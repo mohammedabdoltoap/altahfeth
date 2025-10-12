@@ -1,231 +1,158 @@
+import 'package:althfeth/constants/function.dart';
 import 'package:althfeth/controller/home_cont.dart';
-import 'package:althfeth/view/screen/test.dart';
+import 'package:althfeth/view/screen/dilaysAndRevoews/review.dart';
+import 'package:althfeth/view/screen/studentScreen/update_Student.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../globals.dart';
+import '../widget/home/appBarHome.dart';
+import '../widget/home/appDrawer.dart';
+import '../widget/home/cardStudent.dart';
+import '../widget/home/searchAndButtonAddStudent.dart';
+import 'attendance.dart';
+import 'dilaysAndRevoews/daily_report.dart';
+import 'dilaysAndRevoews/update_daily_report.dart';
+import 'dilaysAndRevoews/update_review.dart';
 
-import '../../constants/loadingWidget.dart';
-import 'addStudent.dart';
-import 'monthly_plan.dart';
+
 
 class Home extends StatelessWidget {
-   HomeCont controller = Get.put(HomeCont());
+  HomeCont controller = Get.put(HomeCont());
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-    if( controller.isLoding_get_circle_and_students.value)
     return Scaffold(
-      body:Center(
-        child: LoadingWidget(isLoading: controller.isLoding_get_circle_and_students),
-      ) ,
-    );
-  return  Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.teal,
-        centerTitle: true,
-        toolbarHeight: 120, // طول أكبر للـ AppBar
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // اسم الحلقة كبير وواضح
-            Text(
-              "${controller.data_circle["name_circle"]}",
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 6),
-            // خط فاصل صغير
-            Container(
-              width: 80,
-              height: 3,
-              color: Colors.white70,
-            ),
-            SizedBox(height: 6),
-            // اسم الأستاذ
-            Text(
-              "الأستاذ: ${controller.dataArg["username"]}",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-                color: Colors.white70,
-              ),
-            ),
-          ],
-        ),
-      ),
-
+      drawer: AppDrawer(),
+      appBar: AppBarHome(),
       body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // شريط البحث + زر إضافة طالب
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: controller.filterStudents,
-                    decoration: InputDecoration(
-                      hintText: "ابحث عن الطالب...",
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Get.to(()=>Addstudent(),arguments: controller.data_circle);
-                  },
-                  icon: Icon(Icons.person_add),
-                  label: Text("إضافة طالب"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    padding:
-                    EdgeInsets.symmetric(vertical: 15, horizontal: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 15),
+        padding: const EdgeInsets.all(10),
+        child: RefreshIndicator(
+          onRefresh: () => controller.getstudents(),
+          child: Obx(() {
+            return controller.loding_get_circle_and_students.value?SizedBox():ListView.builder(
+              itemCount: controller.filteredStudents.length + 1,
 
-            // قائمة الطلاب
-            Expanded(
-              child: Obx(() {
-                if (controller.filteredStudents.isEmpty) {
-                  return Center(child: Text("لا يوجد طلاب مطابقون"));
+              itemBuilder: (context, index) {
+                // أول عنصر = شريط البحث
+                if (index == 0) {
+                  return controller.filteredStudents.isNotEmpty? Column(
+                    children: [
+                      SearchAndButtonAddStudent(),
+                    ],
+                  ):Column(
+                        children: [
+                          SearchAndButtonAddStudent(),
+                          SizedBox(height: 20),
+                          Center(child: Text("لا يوجد طلاب بالحلقة",style: TextStyle(fontSize: 18),)),
+                        ],
+                      );
                 }
-                return ListView.builder(
-                  itemCount: controller.filteredStudents.length,
-                  itemBuilder: (context, index) {
-                    final student = controller.filteredStudents[index];
-                    return Card(
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15)),
-                      child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // اسم الطالب + المرحلة
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(student['name_student'],
-                                    style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold)),
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: 4, horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.teal[100],
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(student['name_stages'],
-                                      style: TextStyle(
-                                          color: Colors.teal[800],
-                                          fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 6),
-                            Text("العمر: ${student['age_student']}"),
-                            Text("العنوان: ${student['address_student']}"),
-                            Text("المستوى: ${student['name_level']}"),
-                            SizedBox(height: 10),
 
-                            // الأزرار
-                            Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        onPressed: () {
-                                          controller.addReport(student['id_student']);
-                                        },
-                                        icon: Icon(Icons.note_add, size: 18),
-                                        label: Text("تقرير"),
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green),
-                                      ),
-                                    ),
-                                    SizedBox(width: 8,),
-                                    Expanded(
-                                      child:
-                                      ElevatedButton.icon(
-                                        onPressed: () {
 
-                                          student["id_user"]= controller.dataArg["id_user"];
-                                          Get.to(()=>Monthly_Plan(),arguments: student);
+                // بقية العناصر = الطلاب
+                final student = controller.filteredStudents[index - 1];
+                return CardStudent(
+                  student: student,
+                  absence: (){
+                    print(student);
+                    controller.select_absence_report(student["id_student"],student["name_student"]);
 
-                                        },
-                                        icon: Icon(Icons.next_plan, size: 18),
-                                        label: Text("الخطة الشهرية"),
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Row(
+                  },
+                  reviewReports: (){
+                    controller.select_review_report(student["id_student"]);
 
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        onPressed: () {
-                                          controller.editStudent(student['id_student'],
-                                              student); // مثال
-                                        },
-                                        icon: Icon(Icons.edit, size: 18),
-                                        label: Text("تعديل"),
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue),
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        onPressed: () {
-                                          controller.deleteStudent(
-                                              student['id_student']);
-                                        },
-                                        icon: Icon(Icons.delete, size: 18),
-                                        label: Text("حذف"),
-                                        style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.red),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                  },
+                  dailyReports: (){
+                    controller.select_daily_report(student["id_student"]);
+                  },
+                  add_rep: () async {
+
+                    if(!holidayData["is_holiday"])
+                   {
+                     await controller.getLastDailyReport(student["id_student"], student["id_level"]);
+                    student["id_user"] = controller.dataArg["id_user"];
+                    if (controller.statLastDailyReport.value == 1) {
+                      Get.to(() => Daily_Report(), arguments: {
+                        "student": student,
+                        "lastDailyReport": controller.lastDailyReport,
+                      });
+                    }
+                    if (controller.statLastDailyReport.value == 2) {
+                      bool? confirm = await showConfirmDialog(
+                        context: context,
+                        title: "تنبيه",
+                        message:
+                        "لقد تم اضافة تسميع لهذا الطالب اليوم ولايمكن اضافة اكثر من تسميع. هل تريد تعديل وتجاوز الاول؟",
+                      );
+                      if (confirm == true) {
+                        Get.to(() => Update_Daily_Report(), arguments: {
+                          "student": student,
+                          "lastDailyReport": controller.lastDailyReport,
+                        });
+                      }
+                    }
+                   }else{
+                      mySnackbar("تنبية", "اجازة بمناسبة${holidayData["reason"]}");
+                    }
+                  },
+                  review: () async {
+
+                    if(!holidayData["is_holiday"]){
+                    await controller.getLastReview(student["id_student"],student["id_level"]);
+                    if (controller.stat_getLastReview == 1) {
+                      bool? confirm = await showConfirmDialog(
+                        context: context,
+                        message:
+                        "لقد تمت إضافة مراجعة لهذا اليوم بالفعل، ولا يمكن إدخال أكثر من مراجعة في نفس اليوم. هل ترغب في تعديل المراجعة الحالية؟",
+                      );
+                      if (confirm == true) {
+                        Get.to(() => Update_Review(), arguments: {
+                          "dataLastReview": controller.dataLastReview,
+                          "student": student
+                        });
+                      }
+                    } else if (controller.stat_getLastReview == 2) {
+                      student["id_user"] = controller.dataArg["id_user"];
+                      Get.to(() => Review(),arguments: {
+                        "dataLastReview": controller.dataLastReview,
+                        "student": student
+                      });
+                    } else if (controller.stat_getLastReview == 3) {
+                      mySnackbar("تنبيه",
+                          "يجب ان يكون للطالب تسميع مسبق قبل اضافة مراجعة ");
+                      return;
+                    } else {
+                      mySnackbar("تنبيه", "حصل خطأ في الاتصال");
+                    }
+                  }
+                    else{
+                      mySnackbar("تنبية", "اجازة بمناسبة${holidayData["reason"]}");
+                    }
+
+                    },
+                  updateData: (){
+
+                    Get.to(()=>UpdateStudent(),arguments: student);
 
                   },
                 );
-              }),
-            ),
-          ],
+              },
+            );
+          }),
         ),
       ),
-
     );
-
-  },);
-
   }
 
+
+
+
 }
+
+
+
+
+
+
+
+

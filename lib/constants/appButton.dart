@@ -1,3 +1,4 @@
+import 'package:althfeth/constants/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -29,7 +30,7 @@ class AppButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: color ?? Colors.green[700],
+          backgroundColor: color ??primaryGreen,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),

@@ -1,10 +1,12 @@
+import 'package:althfeth/constants/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../constants/appButton.dart';
-import '../../constants/loadingWidget.dart';
+import '../../constants/customTextField.dart';
 import '../../controller/loginController.dart';
-
+import '../../globals.dart';
+import '../widget/login/isStudentCheke.dart';
 
 class Login extends StatelessWidget {
   final LoginController loginController = Get.put(LoginController());
@@ -20,54 +22,45 @@ class Login extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // الأيقونة
-              Icon(Icons.menu_book, size: 100, color: Colors.green[700]),
+              Icon(Icons.menu_book, size: 100, color: primaryGreen),
               SizedBox(height: 20),
               Text(
                 "تسجيل الدخول",
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[800],
+                  color: primaryGreen,
                 ),
               ),
               SizedBox(height: 30),
 
-              // حقل اسم المستخدم
-              TextField(
+              CustomTextField(
                 controller: loginController.usernameController,
-                decoration: InputDecoration(
-                  labelText: "اسم المستخدم",
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                label: "اسم المستخدم",
+                hint: "أدخل اسمك هنا",
+                prefixIcon: Icons.person,
               ),
               SizedBox(height: 15),
 
               // حقل كلمة المرور
-              TextField(
+              CustomTextField(
                 controller: loginController.passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: "كلمة المرور",
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                label: "كلمة المرور",
+                hint: "********",
+                isPassword: true,
+                prefixIcon: Icons.lock,
               ),
-
               SizedBox(height: 20),
-
-              Obx(() => AppButton(
+              AppButton(
                 text: "تسجيل دخول",
                 onPressed: () {
+                  if(loginController.isStudent.value)
+                    loginController.select_data_Student();
+                    else
                   loginController.select_data_user();
                 },
-                isLoading: loginController.isLoading.value,
-              )
-        ),
+              ),
+              IsStudentCheke(),
               SizedBox(height: 15),
 
               TextButton(
@@ -76,7 +69,7 @@ class Login extends StatelessWidget {
                 },
                 child: Text(
                   "نسيت كلمة المرور؟",
-                  style: TextStyle(color: Colors.green[700]),
+                  style: TextStyle(color: primaryGreen),
                 ),
               ),
             ],
