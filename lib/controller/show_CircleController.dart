@@ -47,7 +47,7 @@ class Show_CircleController extends GetxController {
 
     showLoading(message: " تحميل الحلقات.");
     await del();
-    var res = await postData(Linkapi.select_circle_for_center, {"id_user": dataArg["id_user"]});
+    var res = await postData(Linkapi.select_circle_for_center, {"responsible_user_id": dataArg["id_user"]});
     hideLoading();
     if (res["stat"] == "ok") {
       data_circle.assignAll(List<Map<String, dynamic>>.from(res["data"]));

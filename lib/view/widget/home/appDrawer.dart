@@ -5,11 +5,10 @@ import '../../../constants/function.dart';
 import '../../../controller/home_cont.dart';
 import '../../../globals.dart';
 import '../../screen/LeaveRequestsPage.dart';
-import '../../screen/ShowCircleExam.dart';
-import '../../screen/add _Visit.dart';
 import '../../screen/attendance.dart';
 import '../../screen/home.dart';
 import '../../screen/login.dart';
+import '../../screen/skillsScreen/StudentList_Skill.dart';
 import '../../screen/updateAttendance.dart';
 import '../../screen/user_attendance.dart';
 class AppDrawer extends StatelessWidget {
@@ -83,7 +82,7 @@ class AppDrawer extends StatelessWidget {
 
               },
             ),
-            if(homeCont.dataArg["role"]==4)
+            if(homeCont.dataArg["role"]==teacherRole)
             drawerItem(
               icon: Icons.history,
               text: "الحضور والانصراف",
@@ -95,7 +94,7 @@ class AppDrawer extends StatelessWidget {
                 }
               },
             ),
-            if(homeCont.dataArg["role"]==4)
+            if(homeCont.dataArg["role"]==teacherRole)
             drawerItem(
               icon: Icons.assignment,
               text: "طلب استقالة",
@@ -111,7 +110,7 @@ class AppDrawer extends StatelessWidget {
             }
     },
             ),
-            if(homeCont.dataArg["role"]==4)
+            if(homeCont.dataArg["role"]==teacherRole)
             drawerItem(
               icon: Icons.assignment,
               text: "طلب اجازة",
@@ -124,24 +123,16 @@ class AppDrawer extends StatelessWidget {
             }
     },
             ),
-           if(homeCont.dataArg["role"]==2)
+
             drawerItem(
               icon: Icons.quiz,
-              text: "الزيارات ",
+              text: "المهارات  ",
               onTap: () {
                 Get.back();
-                Get.to(() => Add_Visit(),arguments: homeCont.dataArg);
+                Get.to(() => StudentList_Skill(),arguments: homeCont.dataArg);
               },
             ),
-           if(homeCont.dataArg["role"]==2)
-            drawerItem(
-              icon: Icons.quiz,
-              text: "الاختبارات الشهرية ",
-              onTap: () {
-                Get.back();
-                Get.to(() => ShowCircleExam(),arguments: homeCont.dataArg);
-              },
-            ),
+
 
             Divider(color: Colors.teal[200], thickness: 1, height: 30),
 

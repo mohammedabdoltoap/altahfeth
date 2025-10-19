@@ -6,6 +6,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
 import '../constants/loadingWidget.dart';
+import '../globals.dart';
+import '../view/screen/adminScreen/Home_Admin.dart';
 import '../view/screen/home.dart';
 import '../view/screen/show_circle.dart';
 class LoginController extends GetxController {
@@ -27,8 +29,18 @@ class LoginController extends GetxController {
         hideLoading();
         if (response["stat"] == "ok") {
           data_user = response["data"];
-          if(data_user["status"]==1) { // Get.to(() => Home(),arguments: data_user);
-            Get.to(() => Show_Circle(), arguments: data_user);
+          if(data_user["status"]==1) {
+            data_user_globle=data_user;
+            print(data_user);
+            if(data_user["role"]==adminRole)
+              {
+
+                Get.to(() => Home_Admin(), arguments: data_user);
+
+              }else {
+              Get.to(() => Show_Circle(), arguments: data_user);
+
+            }
           }
           else{
           mySnackbar("حسابك موقف", "تواصل مع الادارة لحل المشكلة");

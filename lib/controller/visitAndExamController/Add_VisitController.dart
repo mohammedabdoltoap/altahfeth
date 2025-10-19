@@ -2,11 +2,12 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../api/LinkApi.dart';
-import '../api/apiFunction.dart';
-import '../constants/function.dart';
-import '../constants/loadingWidget.dart';
-import '../constants/myreport.dart';
+import '../../api/LinkApi.dart';
+import '../../api/apiFunction.dart';
+import '../../constants/function.dart';
+import '../../constants/loadingWidget.dart';
+import '../../constants/myreport.dart';
+import '../../view/screen/adminScreen/visitsAndExam/StudentsList.dart';
 
 class Add_VisitController extends GetxController{
 
@@ -14,9 +15,9 @@ class Add_VisitController extends GetxController{
   @override
   void onInit() {
     dataArg=Get.arguments;
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      print("dataArg====${dataArg}");
-      select_visits_type_months_years();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp)async {
+       select_visits_type_months_years();
+      select_previous_visits();
     },);
   }
 
@@ -29,10 +30,11 @@ class Add_VisitController extends GetxController{
   RxList<Map<String,dynamic>> years=<Map<String,dynamic>>[].obs;
   RxList<Map<String,dynamic>> visits_type=<Map<String,dynamic>>[].obs;
   RxList<Map<String,dynamic>> circles=<Map<String,dynamic>>[].obs;
-  List<Map<String,dynamic>> visits=<Map<String,dynamic>>[];
+  RxList<Map<String,dynamic>> visits=<Map<String,dynamic>>[].obs;
+  TextEditingController notes=TextEditingController();
 
   Future select_visits_type_months_years()async{
-    showLoading();
+    showLoading(message: "تحميل بيانات ");
     await del();
     var res=await postData(Linkapi.select_visits_type_months_years, {"id_user":dataArg["id_user"]});
     hideLoading();
@@ -50,7 +52,16 @@ class Add_VisitController extends GetxController{
     }
   }
 
-  Future insert_visits()async{
+
+  Future select_visitsed()async {
+    var res=await postData(Linkapi.select_visitsed, {"id_user":dataArg["id_user"]});
+    if(res["stat"]=="ok") {
+      visits.assignAll(List<Map<String, dynamic>>.from(res["visits"]));
+      print("visits=====${visits}");
+    }
+
+    }
+    Future insert_visits()async{
 
 
     if(selectedIdCirle?.value==0) {
@@ -82,49 +93,51 @@ class Add_VisitController extends GetxController{
           return;
         }
       }
-    showLoading();
-    await del();
+
     Map data={
       "id_user":dataArg["id_user"],
       "id_month":selectedIdMonths?.value,
       "id_year":selectedIdYears?.value,
       "id_visit_type":selectedIdVisitsType?.value,
       "id_circle":selectedIdCirle?.value,
+      "notes":notes.text
     };
+
+
     var res=await postData(Linkapi.insert_visits, data);
-    hideLoading();
     if(res["stat"]=="ok"){
-      Get.back();
-      mySnackbar("نجاح", "تم الاضافة بنجاح",type: "g");
+     var id_visit= int.tryParse(res["data"]);
+     if(id_visit!=null){
+       if(selectedIdVisitsType?.value==1){
+         Map data_arg={
+           "id_circle":selectedIdCirle?.value,
+           "id_visit":id_visit,
+           "id_user":dataArg["id_user"],
+         };
+         Get.to(()=>StudentsList(),arguments: data_arg);
+       }
+     }
+
     }
     else if(res["stat"]=="erorr"){
       mySnackbar("تنبية", "${res["msg"]}",);
     }
     else {
       mySnackbar("تنبية", "حصل خطا اثناء الاضافة",);
-
     }
   }
 
 
-  // Future showReport()async{
-  //   final headers = ["التاريخ", "السنة", "الشهر", "نوع الزيارة", "اسم مدير المركز"];
-  //   final rows = visits.map((v) => [
-  //     (v["date"] ?? "غير متوفر").toString(),
-  //     (v["name_year"] ?? "غير متوفر").toString(),
-  //     (v["month_name"] ?? "غير متوفر").toString(),
-  //     (v["name_visit_type"] ?? "غير متوفر").toString(),
-  //     (v["username"] ?? "غير متوفر").toString(),
-  //   ]).toList();
-  //
-  //
-  //   await generateStandardPdfReport(
-  //     title: "تقرير الزيارات",
-  //     // subTitle: "${date}",
-  //     headers:headers,
-  //     rows:rows,
-  //   );
-  //
-  // }
+  RxList<Map<String, dynamic>> previous_visits = <Map<String, dynamic>>[].obs;
+  Future select_previous_visits() async {
+    var res = await postData(Linkapi.select_previous_visits, {
+      "id_user":dataArg["id_user"]
+    });
+    if (res["stat"] == "ok") {
+      previous_visits.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      print("previous_visits=======${previous_visits}");
+    }
+  }
+
 
 }

@@ -13,6 +13,8 @@ class FirstPageExamStudentController extends GetxController {
     select_data_exam();
   }
 
+
+
   RxList<Map<String, dynamic>> students = <Map<String, dynamic>>[].obs;
   Map<String, dynamic> marks = {};
 
@@ -33,4 +35,7 @@ class FirstPageExamStudentController extends GetxController {
 
     print("marks===========${marks}");
   }
+
+
+
 }
