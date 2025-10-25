@@ -1,0 +1,429 @@
+import 'package:althfeth/api/LinkApi.dart';
+import 'package:althfeth/api/apiFunction.dart';
+import 'package:althfeth/constants/function.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+
+class StudentAttendanceReport extends StatelessWidget {
+  final StudentAttendanceReportController controller = Get.put(StudentAttendanceReportController());
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("تقرير حضور وغياب الطلاب"),
+        backgroundColor: Colors.teal,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () => controller.exportToPDF(),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Date Selection
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.teal.shade50,
+            child: Column(
+              children: [
+                // اختيار الحلقة
+                Obx(() => DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(
+                    labelText: "الحلقة",
+                    border: OutlineInputBorder(),
+                  ),
+                  value: controller.selectedCircle.value,
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text("اختر الحلقة")),
+                    ...controller.circlesList.map((circle) {
+                      return DropdownMenuItem(
+                        value: circle['id_circle'].toString(),
+                        child: Text(circle['name_circle'] ?? ''),
+                      );
+                    }).toList(),
+                  ],
+                  onChanged: (val) {
+                    controller.selectedCircle.value = val;
+                  },
+                )),
+                const SizedBox(height: 8),
+                // اختيار التاريخ
+                Row(
+                  children: [
+                    Expanded(
+                      child: Obx(() => ElevatedButton.icon(
+                        icon: const Icon(Icons.calendar_today),
+                        label: Text(
+                          controller.selectedDate.value != null
+                              ? DateFormat('yyyy-MM-dd').format(controller.selectedDate.value!)
+                              : "اختر التاريخ",
+                        ),
+                        onPressed: () => controller.selectDate(context),
+                      )),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.search),
+                        label: const Text("عرض"),
+                        onPressed: () => controller.loadData(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Statistics
+          Obx(() {
+            if (controller.attendanceList.isEmpty) return const SizedBox.shrink();
+            
+            final present = controller.attendanceList.where((s) => s['status'] == '1').length;
+            final absent = controller.attendanceList.where((s) => s['status'] == '0').length;
+            final total = controller.attendanceList.length;
+            
+            return Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.grey.shade100,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildStatCard("الحضور", present.toString(), Colors.green),
+                  _buildStatCard("الغياب", absent.toString(), Colors.red),
+                  _buildStatCard("الإجمالي", total.toString(), Colors.blue),
+                ],
+              ),
+            );
+          }),
+          
+          // Data List
+          Expanded(
+            child: Obx(() {
+              if (controller.loading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              if (controller.attendanceList.isEmpty) {
+                return const Center(
+                  child: Text("لا توجد بيانات حضور"),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: controller.attendanceList.length,
+                itemBuilder: (context, index) {
+                  final student = controller.attendanceList[index];
+                  final isPresent = student['status'] == '1';
+                  
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(12),
+                      leading: CircleAvatar(
+                        backgroundColor: isPresent ? Colors.green : Colors.red,
+                        child: Icon(
+                          isPresent ? Icons.check : Icons.close,
+                          color: Colors.white,
+                        ),
+                      ),
+                      title: Text(
+                        student['name_student'] ?? '',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Text(
+                        isPresent ? 'حاضر' : 'غائب',
+                        style: TextStyle(
+                          color: isPresent ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      trailing: student['notes'] != null && student['notes'].toString().isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.note, color: Colors.orange),
+                              onPressed: () {
+                                Get.dialog(
+                                  AlertDialog(
+                                    title: const Text("ملاحظات"),
+                                    content: Text(student['notes'] ?? ''),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Get.back(),
+                                        child: const Text("إغلاق"),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            )
+                          : null,
+                    ),
+                  );
+                },
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey.shade700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class StudentAttendanceReportController extends GetxController {
+  var selectedDate = Rxn<DateTime>();
+  var selectedCircle = Rxn<String>();
+  var attendanceList = <Map<String, dynamic>>[].obs;
+  var circlesList = <Map<String, dynamic>>[].obs;
+  var loading = false.obs;
+  var dataArg;
+
+  @override
+  void onInit() {
+    super.onInit();
+    dataArg = Get.arguments;
+    loadCircles();
+  }
+  
+  Future<void> loadCircles() async {
+    try {
+      final response = await postData(Linkapi.select_circle_for_center, {
+        "responsible_user_id": dataArg?['id_user']?.toString(),
+      });
+      
+      if (response['stat'] == 'ok') {
+        circlesList.assignAll(List<Map<String, dynamic>>.from(response['data']));
+      }
+    } catch (e) {
+      print("Error loading circles: $e");
+    }
+  }
+
+  Future<void> selectDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate.value ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      selectedDate.value = picked;
+    }
+  }
+
+  Future<void> loadData() async {
+    if (selectedDate.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار التاريخ");
+      return;
+    }
+    
+    if (selectedCircle.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار الحلقة");
+      return;
+    }
+
+    loading.value = true;
+    try {
+      final response = await postData(Linkapi.select_student_attendance, {
+        "id_circle": selectedCircle.value,
+        "date": DateFormat('yyyy-MM-dd').format(selectedDate.value!),
+      });
+
+      print("Student Attendance Response: $response");
+
+      if (response == null) {
+        mySnackbar("خطأ", "فشل الاتصال بالخادم");
+        attendanceList.clear();
+        return;
+      }
+
+      if (response is! Map) {
+        mySnackbar("خطأ", "استجابة غير صحيحة من الخادم");
+        attendanceList.clear();
+        return;
+      }
+      
+      if (response['stat'] == 'ok') {
+        if (response['data'] != null && response['data'] is List) {
+          attendanceList.assignAll(List<Map<String, dynamic>>.from(response['data']));
+          mySnackbar("نجح", "تم تحميل ${attendanceList.length} طالب", type: "g");
+        } else {
+          attendanceList.clear();
+          mySnackbar("تنبيه", "لا توجد بيانات");
+        }
+      } else if (response['stat'] == 'no') {
+        attendanceList.clear();
+        mySnackbar("تنبيه", "لا توجد بيانات حضور لهذا التاريخ");
+      } else {
+        attendanceList.clear();
+        mySnackbar("خطأ", response['msg'] ?? "حدث خطأ");
+      }
+    } catch (e) {
+      print("Error: $e");
+      mySnackbar("خطأ", "حدث خطأ: $e");
+      attendanceList.clear();
+    } finally {
+      loading.value = false;
+    }
+  }
+  
+  Future<void> exportToPDF() async {
+    if (attendanceList.isEmpty) {
+      mySnackbar("تنبيه", "لا توجد بيانات للتصدير");
+      return;
+    }
+
+    try {
+      final pdf = pw.Document();
+      final fontData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
+      final arabicFont = pw.Font.ttf(fontData);
+
+      final dateStr = selectedDate.value != null 
+          ? DateFormat('yyyy-MM-dd').format(selectedDate.value!)
+          : '';
+      
+      final present = attendanceList.where((s) => s['status'] == '1').length;
+      final absent = attendanceList.where((s) => s['status'] == '0').length;
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          textDirection: pw.TextDirection.rtl,
+          theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
+          build: (context) {
+            return [
+              pw.Container(
+                padding: const pw.EdgeInsets.all(20),
+                decoration: pw.BoxDecoration(
+                  color: PdfColor.fromHex('#009688'),
+                  borderRadius: pw.BorderRadius.circular(10),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'تقرير حضور وغياب الطلاب',
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white,
+                      ),
+                    ),
+                    pw.SizedBox(height: 10),
+                    pw.Text(
+                      'التاريخ: $dateStr',
+                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
+                    ),
+                    pw.Text(
+                      'الحضور: $present | الغياب: $absent | الإجمالي: ${attendanceList.length}',
+                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 20),
+
+              pw.Table(
+                border: pw.TableBorder.all(color: PdfColors.grey300),
+                children: [
+                  pw.TableRow(
+                    decoration: pw.BoxDecoration(
+                      color: PdfColor.fromHex('#B2DFDB'),
+                    ),
+                    children: [
+                      _buildTableCell('#', isHeader: true),
+                      _buildTableCell('اسم الطالب', isHeader: true),
+                      _buildTableCell('الحالة', isHeader: true),
+                      _buildTableCell('ملاحظات', isHeader: true),
+                    ],
+                  ),
+                  ...attendanceList.asMap().entries.map((entry) {
+                    final index = entry.key + 1;
+                    final item = entry.value;
+                    final isPresent = item['status'] == '1';
+                    
+                    return pw.TableRow(
+                      children: [
+                        _buildTableCell(index.toString()),
+                        _buildTableCell(item['name_student'] ?? '-'),
+                        _buildTableCell(
+                          isPresent ? 'حاضر' : 'غائب',
+                          color: isPresent ? PdfColors.green : PdfColors.red,
+                        ),
+                        _buildTableCell(item['notes'] ?? '-'),
+                      ],
+                    );
+                  }).toList(),
+                ],
+              ),
+            ];
+          },
+        ),
+      );
+
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+        name: 'تقرير_حضور_الطلاب_$dateStr.pdf',
+      );
+
+      mySnackbar("نجح", "تم إنشاء التقرير بنجاح", type: "g");
+    } catch (e) {
+      print("PDF Error: $e");
+      mySnackbar("خطأ", "حدث خطأ أثناء إنشاء التقرير: $e");
+    }
+  }
+
+  pw.Widget _buildTableCell(String text, {bool isHeader = false, PdfColor? color}) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: isHeader ? 12 : 10,
+          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+          color: color ?? (isHeader ? PdfColor.fromHex('#00695C') : PdfColors.black),
+        ),
+        textAlign: pw.TextAlign.center,
+      ),
+    );
+  }
+}
