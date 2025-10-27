@@ -1,87 +1,105 @@
+import 'dart:async';
 import 'package:althfeth/api/LinkApi.dart';
 import 'package:althfeth/api/apiFunction.dart';
 import 'package:althfeth/constants/function.dart';
 import 'package:althfeth/view/screen/studentScreen/studentPage.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import '../constants/loadingWidget.dart';
 import '../globals.dart';
 import '../view/screen/adminScreen/Home_Admin.dart';
-import '../view/screen/home.dart';
 import '../view/screen/show_circle.dart';
+
 class LoginController extends GetxController {
-  // var isLoading = false.obs;
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
   var data_user;
   RxBool isStudent = false.obs;
+  RxBool isLoading = false.obs;
 
-    Future select_data_user()async {
-      if (passwordController.text.isNotEmpty && usernameController.text.isNotEmpty) {
+  @override
+  void onClose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    super.onClose();
+  }
 
-        showLoading();
-       await del();
-        var response = await postData(Linkapi.select_users, {
+  Future<void> select_data_user() async {
+    if (isLoading.value) return; // منع الطلبات المتكررة
+    if (usernameController.text.trim().isEmpty || passwordController.text.isEmpty) {
+      mySnackbar("تنبيه", "ادخل البيانات المطلوبة", type: "y");
+      return;
+    }
+
+    final response = await handleRequest<dynamic>(
+      isLoading: isLoading,
+      loadingMessage: "جاري تسجيل الدخول...",
+      useDialog: false,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_users, {
           "username": usernameController.text.trim(),
           "password": passwordController.text.trim(),
         });
-        hideLoading();
-        if (response["stat"] == "ok") {
-          data_user = response["data"];
-          if(data_user["status"]==1) {
-            data_user_globle=data_user;
-            print(data_user);
-            if(data_user["role"]==adminRole)
-              {
+      },
+    );
 
-                Get.to(() => Home_Admin(), arguments: data_user);
-
-              }else {
-              Get.to(() => Show_Circle(), arguments: data_user);
-
-            }
-          }
-          else{
-          mySnackbar("حسابك موقف", "تواصل مع الادارة لحل المشكلة");
-          }
-        }
-        else {
-          mySnackbar("خطا", "الاسم او كلمة المرو خطا");
-        }
-      } else{
-        mySnackbar("تنبية", "ادخل البيانات المطلوبه",type: "y");
-      }
-
+    if (response == null) return;
+    if (response is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
     }
 
-
-
-
-
-  Future select_data_Student()async {
-    if (passwordController.text.isNotEmpty && usernameController.text.isNotEmpty) {
-
-      showLoading();
-      await del();
-      var response = await postData(Linkapi.select_data_student, {
-        "name_student": usernameController.text,
-        "password": passwordController.text,
-      });
-      hideLoading();
-      if (response["stat"] == "ok") {
-        data_user = response["data"];
-        Get.to(()=>StudentPage(),arguments: data_user);
-
+    if (response["stat"] == "ok") {
+      data_user = response["data"];
+      if (data_user["status"] == 1) {
+        data_user_globle = data_user;
+        if (data_user["role"] == adminRole) {
+          Get.offAll(() => Home_Admin(), arguments: data_user);
+        } else {
+          Get.offAll(() => Show_Circle(), arguments: data_user);
         }
-      else {
-        mySnackbar("خطا", "الاسم او كلمة المرو خطا");
+      } else {
+        mySnackbar("حسابك موقف", "تواصل مع الإدارة لحل المشكلة");
       }
-    } else{
-      mySnackbar("تنبية", "ادخل البيانات المطلوبه",type: "y");
+    } else {
+      String errorMsg = response["msg"] ?? "اسم المستخدم أو كلمة المرور خاطئة";
+      mySnackbar("خطأ", errorMsg);
     }
-
   }
 
+  Future<void> select_data_Student() async {
+    if (isLoading.value) return; // منع الطلبات المتكررة
+    if (usernameController.text.trim().isEmpty || passwordController.text.isEmpty) {
+      mySnackbar("تنبيه", "ادخل البيانات المطلوبة", type: "y");
+      return;
+    }
 
+    final response = await handleRequest<dynamic>(
+      isLoading: isLoading,
+      loadingMessage: "جاري تسجيل الدخول...",
+      useDialog: false,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.select_data_student, {
+          "name_student": usernameController.text.trim(),
+          "password": passwordController.text.trim(),
+        });
+      },
+    );
+
+    if (response == null) return;
+    if (response is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
+    if (response["stat"] == "ok") {
+      data_user = response["data"];
+      Get.offAll(() => StudentPage(), arguments: data_user);
+    } else {
+      String errorMsg = response["msg"] ?? "اسم المستخدم أو كلمة المرور خاطئة";
+      mySnackbar("خطأ", errorMsg);
+    }
+  }
 }

@@ -55,9 +55,19 @@ class Review extends StatelessWidget {
 
               SouraSelector(),
               CustomTextField(controller: controller.markController, label: "الدرجة", hint: "الدرجة",keyboardType:TextInputType.number,),
-              CustomDropdownField(label: "التقييم", items: controller.dataEvaluations, value: controller.selectedEvaluations.value, onChanged: (val){
-                controller.selectedEvaluations.value=val;
-              }, valueKey: "id_evaluation", displayKey: "name_evaluation"),
+              Obx(() {
+                final items = controller.dataEvaluations.toList();
+                return CustomDropdownField(
+                  label: "التقييم", 
+                  items: items,
+                  value: controller.selectedEvaluations.value, 
+                  onChanged: (val){
+                    controller.selectedEvaluations.value=val;
+                  }, 
+                  valueKey: "id_evaluation", 
+                  displayKey: "name_evaluation"
+                );
+              }),
 
               const SizedBox(height: 20),
               AppButton(

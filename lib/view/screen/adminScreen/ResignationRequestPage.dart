@@ -15,7 +15,7 @@ class ResignationRequestPage extends StatelessWidget {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text("طلب استقالة"),
+        title: const Text("طلب استقالة - مدير المركز"),
         centerTitle: true,
         backgroundColor: theme.primaryColor,
       ),
@@ -40,7 +40,7 @@ class ResignationRequestPage extends StatelessWidget {
                         Icon(Icons.person, color: theme.primaryColor),
                         const SizedBox(width: 8),
                         Text(
-                          "معلومات الموظف",
+                          "معلومات مدير المركز",
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.primaryColor,
@@ -102,8 +102,8 @@ class ResignationRequestPage extends StatelessWidget {
                     onChanged: (value) => controller.selectedReason.value = value!,
                   )),
                   Obx(() => RadioListTile<String>(
-                    title: const Text("فرصة عمل أفضل"),
-                    value: "فرصة عمل أفضل",
+                    title: const Text("فرصة إدارية أفضل"),
+                    value: "فرصة إدارية أفضل",
                     groupValue: controller.selectedReason.value,
                     onChanged: (value) => controller.selectedReason.value = value!,
                   )),
@@ -136,7 +136,6 @@ class ResignationRequestPage extends StatelessWidget {
               controller: controller.additionalDetailsController,
               label: "تفاصيل إضافية (اختياري)",
               hint: "اكتب أي تفاصيل إضافية تود إضافتها...",
-              maxLines: 4,
             ),
             
             const SizedBox(height: 20),
@@ -155,7 +154,7 @@ class ResignationRequestPage extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      "سيتم مراجعة طلب الاستقالة من قبل الإدارة وستتلقى رداً خلال 3-5 أيام عمل",
+                      "سيتم مراجعة طلب الاستقالة من قبل الإدارة العليا وستتلقى رداً خلال 5-7 أيام عمل",
                       style: TextStyle(
                         color: Colors.orange.shade700,
                         fontWeight: FontWeight.w500,
@@ -242,7 +241,7 @@ class ResignationController extends GetxController {
   var isLoading = false.obs;
   
   String get userName => dataArg?["username"] ?? "غير محدد";
-  String get userPosition => "مدير مركز"; // يمكن تحديثه حسب نوع المستخدم
+  String get userPosition => "مدير المركز"; 
   String get hireDate => "2023-01-01"; // يمكن جلبه من البيانات
 
   @override
@@ -268,9 +267,9 @@ class ResignationController extends GetxController {
   }
 
   Future<void> submitResignation() async {
-    // التحقق من البيانات
+    // التحقق من إدخال التاريخ
     if (resignationDateController.text.isEmpty) {
-      mySnackbar("تنبيه", "يرجى اختيار تاريخ الاستقالة");
+      mySnackbar("تنبيه", "الرجاء اختيار تاريخ الاستقالة");
       return;
     }
 
@@ -281,13 +280,24 @@ class ResignationController extends GetxController {
         useDialog: true,
         immediateLoading: true,
         action: () async {
-          return await postData(Linkapi.addResignation, {
+          // إرسال جميع البيانات المطلوبة إلى PHP
+          Map<String, dynamic> requestData = {
             "id_user": dataArg["id_user"],
             "resignation_date": resignationDateController.text,
             "reason": selectedReason.value,
-            "additional_details": additionalDetailsController.text.trim(),
-            "request_date": DateTime.now().toIso8601String().split('T')[0],
-          });
+          };
+
+          // إضافة التفاصيل الإضافية إذا كانت موجودة
+          if (additionalDetailsController.text.isNotEmpty) {
+            requestData["notes"] = additionalDetailsController.text;
+          }
+
+          // إضافة id_circle إذا كان موجوداً
+          if (dataArg["id_circle"] != null) {
+            requestData["id_circle"] = dataArg["id_circle"];
+          }
+
+          return await postData(Linkapi.addResignation, requestData);
         },
       );
 
@@ -299,7 +309,7 @@ class ResignationController extends GetxController {
 
       if (res["stat"] == "ok") {
         Get.back();
-        mySnackbar("نجاح", "تم تقديم طلب الاستقالة بنجاح", type: "g");
+        mySnackbar("تم تقديم طلب الاستقالة", "سيتم المراجعة قريباً", type: "g");
         
         // إظهار رسالة تأكيد
         Get.dialog(
@@ -312,7 +322,7 @@ class ResignationController extends GetxController {
               ],
             ),
             content: const Text(
-              "تم تقديم طلب الاستقالة بنجاح. ستتلقى رداً من الإدارة خلال 3-5 أيام عمل.",
+              "تم تقديم طلب الاستقالة بنجاح. ستتلقى رداً من الإدارة العليا خلال 5-7 أيام عمل.",
             ),
             actions: [
               TextButton(
@@ -322,8 +332,14 @@ class ResignationController extends GetxController {
             ],
           ),
         );
+      } else if (res["stat"] == "no") {
+        // حالة وجود استقالة مسبقة أو خطأ منطقي
+        String errorMsg = res["message"] ?? res["msg"] ?? "لا يمكن تقديم الطلب";
+        mySnackbar("تنبيه", errorMsg);
       } else {
-        mySnackbar("تنبيه", res["msg"] ?? "فشل في تقديم الطلب");
+        // حالة خطأ في الخادم
+        String errorMsg = res["msg"] ?? res["message"] ?? "حصل خطأ أثناء تقديم الطلب";
+        mySnackbar("خطأ", errorMsg);
       }
     } catch (e) {
       mySnackbar("خطأ", "حدث خطأ غير متوقع");

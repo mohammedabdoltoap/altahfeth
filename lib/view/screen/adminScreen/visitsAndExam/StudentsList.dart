@@ -6,6 +6,7 @@ import 'package:althfeth/constants/loadingWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../constants/SmolleStudentCard.dart';
+import '../../../../constants/inline_loading.dart';
 import '../../../../controller/visitAndExamController/Add_VisitController.dart';
 import 'ExamScreen.dart';
 
@@ -20,6 +21,10 @@ class StudentsList extends StatelessWidget {
         backgroundColor: primaryGreen, // primaryTeal
       ),
       body: Obx(() {
+        if (controller.loadingStudents.value && controller.students.isEmpty) {
+          return const InlineLoading(message: "جاري تحميل الطلاب...");
+        }
+
         if (controller.students.isEmpty) {
           return const Center(
             child: Text(
@@ -58,19 +63,17 @@ class StudentsList extends StatelessWidget {
 
 
 
-
-
-
-
 class StudentsListController extends GetxController{
   Add_VisitController add_visitController=Get.put(Add_VisitController());
 
   var dataVisits;
+  RxBool loadingStudents = false.obs;
   @override
   void onInit() {
     dataVisits=Get.arguments;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp)async {
       getstudents();
+
       add_visitController.select_visitsed();
       add_visitController.select_previous_visits();
     },);
@@ -79,10 +82,22 @@ class StudentsListController extends GetxController{
 
 RxList<Map<String,dynamic>> students=<Map<String,dynamic>>[].obs;
   Future getstudents()async{
-    showLoading();
-   await del() ;
-    var res=await postData(Linkapi.getstudents, {"id_circle":dataVisits["id_circle"]});
-    hideLoading();
+    if (loadingStudents.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: loadingStudents,
+      loadingMessage: "جاري تحميل الطلاب...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.getstudents, {"id_circle":dataVisits["id_circle"]});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if(res["stat"]=="ok"){
       students.assignAll(List<Map<String,dynamic>>.from(res["data"]));
     }else if(res["stat"]=="erorr"){

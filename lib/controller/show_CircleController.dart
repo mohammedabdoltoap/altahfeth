@@ -4,10 +4,10 @@ import 'package:get/get.dart';
 import '../api/LinkApi.dart';
 import '../api/apiFunction.dart';
 import '../constants/function.dart';
-import '../constants/loadingWidget.dart';
 
 class Show_CircleController extends GetxController {
   var dataArg;
+  RxBool isLoading = false.obs;
 
   @override
   void onInit() {
@@ -16,53 +16,41 @@ class Show_CircleController extends GetxController {
 
     // نخلي استدعاء get_circle بعد ما يخلص build الأول
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if(dataArg["role"]==4) {
-        get_circle();
-      }
-        if(dataArg["role"]==2) {
-        select_circle_for_center();
-      }
+      get_circle();
     });
   }
 
   RxList<Map<String, dynamic>> data_circle = <Map<String, dynamic>>[].obs;
 
   Future<void> get_circle() async {
+    if (isLoading.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: isLoading,
+      loadingMessage: "تحميل الحلقات...",
+      useDialog: false,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.get_circle, {"id_user": dataArg["id_user"]});
+      },
+    );
 
-    showLoading(message: " تحميل الحلقات.");
-    await del();
-    print("dataArg========${dataArg}");
-    var res = await postData(Linkapi.get_circle, {"id_user": dataArg["id_user"]});
-    hideLoading();
-    if (res["stat"] == "ok") {
-      data_circle.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-
-    } else {
-      mySnackbar("حصل خطأ", "تواصل مع الادارة");
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
     }
 
-  }
-
-  Future<void> select_circle_for_center() async {
-
-    showLoading(message: " تحميل الحلقات.");
-    await del();
-    var res = await postData(Linkapi.select_circle_for_center, {"responsible_user_id": dataArg["id_user"]});
-    hideLoading();
     if (res["stat"] == "ok") {
       data_circle.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-
     } else if(res["stat"]=="no") {
-      mySnackbar("حصل خطأ", "لايوجد لديك حلقات مسوول عنها");
+      String errorMsg = res["msg"] ?? "لا يوجد لديك حلقات حالياً";
+      mySnackbar("تنبيه", errorMsg, type: "y");
+    } else {
+      String errorMsg = res["msg"] ?? "تعضر جلب الحلقات";
+      mySnackbar("خطأ", errorMsg);
     }
-    else if(res["stat"]=="error"){
-      mySnackbar("حصل خطأ", "${res["msg"]}");
-    }
-    else{
-      mySnackbar("حصل خطأ", "حاول لاحقا");
-
-    }
-
   }
+
 
 }

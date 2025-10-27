@@ -1,12 +1,9 @@
-import 'package:get/get.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
 import '../../api/LinkApi.dart';
 import '../../api/apiFunction.dart';
 import '../../constants/function.dart';
-import '../../constants/loadingWidget.dart';
-
 
 class ReviewController extends GetxController{
 
@@ -22,10 +19,11 @@ class ReviewController extends GetxController{
 
   @override
   void onInit() {
-
     student=Get.arguments["student"];
     dataLastReview=Get.arguments["dataLastReview"];
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      // استدعاء منفصل للطلبين - يعملان بشكل متوازي
+      select_evaluations();
       select_fromId_soura_with_to_soura();
     },);
     super.onInit();
@@ -35,33 +33,61 @@ class ReviewController extends GetxController{
 
 
 
-  RxList<Map<String,dynamic>> dataEvaluations=<Map<String,dynamic>>[].obs;
-  RxnInt selectedEvaluations=RxnInt(null);
-  Future select_evaluations()async{
-    var res=await postData(Linkapi.select_evaluations, {});
-    dataEvaluations.assignAll(RxList<Map<String,dynamic>>.from(checkApi(res,massge: "خطا في جلب التقيميات")));
+  RxList<Map<String, dynamic>> dataEvaluations = <Map<String, dynamic>>[].obs;
+  RxnInt selectedEvaluations = RxnInt(null);
 
+  Future select_evaluations() async {
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      useDialog: false,
+      // loadingMessage: "جاري تحميل التقييمات...",
+      action: () async {
+        return await postData(Linkapi.select_evaluations, {});
+      },
+    );
+
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
+    if (res["stat"] == "ok") {
+      dataEvaluations.assignAll(List<Map<String,dynamic>>.from(res["data"]));
+    } else {
+      String errorMsg = res["msg"] ?? "خطأ في جلب التقييمات";
+      mySnackbar("خطأ", errorMsg);
+    }
   }
 
   var datasoura = <Map<String, dynamic>>[].obs;
 
   Future select_fromId_soura_with_to_soura() async {
+    final response = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري تحميل سور القرآن...",
+      action: () async {
+        return await postData(Linkapi.select_fromId_soura_with_to_soura, {
+          "id_level": student["id_level"],
+          "id_soura": dataLastReview.value!["to_id_soura"],
+        });
+      },
+    );
 
-    showLoading();
-    await del();
-   await select_evaluations();
-    var response = await postData(Linkapi.select_fromId_soura_with_to_soura, {
-      "id_level":student["id_level"],
-      "id_soura":dataLastReview.value!["to_id_soura"],
-    });
-    hideLoading();
+    if (response == null) return;
+    if (response is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
     if (response["stat"] == "ok") {
       datasoura.assignAll(List<Map<String, dynamic>>.from(response["data"]));
-
-
+    } else if (response["stat"] == "no") {
+      String errorMsg = response["msg"] ?? "لا يوجد سور";
+      mySnackbar("تنبيه", errorMsg);
     } else {
-      mySnackbar("خطا اثناء جلب السور", "datasoura");
-
+      String errorMsg = response["msg"] ?? "خطأ في جلب السور";
+      mySnackbar("خطأ", errorMsg);
     }
   }
 
@@ -99,27 +125,33 @@ class ReviewController extends GetxController{
       "to_id_aya": to_id_aya.value,
       "id_user": student["id_user"],
       "id_circle": student["id_circle"],
-      "mark":markController.text,
-      "id_evaluation":selectedEvaluations.value
+      "mark": markController.text,
+      "id_evaluation": selectedEvaluations.value,
     };
-    showLoading();
-    await del();
 
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري حفظ المراجعة...",
+      defaultErrorTitle: "لم يتم حفظ المراجعة",
+      action: () async {
+        await del();
+        return await postData(Linkapi.addReview, data);
+      },
+    );
 
-    var res=await postData(Linkapi.addReview, data);
-    hideLoading();
-    if(res["stat"]=="ok"){
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
+    if (res["stat"] == "ok") {
       Get.back();
-      mySnackbar("نجاح", "تم الاضافة بنجاح",type: "g");
+      mySnackbar("نجاح", "تم الإضافة بنجاح", type: "g");
+    } else {
+      String errorMsg = res["msg"] ?? "حصل خطأ أثناء الحفظ";
+      mySnackbar("خطأ", errorMsg);
     }
-    else{
-      mySnackbar("تحذير", "حصل خطا ");
-    }
-
-
-
-
-
   }
 
 }

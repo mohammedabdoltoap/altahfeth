@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:althfeth/api/LinkApi.dart';
-import 'package:althfeth/api/apiFunction.dart';
+
+import '../../../api/LinkApi.dart';
+import '../../../api/apiFunction.dart';
 
 class ParentsContactsPage extends StatelessWidget {
   final ParentsContactsController controller = Get.put(ParentsContactsController());
@@ -196,7 +197,6 @@ class ParentsContactsPage extends StatelessWidget {
                                 fontSize: 14,
                                 color: Colors.green.shade700,
                                 fontWeight: FontWeight.w600,
-                                direction: TextDirection.ltr,
                               ),
                             ),
                           ),
@@ -257,20 +257,21 @@ class ParentsContactsPage extends StatelessWidget {
   void _openWhatsApp(String phoneNumber) async {
     // تنظيف رقم الهاتف
     String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    
-    // إضافة رمز الدولة إذا لم يكن موجوداً
+
+    // ✅ رمز الدولة اليمني +967
     if (!cleanPhone.startsWith('+')) {
       if (cleanPhone.startsWith('0')) {
-        cleanPhone = '+218${cleanPhone.substring(1)}'; // ليبيا
-      } else if (!cleanPhone.startsWith('218')) {
-        cleanPhone = '+218$cleanPhone';
+        cleanPhone = '+967${cleanPhone.substring(1)}'; // اليمن
+      } else if (!cleanPhone.startsWith('967')) {
+        print("cleanPhone===${cleanPhone}");
+        cleanPhone = '+967$cleanPhone';
       } else {
         cleanPhone = '+$cleanPhone';
       }
     }
 
     final whatsappUrl = Uri.parse('https://wa.me/$cleanPhone');
-    
+
     try {
       if (await canLaunchUrl(whatsappUrl)) {
         await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
@@ -293,27 +294,31 @@ class ParentsContactsPage extends StatelessWidget {
   }
 }
 
+
 class ParentsContactsController extends GetxController {
+  var dataArg;
   var loading = true.obs;
   var parentsList = <Map<String, dynamic>>[].obs;
-  var dataArg;
 
   @override
   void onInit() {
-    super.onInit();
     dataArg = Get.arguments;
+    super.onInit();
     loadParentsContacts();
   }
 
   Future<void> loadParentsContacts() async {
     loading.value = true;
+
     try {
+      // 📨 إرسال الطلب إلى الـ API مع id_circle
       final response = await postData(Linkapi.select_parents_contacts, {
-        "id_center": dataArg?['id_center']?.toString(),
+        "id_circle": dataArg?["id_circle"]?.toString(),
       });
 
-      if (response['stat'] == 'ok') {
-        parentsList.assignAll(List<Map<String, dynamic>>.from(response['data']));
+      // ✅ التحقق من النتيجة
+      if (response["stat"] == "ok") {
+        parentsList.assignAll(List<Map<String, dynamic>>.from(response["data"]));
       } else {
         parentsList.clear();
       }

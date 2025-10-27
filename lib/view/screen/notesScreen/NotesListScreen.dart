@@ -10,7 +10,16 @@ class NotesListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("الملاحظات"),
+        title: Column(
+          children: [
+            Text("الملاحظات"),
+            if (notesController.circleName != null)
+              Text(
+                notesController.circleName,
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+              ),
+          ],
+        ),
         centerTitle: true,
         actions: [
           IconButton(
@@ -111,7 +120,7 @@ class NotesListScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                note["supervisor_name"] ?? "غير محدد",
+                                note["responsible_username"] ?? "غير محدد",
                                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -133,7 +142,7 @@ class NotesListScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        notesController.formatDate(note["note_date"] ?? ""),
+                        notesController.formatDate(note["date"] ?? ""),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.grey[600],
                         ),
@@ -142,13 +151,13 @@ class NotesListScreen extends StatelessWidget {
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _getVisitTypeColor(note["visit_type"]).withOpacity(0.1),
+                          color: _getVisitTypeColor(note["name_visit_type"]).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          notesController.getVisitTypeText(note["visit_type"] ?? ""),
+                          note["name_visit_type"] ?? "غير محدد",
                           style: TextStyle(
-                            color: _getVisitTypeColor(note["visit_type"]),
+                            color: _getVisitTypeColor(note["name_visit_type"]),
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -161,7 +170,7 @@ class NotesListScreen extends StatelessWidget {
               SizedBox(height: 12),
               // Note content preview
               Text(
-                note["note_content"] ?? "",
+                note["notes"] ?? "",
                 style: Theme.of(context).textTheme.bodyMedium,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -194,15 +203,18 @@ class NotesListScreen extends StatelessWidget {
   }
 
   Color _getVisitTypeColor(String? visitType) {
-    switch (visitType) {
-      case 'regular':
-        return Colors.green;
-      case 'emergency':
-        return Colors.red;
-      case 'follow_up':
-        return Colors.orange;
-      default:
-        return Colors.blue;
+    if (visitType == null) return Colors.blue;
+    
+    if (visitType.contains('فنية')) {
+      return Colors.green;
+    } else if (visitType.contains('طارئة')) {
+      return Colors.red;
+    } else if (visitType.contains('متابعة')) {
+      return Colors.orange;
+    } else if (visitType.contains('إدارية')) {
+      return Colors.purple;
+    } else {
+      return Colors.blue;
     }
   }
 
@@ -249,7 +261,7 @@ class NotesListScreen extends StatelessWidget {
                 _buildDetailRow(
                   context,
                   "اسم الموجهة:",
-                  note["supervisor_name"] ?? "غير محدد",
+                  note["responsible_username"] ?? "غير محدد",
                   Icons.person,
                 ),
                 SizedBox(height: 12),
@@ -258,7 +270,7 @@ class NotesListScreen extends StatelessWidget {
                 _buildDetailRow(
                   context,
                   "نوع الزيارة:",
-                  notesController.getVisitTypeText(note["visit_type"] ?? ""),
+                  note["name_visit_type"] ?? "غير محدد",
                   Icons.event,
                 ),
                 SizedBox(height: 12),
@@ -267,7 +279,7 @@ class NotesListScreen extends StatelessWidget {
                 _buildDetailRow(
                   context,
                   "تاريخ الملاحظة:",
-                  notesController.formatDate(note["note_date"] ?? ""),
+                  notesController.formatDate(note["date"] ?? ""),
                   Icons.calendar_today,
                 ),
                 SizedBox(height: 16),
@@ -289,7 +301,7 @@ class NotesListScreen extends StatelessWidget {
                     border: Border.all(color: Colors.grey[300]!),
                   ),
                   child: Text(
-                    note["note_content"] ?? "لا يوجد محتوى",
+                    note["notes"] ?? "لا يوجد محتوى",
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),

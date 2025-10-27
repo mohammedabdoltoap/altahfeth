@@ -32,32 +32,69 @@ class Add_VisitController extends GetxController{
   RxList<Map<String,dynamic>> circles=<Map<String,dynamic>>[].obs;
   RxList<Map<String,dynamic>> visits=<Map<String,dynamic>>[].obs;
   TextEditingController notes=TextEditingController();
+  RxBool loadingMetadata = false.obs;
+  RxBool loadingVisitsList = false.obs;
+  RxBool loadingInsertVisit = false.obs;
+  RxBool loadingPreviousVisits = false.obs;
 
   Future select_visits_type_months_years()async{
-    showLoading(message: "تحميل بيانات ");
-    await del();
-    var res=await postData(Linkapi.select_visits_type_months_years, {"id_user":dataArg["id_user"]});
-    hideLoading();
-    if(res["stat"]=="ok"){
+    if (loadingMetadata.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: loadingMetadata,
+      loadingMessage: "جاري تحميل بيانات الزيارات...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_visits_type_months_years, {"id_user": dataArg["id_user"]});
+      },
+    );
+
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+    if (res["stat"] == "ok") {
       months.assignAll(List<Map<String, dynamic>>.from(res["months"]));
       years.assignAll(List<Map<String, dynamic>>.from(res["years"]));
       visits_type.assignAll(List<Map<String, dynamic>>.from(res["visits_type"]));
       circles.assignAll(List<Map<String, dynamic>>.from(res["circles"]));
       visits.assignAll(List<Map<String, dynamic>>.from(res["visits"]));
-      print("visits======${visits}");
 
-    }
-    else {
-      mySnackbar("تنبية", res["msg"]);
+      print("visits======${visits}");
+    } else if(res["stat"]=="erorr"){
+      String errorMsg = res["msg"] ?? "تعذر تحميل بيانات الزيارات";
+      mySnackbar("تنبيه", errorMsg);
+    }else if(res["stat"]=="no"){
+      if(circles.isEmpty){
+        mySnackbar("تنبية ", "لايمكن اضافة زيارة في هذا المركز لانه لايوجد حلقات تابعة لهذا المركز ");
+      }
     }
   }
 
 
   Future select_visitsed()async {
-    var res=await postData(Linkapi.select_visitsed, {"id_user":dataArg["id_user"]});
+    if (loadingVisitsList.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: loadingVisitsList,
+      loadingMessage: "جاري تحديث قائمة الزيارات...",
+      useDialog: false,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_visitsed, {"id_user": dataArg["id_user"]});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if(res["stat"]=="ok") {
       visits.assignAll(List<Map<String, dynamic>>.from(res["visits"]));
       print("visits=====${visits}");
+    } else {
+      String errorMsg = res["msg"] ?? "تعذر تحميل الزيارات";
+      mySnackbar("تنبيه", errorMsg);
     }
 
     }
@@ -104,7 +141,21 @@ class Add_VisitController extends GetxController{
     };
 
 
-    var res=await postData(Linkapi.insert_visits, data);
+    if (loadingInsertVisit.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: loadingInsertVisit,
+      loadingMessage: "جاري إضافة الزيارة...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.insert_visits, data);
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if(res["stat"]=="ok"){
      var id_visit= int.tryParse(res["data"]);
      if(id_visit!=null){
@@ -129,15 +180,79 @@ class Add_VisitController extends GetxController{
 
 
   RxList<Map<String, dynamic>> previous_visits = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> all_previous_visits = <Map<String, dynamic>>[].obs;
+  
+  // متغيرات الفلترة
+  RxInt selectedFilterYear = RxInt(0);
+  RxInt selectedFilterMonth = RxInt(0);
   Future select_previous_visits() async {
-    var res = await postData(Linkapi.select_previous_visits, {
-      "id_user":dataArg["id_user"]
-    });
+    if (loadingPreviousVisits.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: loadingPreviousVisits,
+      loadingMessage: "جاري تحميل الزيارات السابقة...",
+      useDialog: false,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_previous_visits, {
+          "id_user":dataArg["id_user"]
+        });
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
-      previous_visits.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      all_previous_visits.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      
+      // تطبيق الفلترة الافتراضية للسنة الحالية
+      int currentYear = DateTime.now().year;
+      var currentYearData = years.firstWhereOrNull((year) => 
+        year["name_year"].toString().contains(currentYear.toString()));
+      
+      if (currentYearData != null) {
+        selectedFilterYear.value = currentYearData["id_year"];
+        filterPreviousVisits();
+      } else {
+        previous_visits.assignAll(all_previous_visits);
+      }
+      
       print("previous_visits=======${previous_visits}");
+    } else if(res["stat"]=="erorr"){
+      String errorMsg = res["msg"] ?? "تعذر تحميل الزيارات السابقة";
+      mySnackbar("تنبيه", errorMsg);
     }
   }
 
+  // دالة فلترة الزيارات السابقة
+  void filterPreviousVisits() {
+    List<Map<String, dynamic>> filteredVisits = all_previous_visits.where((visit) {
+      bool yearMatch = selectedFilterYear.value == 0 || visit["id_year"] == selectedFilterYear.value;
+      bool monthMatch = selectedFilterMonth.value == 0 || visit["id_month"] == selectedFilterMonth.value;
+      return yearMatch && monthMatch;
+    }).toList();
+    
+    previous_visits.assignAll(filteredVisits);
+  }
 
+  // إعادة تعيين الفلاتر
+  void resetFilters() {
+    selectedFilterYear.value = 0;
+    selectedFilterMonth.value = 0;
+    previous_visits.assignAll(all_previous_visits);
+  }
+
+  // تطبيق فلتر السنة الحالية
+  void applyCurrentYearFilter() {
+    int currentYear = DateTime.now().year;
+    var currentYearData = years.firstWhereOrNull((year) => 
+      year["name_year"].toString().contains(currentYear.toString()));
+    
+    if (currentYearData != null) {
+      selectedFilterYear.value = currentYearData["id_year"];
+      selectedFilterMonth.value = 0;
+      filterPreviousVisits();
+    }
+  }
 }

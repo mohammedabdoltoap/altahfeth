@@ -41,7 +41,7 @@ class StudentAttendanceReport extends StatelessWidget {
                   ),
                   value: controller.selectedCircle.value,
                   items: [
-                    const DropdownMenuItem(value: null, child: Text("اختر الحلقة")),
+                    const DropdownMenuItem(value: 'all', child: Text("جميع الحلقات")),
                     ...controller.circlesList.map((circle) {
                       return DropdownMenuItem(
                         value: circle['id_circle'].toString(),
@@ -54,32 +54,83 @@ class StudentAttendanceReport extends StatelessWidget {
                   },
                 )),
                 const SizedBox(height: 8),
-                // اختيار التاريخ
-                Row(
+                // اختيار نوع التاريخ
+                Obx(() => Row(
                   children: [
                     Expanded(
-                      child: Obx(() => ElevatedButton.icon(
-                        icon: const Icon(Icons.calendar_today),
-                        label: Text(
-                          controller.selectedDate.value != null
-                              ? DateFormat('yyyy-MM-dd').format(controller.selectedDate.value!)
-                              : "اختر التاريخ",
-                        ),
-                        onPressed: () => controller.selectDate(context),
-                      )),
+                      child: RadioListTile<bool>(
+                        title: const Text("يوم واحد"),
+                        value: false,
+                        groupValue: controller.useDateRange.value,
+                        onChanged: (val) => controller.useDateRange.value = val!,
+                        dense: true,
+                      ),
                     ),
-                    const SizedBox(width: 8),
                     Expanded(
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.search),
-                        label: const Text("عرض"),
-                        onPressed: () => controller.loadData(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                        ),
+                      child: RadioListTile<bool>(
+                        title: const Text("فترة"),
+                        value: true,
+                        groupValue: controller.useDateRange.value,
+                        onChanged: (val) => controller.useDateRange.value = val!,
+                        dense: true,
                       ),
                     ),
                   ],
+                )),
+                const SizedBox(height: 8),
+                // اختيار التاريخ
+                Obx(() {
+                  if (controller.useDateRange.value) {
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.calendar_today, size: 18),
+                            label: Text(
+                              controller.startDate.value != null
+                                  ? DateFormat('yyyy-MM-dd').format(controller.startDate.value!)
+                                  : "من",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            onPressed: () => controller.selectStartDate(context),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.calendar_today, size: 18),
+                            label: Text(
+                              controller.endDate.value != null
+                                  ? DateFormat('yyyy-MM-dd').format(controller.endDate.value!)
+                                  : "إلى",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            onPressed: () => controller.selectEndDate(context),
+                          ),
+                        ),
+                      ],
+                    );
+                  } else {
+                    return ElevatedButton.icon(
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(
+                        controller.selectedDate.value != null
+                            ? DateFormat('yyyy-MM-dd').format(controller.selectedDate.value!)
+                            : "اختر التاريخ",
+                      ),
+                      onPressed: () => controller.selectDate(context),
+                    );
+                  }
+                }),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.search),
+                  label: const Text("عرض التقرير"),
+                  onPressed: () => controller.loadData(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    minimumSize: const Size(double.infinity, 45),
+                  ),
                 ),
               ],
             ),
@@ -89,9 +140,24 @@ class StudentAttendanceReport extends StatelessWidget {
           Obx(() {
             if (controller.attendanceList.isEmpty) return const SizedBox.shrink();
             
-            final present = controller.attendanceList.where((s) => s['status'] == '1').length;
-            final absent = controller.attendanceList.where((s) => s['status'] == '0').length;
-            final total = controller.attendanceList.length;
+            // تحقق من نوع البيانات
+            final isSummary = controller.attendanceList.first.containsKey('present_count');
+            
+            int present, absent, total;
+            
+            if (isSummary) {
+              // حساب من البيانات المجمعة
+              present = controller.attendanceList.fold(0, (sum, s) => 
+                sum + (int.tryParse(s['present_count'].toString()) ?? 0));
+              absent = controller.attendanceList.fold(0, (sum, s) => 
+                sum + (int.tryParse(s['absent_count'].toString()) ?? 0));
+              total = present + absent;
+            } else {
+              // حساب من البيانات التفصيلية
+              present = controller.attendanceList.where((s) => s['status'] == '1').length;
+              absent = controller.attendanceList.where((s) => s['status'] == '0').length;
+              total = controller.attendanceList.length;
+            }
             
             return Container(
               padding: const EdgeInsets.all(16),
@@ -101,7 +167,7 @@ class StudentAttendanceReport extends StatelessWidget {
                 children: [
                   _buildStatCard("الحضور", present.toString(), Colors.green),
                   _buildStatCard("الغياب", absent.toString(), Colors.red),
-                  _buildStatCard("الإجمالي", total.toString(), Colors.blue),
+                  _buildStatCard(isSummary ? "إجمالي الأيام" : "إجمالي الطلاب", total.toString(), Colors.blue),
                 ],
               ),
             );
@@ -125,58 +191,143 @@ class StudentAttendanceReport extends StatelessWidget {
                 itemCount: controller.attendanceList.length,
                 itemBuilder: (context, index) {
                   final student = controller.attendanceList[index];
-                  final isPresent = student['status'] == '1';
                   
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(12),
-                      leading: CircleAvatar(
-                        backgroundColor: isPresent ? Colors.green : Colors.red,
-                        child: Icon(
-                          isPresent ? Icons.check : Icons.close,
-                          color: Colors.white,
-                        ),
+                  // تحقق من نوع البيانات (مجمعة أو تفصيلية)
+                  final isSummary = student.containsKey('present_count');
+                  
+                  if (isSummary) {
+                    // عرض ملخص (للفترة)
+                    final presentCount = int.tryParse(student['present_count'].toString()) ?? 0;
+                    final absentCount = int.tryParse(student['absent_count'].toString()) ?? 0;
+                    final totalDays = int.tryParse(student['total_days'].toString()) ?? 0;
+                    final attendanceRate = totalDays > 0 ? (presentCount / totalDays * 100) : 0.0;
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      title: Text(
-                        student['name_student'] ?? '',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      child: ExpansionTile(
+                        leading: CircleAvatar(
+                          backgroundColor: attendanceRate >= 80 ? Colors.green : 
+                                          attendanceRate >= 60 ? Colors.orange : Colors.red,
+                          child: Text(
+                            '${attendanceRate.toStringAsFixed(0)}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                      ),
-                      subtitle: Text(
-                        isPresent ? 'حاضر' : 'غائب',
-                        style: TextStyle(
-                          color: isPresent ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
+                        title: Text(
+                          student['name_student'] ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      trailing: student['notes'] != null && student['notes'].toString().isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.note, color: Colors.orange),
-                              onPressed: () {
-                                Get.dialog(
-                                  AlertDialog(
-                                    title: const Text("ملاحظات"),
-                                    content: Text(student['notes'] ?? ''),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Get.back(),
-                                        child: const Text("إغلاق"),
-                                      ),
-                                    ],
+                        subtitle: student['name_circle'] != null
+                            ? Text('الحلقة: ${student['name_circle']}')
+                            : null,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildStatItem('الحضور', presentCount.toString(), Colors.green),
+                                    _buildStatItem('الغياب', absentCount.toString(), Colors.red),
+                                    _buildStatItem('الإجمالي', totalDays.toString(), Colors.blue),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                LinearProgressIndicator(
+                                  value: attendanceRate / 100,
+                                  backgroundColor: Colors.grey.shade200,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    attendanceRate >= 80 ? Colors.green : 
+                                    attendanceRate >= 60 ? Colors.orange : Colors.red,
                                   ),
-                                );
-                              },
-                            )
-                          : null,
-                    ),
-                  );
+                                  minHeight: 8,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    // عرض تفصيلي (ليوم واحد)
+                    final isPresent = student['status'] == '1';
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 3,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(12),
+                        leading: CircleAvatar(
+                          backgroundColor: isPresent ? Colors.green : Colors.red,
+                          child: Icon(
+                            isPresent ? Icons.check : Icons.close,
+                            color: Colors.white,
+                          ),
+                        ),
+                        title: Text(
+                          student['name_student'] ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (student['name_circle'] != null)
+                              Text(
+                                'الحلقة: ${student['name_circle']}',
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            Text(
+                              isPresent ? 'حاضر' : 'غائب',
+                              style: TextStyle(
+                                color: isPresent ? Colors.green : Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: student['notes'] != null && student['notes'].toString().isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.note, color: Colors.orange),
+                                onPressed: () {
+                                  Get.dialog(
+                                    AlertDialog(
+                                      title: const Text("ملاحظات"),
+                                      content: Text(student['notes'] ?? ''),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Get.back(),
+                                          child: const Text("إغلاق"),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              )
+                            : null,
+                      ),
+                    );
+                  }
                 },
               );
             }),
@@ -207,15 +358,37 @@ class StudentAttendanceReport extends StatelessWidget {
       ],
     );
   }
+  
+  Widget _buildStatItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ],
+    );
+  }
 }
 
 class StudentAttendanceReportController extends GetxController {
   var selectedDate = Rxn<DateTime>();
+  var startDate = Rxn<DateTime>();
+  var endDate = Rxn<DateTime>();
   var selectedCircle = Rxn<String>();
   var attendanceList = <Map<String, dynamic>>[].obs;
   var circlesList = <Map<String, dynamic>>[].obs;
   var loading = false.obs;
   var dataArg;
+  var useDateRange = false.obs;
 
   @override
   void onInit() {
@@ -247,12 +420,44 @@ class StudentAttendanceReportController extends GetxController {
     );
     if (picked != null) {
       selectedDate.value = picked;
+      useDateRange.value = false;
+    }
+  }
+  
+  Future<void> selectStartDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: startDate.value ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      startDate.value = picked;
+      useDateRange.value = true;
+    }
+  }
+  
+  Future<void> selectEndDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: endDate.value ?? DateTime.now(),
+      firstDate: startDate.value ?? DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      endDate.value = picked;
+      useDateRange.value = true;
     }
   }
 
   Future<void> loadData() async {
-    if (selectedDate.value == null) {
+    if (!useDateRange.value && selectedDate.value == null) {
       mySnackbar("تنبيه", "الرجاء اختيار التاريخ");
+      return;
+    }
+    
+    if (useDateRange.value && (startDate.value == null || endDate.value == null)) {
+      mySnackbar("تنبيه", "الرجاء اختيار تاريخ البداية والنهاية");
       return;
     }
     
@@ -263,10 +468,18 @@ class StudentAttendanceReportController extends GetxController {
 
     loading.value = true;
     try {
-      final response = await postData(Linkapi.select_student_attendance, {
+      Map<String, dynamic> requestData = {
         "id_circle": selectedCircle.value,
-        "date": DateFormat('yyyy-MM-dd').format(selectedDate.value!),
-      });
+      };
+      
+      if (useDateRange.value) {
+        requestData["start_date"] = DateFormat('yyyy-MM-dd').format(startDate.value!);
+        requestData["end_date"] = DateFormat('yyyy-MM-dd').format(endDate.value!);
+      } else {
+        requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
+      }
+      
+      final response = await postData(Linkapi.select_student_attendance, requestData);
 
       print("Student Attendance Response: $response");
 

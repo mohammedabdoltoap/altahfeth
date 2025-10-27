@@ -163,20 +163,43 @@ class StudentsListUpdateController extends GetxController {
 
   RxList<Map<String, dynamic>> students = <Map<String, dynamic>>[].obs;
 
+  RxBool isLoading = false.obs;
+
   Future select_data_visit_previous() async {
-    var res = await postData(Linkapi.select_data_visit_previous, {
-      "id_visit": dataArd["id_visit"],
-      "id_circle": dataArd["id_circle"],
-    });
-    if (res["stat"] == "ok") {
-      students.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-      print("students====${students}");
-    } else if(res["stat"]=="no"){
-      mySnackbar("تنبية", "لايوجد طلاب في هذه الحلقة");
-    }else if(res["stat"]=="erorr"){
-      mySnackbar("تنبية", "${res["msg"]}");
-    }else{
-      mySnackbar("تنبية", "خطا غير متوقغ");
+    try {
+      final res = await handleRequest<dynamic>(
+        isLoading: isLoading,
+        loadingMessage: "جاري تحميل بيانات الطلاب...",
+        useDialog: false,
+        immediateLoading: true,
+        action: () async {
+          return await postData(Linkapi.select_data_visit_previous, {
+            "id_visit": dataArd["id_visit"],
+            "id_circle": dataArd["id_circle"],
+          });
+        },
+      );
+
+      if (res == null) return;
+      if (res is! Map) {
+        mySnackbar("خطأ", "فشل الاتصال بالخادم");
+        return;
+      }
+
+      if (res["stat"] == "ok") {
+        students.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+        print("students====${students}");
+      } else if (res["stat"] == "no") {
+        mySnackbar("تنبيه", "لا يوجد طلاب في هذه الحلقة");
+      } else if (res["stat"] == "error") {
+        mySnackbar("تنبيه", "${res["msg"]}");
+      } else {
+        mySnackbar("تنبيه", "خطأ غير متوقع");
+      }
+    } catch (e, stackTrace) {
+      print("Error in select_data_visit_previous: $e");
+      print(stackTrace);
+      mySnackbar("خطأ", "حدث خطأ غير متوقع، حاول مرة أخرى");
     }
   }
 }

@@ -105,58 +105,91 @@ class Notes_For_TeacherController extends GetxController{
   }
   TextEditingController notesController = TextEditingController();
 
- Future insert_notes_for_teacher()async{
-   if(data_notes.isNotEmpty){
+  RxBool isLoading = false.obs;
 
-     showLoading();
-     await del();
-     var res = await postData(Linkapi.update_notes_for_teacher, {
-       "notes": notesController.text,
-       "id_notes":data_notes["id_notes"],
-     });
-     hideLoading();
-     if (res["stat"] == "ok") {
-       Get.back();
-       mySnackbar("نجاح", "${res["msg"]}", type: "g");
-     } else {
-       mySnackbar("تنبية", "${res["msg"]}");
-     }
+  Future insert_notes_for_teacher() async {
+    try {
+      if (data_notes.isNotEmpty) {
+        final res = await handleRequest<dynamic>(
+          isLoading: isLoading,
+          loadingMessage: "جاري تحديث الملاحظات...",
+          useDialog: true,
+          immediateLoading: true,
+          action: () async {
+            return await postData(Linkapi.update_notes_for_teacher, {
+              "notes": notesController.text,
+              "id_notes": data_notes["id_notes"],
+            });
+          },
+        );
 
+        if (res == null) return;
+        if (res is! Map) {
+          mySnackbar("خطأ", "فشل الاتصال بالخادم");
+          return;
+        }
 
+        if (res["stat"] == "ok") {
+          Get.back();
+          mySnackbar("نجاح", "${res["msg"]}", type: "g");
+        } else {
+          mySnackbar("تنبيه", "${res["msg"]}");
+        }
+      } else {
+        final res = await handleRequest<dynamic>(
+          isLoading: isLoading,
+          loadingMessage: "جاري إضافة الملاحظات...",
+          useDialog: true,
+          immediateLoading: true,
+          action: () async {
+            return await postData(Linkapi.insert_notes_for_teacher, {
+              "id_circle": dataVisitCircle["id_circle"],
+              "id_visit": dataVisitCircle["id_visit"],
+              "notes": notesController.text,
+              "responsible_user_id": dataVisitCircle["id_user"]
+            });
+          },
+        );
 
+        if (res == null) return;
+        if (res is! Map) {
+          mySnackbar("خطأ", "فشل الاتصال بالخادم");
+          return;
+        }
 
-   }else {
-
-     showLoading();
-     await del();
-     var res = await postData(Linkapi.insert_notes_for_teacher, {
-       "id_circle": dataVisitCircle["id_circle"],
-       "id_visit": dataVisitCircle["id_visit"],
-       "notes": notesController.text,
-       "responsible_user_id": dataVisitCircle["id_user"]
-     });
-     hideLoading();
-     if (res["stat"] == "ok") {
-       Get.back();
-       mySnackbar("نجاح", "تم اضافة الملاحظات ", type: "g");
-     } else {
-       mySnackbar("تنبية", "حصل خطا لم تتم الاضافة ");
-     }
-   }
- }
+        if (res["stat"] == "ok") {
+          Get.back();
+          mySnackbar("نجاح", "تم إضافة الملاحظات", type: "g");
+        } else {
+          mySnackbar("تنبيه", "حصل خطأ لم تتم الإضافة");
+        }
+      }
+    } catch (e, stackTrace) {
+      print("Error in insert_notes_for_teacher: $e");
+      print(stackTrace);
+      mySnackbar("خطأ", "حدث خطأ غير متوقع، حاول مرة أخرى");
+    }
+  }
 
   Map<String, dynamic> data_notes={};
- Future select_notes_for_teacher()async{
-   var res=await postData(Linkapi.select_notes_for_teacher, {
-     "id_visit":dataVisitCircle["id_visit"],
-   });
-   if(res["stat"]=="ok"){
-     data_notes=res["data"];
-     notesController.text=data_notes["notes"];
-     print("data_notes.runtimeType====${data_notes.runtimeType}");
-   }
-
- }
+  Future select_notes_for_teacher() async {
+    try {
+      var res = await postData(Linkapi.select_notes_for_teacher_by_circle, {
+        "id_visit": dataVisitCircle["id_visit"],
+      });
+      
+      if (res != null && res is Map) {
+        if (res["stat"] == "ok") {
+          data_notes = res["data"];
+          notesController.text = data_notes["notes"] ?? "";
+          print("data_notes.runtimeType====${data_notes.runtimeType}");
+        }
+      }
+    } catch (e, stackTrace) {
+      print("Error in select_notes_for_teacher: $e");
+      print(stackTrace);
+    }
+  }
 
 
 }

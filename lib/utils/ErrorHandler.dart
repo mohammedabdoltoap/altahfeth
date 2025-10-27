@@ -96,7 +96,7 @@ class ErrorHandler {
               label: "العودة",
               textColor: Colors.white,
               onPressed: () {
-                if (Get.canPop()) {
+                if (Get.context != null && Navigator.canPop(Get.context!)) {
                   Get.back();
                 }
               },
@@ -110,27 +110,42 @@ class ErrorHandler {
   // دالة للتعامل مع أخطاء API
   static void handleApiError(dynamic error, {VoidCallback? onRetry}) {
     String message = "حدث خطأ في الاتصال بالخادم";
-    String? details;
 
     if (error is Exception) {
-      details = error.toString();
+      message = error.toString().replaceAll('Exception: ', '');
     } else if (error is String) {
       message = error;
     } else {
-      details = error.toString();
+      message = error.toString();
     }
 
-    _showErrorScreen(
-      message: message,
-      details: details,
+    // عرض Snackbar بدلاً من صفحة الخطأ
+    Get.snackbar(
+      "خطأ في الخادم",
+      message,
+      backgroundColor: Colors.red.shade100,
+      colorText: Colors.red.shade800,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 4),
+      icon: const Icon(Icons.error_outline, color: Colors.red),
+      margin: const EdgeInsets.all(12),
+      borderRadius: 12,
     );
   }
 
   // دالة للتعامل مع أخطاء الشبكة
   static void handleNetworkError({VoidCallback? onRetry}) {
-    _showErrorScreen(
-      message: "تحقق من اتصالك بالإنترنت",
-      details: "لا يمكن الوصول إلى الخادم. تأكد من اتصالك بالإنترنت وحاول مرة أخرى.",
+    // عرض Snackbar بدلاً من صفحة الخطأ
+    Get.snackbar(
+      "خطأ في الاتصال",
+      "تحقق من اتصالك بالإنترنت وحاول مرة أخرى",
+      backgroundColor: Colors.orange.shade100,
+      colorText: Colors.orange.shade800,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 4),
+      icon: const Icon(Icons.wifi_off, color: Colors.orange),
+      margin: const EdgeInsets.all(12),
+      borderRadius: 12,
     );
   }
 
@@ -151,7 +166,7 @@ class ErrorHandler {
   static void handleError(dynamic error, {
     String? customMessage,
     VoidCallback? onRetry,
-    bool showSnackbar = false,
+    bool showSnackbar = true, // تم تغيير القيمة الافتراضية إلى true
   }) {
     String message = customMessage ?? "حدث خطأ غير متوقع";
     
@@ -162,8 +177,10 @@ class ErrorHandler {
         backgroundColor: Colors.red.shade100,
         colorText: Colors.red.shade800,
         snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 4),
         icon: const Icon(Icons.error, color: Colors.red),
+        margin: const EdgeInsets.all(12),
+        borderRadius: 12,
       );
     } else {
       _showErrorScreen(

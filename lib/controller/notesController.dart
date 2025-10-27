@@ -6,10 +6,16 @@ import '../constants/function.dart';
 class NotesController extends GetxController {
   var notes = <Map<String, dynamic>>[].obs;
   var isLoading = false.obs;
+  var dataArg;
+  var circleId;
+  var circleName;
 
   @override
   void onInit() {
     super.onInit();
+    dataArg = Get.arguments;
+    circleId = dataArg["id_circle"];
+    circleName = dataArg["circle_name"];
     fetchNotes();
   }
 
@@ -20,7 +26,9 @@ class NotesController extends GetxController {
       useDialog: true,
       immediateLoading: true,
       action: () async {
-        return await postData(Linkapi.select_notes_for_teacher, {});
+        return await postData(Linkapi.select_notes_for_teacher_by_circle, {
+          "id_circle": circleId
+        });
       },
     );
 
@@ -52,16 +60,4 @@ class NotesController extends GetxController {
     }
   }
 
-  String getVisitTypeText(String visitType) {
-    switch (visitType) {
-      case 'regular':
-        return 'زيارة عادية';
-      case 'emergency':
-        return 'زيارة طارئة';
-      case 'follow_up':
-        return 'زيارة متابعة';
-      default:
-        return visitType;
-    }
-  }
 }

@@ -448,7 +448,7 @@ class AbsenceReportController extends GetxController {
         requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
       }
       
-      final response = await postData(Linkapi.select_absence_report, requestData);
+      final response = await postData(Linkapi.select_admin_absence_report, requestData);
 
       if (response == null) {
         mySnackbar("خطأ", "فشل الاتصال بالخادم");

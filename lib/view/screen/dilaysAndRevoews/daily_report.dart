@@ -13,43 +13,63 @@ class Daily_Report extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text("اضافة تسميع"),),
-      body:
-      Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10),
-        child: SingleChildScrollView(
+      appBar: AppBar(
+        title: const Text("إضافة تسميع"),
+        backgroundColor: primaryGreen,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [primaryGreen.withOpacity(0.05), Colors.white],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
           child: Column(
             children: [
               Container(
-                width: double.infinity,
-                child: Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [primaryGreen.withOpacity(0.1), Colors.white],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  shadowColor: Colors.teal.shade100,
-                  child: Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                    Center(
-                      child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                        child: Text("معلومات الطالب ",
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: childyGreen,
-                            fontWeight: FontWeight.w500,
-                          )
-                        ),
-                      ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryGreen.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
                     ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.person, color: primaryGreen, size: 28),
+                          const SizedBox(width: 10),
+                          Text(
+                            "معلومات الطالب",
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: primaryGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                         const SizedBox(height: 15),
                         ReadOnlyTextField(label: "اسم الطالب",value: controller.dataArg_Student["name_student"],color_line: Colors.black,),
                         const SizedBox(height: 15),
@@ -63,27 +83,68 @@ class Daily_Report extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
 
-              Divider(height: 2,),
+
+              const SizedBox(height: 20),
               // ويدجيت اختيار السورة
               SouraSelector(),
               const SizedBox(height: 20),
-              CustomTextField(controller: controller.markController, label: "الدرجة", hint: "الدرجة",keyboardType: TextInputType.number,),
-              CustomDropdownField(label: "التقييم", items: controller.dataEvaluations, value: controller.selectedEvaluations.value, onChanged: (val){
-                controller.selectedEvaluations.value=val;
-
-              }, valueKey: "id_evaluation", displayKey: "name_evaluation"),
-              const SizedBox(height: 20),
-              AppButton(
-                text: "حفظ التسميع",
-                onPressed: () {
-                  controller.addDailyRepor();
-                },
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: CustomTextField(
+                  controller: controller.markController,
+                  label: "الدرجة",
+                  hint: "أدخل الدرجة",
+                  keyboardType: TextInputType.number,
+                ),
+              ),
+              Obx(() {
+                final items = controller.dataEvaluations.toList();
+                return CustomDropdownField(
+                  label: "التقييم", 
+                  items: items,
+                  value: controller.selectedEvaluations.value, 
+                  onChanged: (val){
+                    controller.selectedEvaluations.value=val;
+                  }, 
+                  valueKey: "id_evaluation", 
+                  displayKey: "name_evaluation"
+                );
+              }),
+              const SizedBox(height: 30),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [primaryGreen, primaryGreen.withOpacity(0.8)],
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryGreen.withOpacity(0.4),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: AppButton(
+                  text: "حفظ التسميع",
+                  onPressed: () {
+                    controller.addDailyRepor();
+                  },
+                ),
               ),
               const SizedBox(height: 15),
-
-            ],
+           ]),
           ),
         ),
       ),
@@ -102,12 +163,25 @@ class SouraSelector extends StatelessWidget {
       Obx(() {
         return Column(
         children: [
-             Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+             Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade50, Colors.white],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
               margin: const EdgeInsets.symmetric(vertical: 10),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -116,7 +190,7 @@ class SouraSelector extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
+                          color: primaryGreen.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: controller.dataArglastDailyReport.value?["date"]!=null?
@@ -124,26 +198,32 @@ class SouraSelector extends StatelessWidget {
                           "اخر تسميع بتاريخ : ${controller.dataArglastDailyReport.value?["date"]}",
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.teal.shade800,
+                            color: primaryGreen,
                             fontWeight: FontWeight.w500,
                           ),
                         ): Text(
                           "اول تسميع لهذا الطالب اليوم",
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.teal.shade800,
+                            color: primaryGreen,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
                     ),
-                        Text(
-                          "نطاق البداية",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.teal.shade700,
-                          ),
+                        Row(
+                          children: [
+                            Icon(Icons.play_circle_filled, color: Colors.blue.shade700, size: 24),
+                            const SizedBox(width: 8),
+                            Text(
+                              "نطاق البداية",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade700,
+                              ),
+                            ),
+                          ],
                         ),
 
                     const SizedBox(height: 20),
@@ -168,32 +248,51 @@ class SouraSelector extends StatelessWidget {
                 ),
               ),
             ),
-              Card(
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.orange.shade50, Colors.white],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.orange.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
             margin: const EdgeInsets.symmetric(vertical: 10),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
 
-                  Text(
-                    "نطاق النهاية",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.teal.shade700,
-                    ),
+                  Row(
+                    children: [
+                      Icon(Icons.stop_circle, color: Colors.orange.shade700, size: 24),
+                      const SizedBox(width: 8),
+                      Text(
+                        "نطاق النهاية",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   Obx(() {
                     return DropdownButtonFormField<Map<String, dynamic>>(
                       decoration: InputDecoration(
                         prefixIcon:
-                        const Icon(Icons.play_arrow, color: Colors.teal),
+                         Icon(Icons.play_arrow, color: primaryGreen),
                         labelText: "الي سورة",
-                        labelStyle: TextStyle(color: Colors.teal),
+                        labelStyle: TextStyle(color: primaryGreen),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -241,10 +340,9 @@ class SouraSelector extends StatelessWidget {
 
                     return DropdownButtonFormField<int>(
                       decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.format_list_numbered,
-                            color: Colors.teal),
+                        prefixIcon:  Icon(Icons.format_list_numbered, color: primaryGreen),
                         labelText: "الي الآية رقم",
-                        labelStyle: TextStyle(color: Colors.teal),
+                        labelStyle: TextStyle(color: primaryGreen),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

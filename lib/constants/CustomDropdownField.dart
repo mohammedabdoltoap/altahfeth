@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
 
 class CustomDropdownField extends StatelessWidget {
   final String label;
@@ -28,33 +26,49 @@ class CustomDropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-        return Container(
+    final theme = Theme.of(context);
+    
+    dynamic displayValue = value;
+    
+    // التحقق من وجود القيمة في القائمة
+    if (items.isNotEmpty && displayValue != null) {
+      bool valueExists = items.any((item) => item[valueKey] == displayValue);
+      if (!valueExists) {
+        displayValue = null; // إذا القيمة غير موجودة، نجعلها null
+      }
+    }
+    
+    // إذا كانت القيمة 0 أو null، نجعلها null
+    if (displayValue == 0 || displayValue == null) {
+      displayValue = null;
+    }
+    
+    return Container(
       margin: margin ?? const EdgeInsets.symmetric(vertical: 8),
       child: DropdownButtonFormField<dynamic>(
         decoration: InputDecoration(
           labelText: label,
-          filled: true,
-          fillColor: fillColor ?? Colors.white,
-          prefixIcon: icon != null ? Icon(icon, color: Colors.teal) : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          hintText: items.isEmpty ? "لا توجد بيانات" : label,
+          filled: theme.inputDecorationTheme.filled,
+          fillColor: fillColor ?? theme.inputDecorationTheme.fillColor,
+          prefixIcon: icon != null ? Icon(icon, color: theme.colorScheme.primary.withOpacity(0.7)) : null,
         ),
-        value: value,
-        items: items.map((item) {
-          return DropdownMenuItem<dynamic>(
-            value: item[valueKey],
-            child: Text(
-              item[displayKey].toString(),
-              style: const TextStyle(fontSize: 16),
-            ),
-          );
-        }).toList(),
-        onChanged: onChanged,
+        value: displayValue,
+        isExpanded: true,
+        items: items.isEmpty 
+          ? null 
+          : items.map((item) {
+              return DropdownMenuItem<dynamic>(
+                value: item[valueKey],
+                child: Text(
+                  item[displayKey].toString(),
+                  style: const TextStyle(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            }).toList(),
+        onChanged: items.isEmpty ? null : onChanged,
       ),
     );
-      },);
-      }
+  }
 }

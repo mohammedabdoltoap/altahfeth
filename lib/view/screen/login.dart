@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../constants/appButton.dart';
 import '../../constants/customTextField.dart';
 import '../../controller/loginController.dart';
-import '../../globals.dart';
 import '../widget/login/isStudentCheke.dart';
 
 class Login extends StatelessWidget {
@@ -14,70 +13,111 @@ class Login extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // الأيقونة
-              Icon(Icons.menu_book, size: 100, color: primaryGreen),
-              SizedBox(height: 20),
-              Text(
-                "تسجيل الدخول",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: primaryGreen,
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480), // عرض مريح لكل الشاشات
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // الأيقونة في الوسط ضمن بطاقة صغيرة
+                Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: whiteColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        width: 90,
+                        height: 90,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              SizedBox(height: 30),
 
-              CustomTextField(
-                controller: loginController.usernameController,
-                label: "اسم المستخدم",
-                hint: "أدخل اسمك هنا",
-                prefixIcon: Icons.person,
-              ),
-              SizedBox(height: 15),
+                const SizedBox(height: 24),
 
-              // حقل كلمة المرور
-              CustomTextField(
-                controller: loginController.passwordController,
-                label: "كلمة المرور",
-                hint: "********",
-                isPassword: true,
-                prefixIcon: Icons.lock,
-              ),
-              SizedBox(height: 20),
-              AppButton(
-                text: "تسجيل دخول",
-                onPressed: () {
-                  if(loginController.isStudent.value)
-                    loginController.select_data_Student();
-                    else
-                  loginController.select_data_user();
-                },
-              ),
-              IsStudentCheke(),
-              SizedBox(height: 15),
-
-              TextButton(
-                onPressed: () {
-                  Get.snackbar("معلومة", "تواصل مع الإدارة لإعادة كلمة المرور");
-                },
-                child: Text(
-                  "نسيت كلمة المرور؟",
-                  style: TextStyle(color: primaryGreen),
+                // حقل اسم المستخدم
+                CustomTextField(
+                  controller: loginController.usernameController,
+                  label: "اسم المستخدم",
+                  hint: "أدخل اسم المستخدم",
+                  prefixIcon: Icons.person_outline,
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 16),
+
+                // حقل كلمة المرور
+                CustomTextField(
+                  controller: loginController.passwordController,
+                  label: "كلمة المرور",
+                  hint: "********",
+                  isPassword: true,
+                  prefixIcon: Icons.lock_outline,
+                ),
+
+                const SizedBox(height: 24),
+
+                // زر تسجيل الدخول (يعتمد على isLoading فقط بدون Dialog)
+                Obx(() => AppButton(
+                  text: "تسجيل الدخول",
+                  isLoading: loginController.isLoading.value,
+                  onPressed: () {
+                    if (loginController.isStudent.value) {
+                      loginController.select_data_Student();
+                    } else {
+                      loginController.select_data_user();
+                    }
+                  },
+                )),
+
+                const SizedBox(height: 12),
+
+                // اختيار الدخول كطالب
+                IsStudentCheke(),
+
+                const SizedBox(height: 12),
+
+                // رابط نسيان كلمة المرور
+                Align(
+                  alignment: Alignment.center,
+                  child: TextButton(
+                    onPressed: () {
+                      Get.snackbar(
+                        "معلومة",
+                        "تواصل مع الإدارة لإعادة كلمة المرور",
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: whiteColor,
+                        colorText: primaryGreen,
+                      );
+                    },
+                    child: Text(
+                      "نسيت كلمة المرور؟",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: childyGreen, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
-

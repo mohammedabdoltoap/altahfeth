@@ -1,5 +1,4 @@
 import 'package:althfeth/api/LinkApi.dart';
-import 'package:althfeth/constants/loadingWidget.dart';
 import 'package:althfeth/controller/home_cont.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -16,13 +15,9 @@ class Update_StudentController extends GetxController {
   @override
   void onInit() {
     dataArg = Get.arguments;
-
-    print("${dataArg}rrrrrrrrrrrrrrrr");
-
-
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       select_reders();
-
+      shwoData();
     },);
 
     // TODO: implement onInit
@@ -32,7 +27,6 @@ class Update_StudentController extends GetxController {
 
   shwoData(){
     name_student.text=dataArg["name_student"];
-    age_student.text=dataArg["age_student"].toString();
     address_student.text=dataArg["address_student"];
     surname.text=dataArg["surname"];
     place_of_birth.text=dataArg["place_of_birth"];
@@ -52,7 +46,6 @@ class Update_StudentController extends GetxController {
   // RxInt? selectedStageId = 0.obs;
   // RxInt? selectedLevelId = 0.obs;
   TextEditingController name_student = TextEditingController();
-  TextEditingController age_student = TextEditingController();
   TextEditingController address_student = TextEditingController();
   TextEditingController surname = TextEditingController();
   TextEditingController place_of_birth = TextEditingController();
@@ -85,17 +78,7 @@ class Update_StudentController extends GetxController {
       return;
     }
 
-    // تحقق من العمر
-    if (age_student.text.isEmpty) {
-      mySnackbar("تحذير", "يرجى ادخال العمر");
-      return;
-    }
 
-    int? age = int.tryParse(age_student.text);
-    if (age == null || age < 3 || age > 100) {
-      mySnackbar("تحذير", "يرجى ادخال عمر صحيح ");
-      return;
-    }
 
     if (address_student.text.isEmpty) {
       mySnackbar("تحذير", "يرجى ادخال العنوان");
@@ -129,7 +112,6 @@ class Update_StudentController extends GetxController {
     var dataBody = {
       "id_student":dataArg["id_student"],
       "name_student": name_student.text.trim(),
-      "age_student": age,
       "address_student": address_student.text,
       "surname": surname.text,
       "place_of_birth": place_of_birth.text,
@@ -146,38 +128,58 @@ class Update_StudentController extends GetxController {
       "password": password.text.trim(),
     };
 
-    showLoading();
-    await del();
-    var data = await postData(Linkapi.update_Student, dataBody);
-    hideLoading();
+    final data = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري حفظ التعديلات...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.update_Student, dataBody);
+      },
+    );
+    if (data == null) return;
+    if (data is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (data["stat"] == "ok") {
       HomeCont homeCont=Get.put(HomeCont());
      await homeCont.getstudents();
       Get.back();
-      mySnackbar("نجاح", "تم التعديل بنجاح", type: 1);
+      mySnackbar("نجاح", "تم التعديل بنجاح", type: "g");
     } else {
-      mySnackbar("تحقق من الانترنت", "حصل خطأ");
+      String errorMsg = data["msg"] ?? "لم يتم حفظ التعديلات";
+      mySnackbar("خطأ", errorMsg);
     }
     //
   }
 
   RxInt selectedReaderId = RxInt(0);
   RxList<Map<String, dynamic>> reder=<Map<String, dynamic>>[].obs;
+  RxBool isLodeReder=false.obs;
   Future select_reders()async {
-
-    showLoading();
-    await del();
-    var response=await postData(Linkapi.select_reders, {});
-    hideLoading();
+    final response = await handleRequest<dynamic>(
+      isLoading: isLodeReder,
+      loadingMessage: "جاري تحميل القرّاء...",
+      useDialog: false,
+      immediateLoading: false,
+      action: () async {
+        return await postData(Linkapi.select_reders, {});
+      },
+    );
+    if(response==null) return;
+    if (response is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if(response["stat"]=="ok"){
       reder.assignAll(RxList<Map<String, dynamic>>.from(response["data"]));
     }
     else{
-      print("errrrrrrrrrooooooooorrrr===== ${response}");
-
+      String errorMsg = response["msg"] ?? "تعذر تحميل قائمة القرّاء";
+      mySnackbar("خطأ", errorMsg);
     }
 
-    shwoData();
 
   }
 }

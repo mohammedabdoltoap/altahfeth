@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../constants/function.dart';
+import '../../../../constants/inline_loading.dart';
 import '../../../../controller/visitAndExamController/Add_VisitController.dart';
 import 'StudentsList.dart';
 
@@ -17,15 +18,23 @@ class ExamScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("تحديد النطاق"),
-        backgroundColor: Colors.teal,
-        centerTitle: true,
+        title: Text(
+          "تحديد النطاق",
+        ),
+
       ),
       body: Obx(() {
-        if (controller.datasoura.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+        if (controller.datasoura.isEmpty && !controller.loadingDatasoura.value) {
+          return Center(
+            child: Text(
+              "لا توجد بيانات سور",
+              style: theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor),
+            ),
+          );
         }
 
         return ListView(
@@ -33,10 +42,9 @@ class ExamScreen extends StatelessWidget {
           children: [
             Text(
               "الحفظ الشهري",
-              style: TextStyle(
-                fontSize: 20,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.teal.shade700,
+                color: colorScheme.primary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -78,13 +86,12 @@ class ExamScreen extends StatelessWidget {
               keyboardType: TextInputType.number,
               onChanged: (_) => checkGrade(controller: controller.tilawa_monthly, label: "درجة التلاوة"),
             ),
-            Divider(height: 30, thickness: 2),
+            Divider(height: 30, thickness: 2, color: theme.dividerColor),
             Text(
               "المراجعة الشهرية",
-              style: TextStyle(
-                fontSize: 20,
+              style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.teal.shade700,
+                color: colorScheme.primary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -126,7 +133,7 @@ class ExamScreen extends StatelessWidget {
               keyboardType: TextInputType.number,
               onChanged: (_) => checkGrade(controller: controller.tilawa_revision, label: "درجة التلاوة"),
             ),
-            Divider(height: 30, thickness: 2),
+            Divider(height: 30, thickness: 2, color: theme.dividerColor),
 
             CustomTextField(
               controller: controller.notes,
@@ -136,7 +143,8 @@ class ExamScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-          AppButton(text: "اعتماد الدرجات", onPressed:controller.insert_visit_exam_result),
+            AppButton(text: "اعتماد الدرجات", onPressed: controller.insert_visit_exam_result,isLoading: controller.isSave.value,),
+
             const SizedBox(height: 20),
           ],
         );
@@ -211,9 +219,12 @@ class RangeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: theme.cardTheme.elevation ?? 3,
+      shape: theme.cardTheme.shape ??
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       margin: const EdgeInsets.symmetric(vertical: 10),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -222,22 +233,25 @@ class RangeCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: TextStyle(
-                fontSize: 18,
+              style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: Colors.teal.shade700,
+                color: colorScheme.primary,
               ),
             ),
             const SizedBox(height: 20),
             Obx(() {
               return DropdownButtonFormField<Map<String, dynamic>>(
                 decoration: InputDecoration(
-                  prefixIcon:
-                  const Icon(Icons.menu_book_rounded, color: Colors.teal),
+                  prefixIcon: Icon(
+                    Icons.menu_book_rounded,
+                    color: colorScheme.primary,
+                  ),
                   labelText: title.contains("بداية")
                       ? "من سورة"
                       : "إلى سورة",
-                  labelStyle: const TextStyle(color: Colors.teal),
+                  labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.primary,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -273,12 +287,16 @@ class RangeCard extends StatelessWidget {
 
               return DropdownButtonFormField<int>(
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.format_list_numbered,
-                      color: Colors.teal),
+                  prefixIcon: Icon(
+                    Icons.format_list_numbered,
+                    color: colorScheme.primary,
+                  ),
                   labelText: title.contains("بداية")
                       ? "من آية رقم"
                       : "إلى آية رقم",
-                  labelStyle: const TextStyle(color: Colors.teal),
+                  labelStyle: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.primary,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -318,6 +336,7 @@ class ExamScreenController extends GetxController {
 
 
   RxList<Map<String, dynamic>> datasoura = <Map<String, dynamic>>[].obs;
+  RxBool loadingDatasoura = false.obs;
 
   @override
   void onInit() {
@@ -329,11 +348,23 @@ class ExamScreenController extends GetxController {
   }
 
   Future select_sour_quran() async {
+    if (loadingDatasoura.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: loadingDatasoura,
+      loadingMessage: "جاري تحميل بيانات السور...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.select_sour_quran, {});
+      },
+    );
 
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.select_sour_quran, {});
-    hideLoading();
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       datasoura.assignAll(List<Map<String, dynamic>>.from(res["data"]));
     } else if (res["stat"] == "error") {
@@ -346,6 +377,7 @@ class ExamScreenController extends GetxController {
   }
 
 
+  RxBool isSave=false.obs;
 
   /// دالة التحقق من صحة البيانات وإرجاع Map جاهز للحفظ
   Future insert_visit_exam_result() async {
@@ -420,13 +452,25 @@ class ExamScreenController extends GetxController {
       };
       print("data======${data}");
       // ===== إرسال البيانات =====
-      var res = await postData(Linkapi.insert_visit_exam_result, data);
+      var res =await handleRequest(
+        isLoading: isSave,
+        useDialog: false,
 
+        action: () async{
+          await del();
+           return await postData(Linkapi.insert_visit_exam_result, data);
+
+      },);
+
+      if(res==null)return;
+      if(res is! Map){
+        mySnackbar("تنبيه", "مشكلة في الاتصال");
+      return ;
+      }
       // ===== التعامل مع النتيجة =====
       if (res["stat"] == "ok") {
         Get.back();
         mySnackbar("نجاح", "${res["msg"]}", type: "g");
-
         // حذف الطالب من قائمة الطلاب بعد الإضافة
         StudentsListController controller = Get.find();controller.students.removeWhere((student) => student["id_student"] == dataVistAndStudent["id_student"]);
         Add_VisitController add_visitController=Get.put(Add_VisitController());

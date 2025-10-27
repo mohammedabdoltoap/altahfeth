@@ -2,8 +2,12 @@ import 'package:althfeth/api/LinkApi.dart';
 import 'package:althfeth/api/apiFunction.dart';
 import 'package:althfeth/constants/function.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class ComprehensiveStudentPerformance extends StatelessWidget {
   final ComprehensiveStudentPerformanceController controller = 
@@ -15,6 +19,12 @@ class ComprehensiveStudentPerformance extends StatelessWidget {
       appBar: AppBar(
         title: const Text("تقرير أداء الطالب الشامل"),
         backgroundColor: Colors.indigo,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: () => controller.exportToPDF(),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -165,10 +175,10 @@ class ComprehensiveStudentPerformance extends StatelessWidget {
   // عرض تقرير طالب واحد
   Widget _buildSingleStudentView() {
     final data = controller.performanceData;
-    final studentInfo = data['student_info'] ?? {};
-    final recitationStats = data['recitation_stats'] ?? {};
-    final reviewStats = data['review_stats'] ?? {};
-    final attendanceStats = data['attendance_stats'] ?? {};
+    final studentInfo = Map<String, dynamic>.from(data['student_info'] ?? {});
+    final recitationStats = Map<String, dynamic>.from(data['recitation_stats'] ?? {});
+    final reviewStats = Map<String, dynamic>.from(data['review_stats'] ?? {});
+    final attendanceStats = Map<String, dynamic>.from(data['attendance_stats'] ?? {});
     
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -568,5 +578,235 @@ class ComprehensiveStudentPerformanceController extends GetxController {
     } finally {
       loading.value = false;
     }
+  }
+
+  Future<void> exportToPDF() async {
+    if (performanceData.isEmpty) {
+      mySnackbar("تنبيه", "لا توجد بيانات للتصدير");
+      return;
+    }
+
+    try {
+      final pdf = pw.Document();
+      final fontData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
+      final arabicFont = pw.Font.ttf(fontData);
+
+      if (!showAllStudents.value) {
+        // PDF لطالب واحد - شكل جدول مضغوط
+        final studentInfo = Map<String, dynamic>.from(performanceData['student_info'] ?? {});
+        final recitationStats = Map<String, dynamic>.from(performanceData['recitation_stats'] ?? {});
+        final reviewStats = Map<String, dynamic>.from(performanceData['review_stats'] ?? {});
+        final attendanceStats = Map<String, dynamic>.from(performanceData['attendance_stats'] ?? {});
+
+        pdf.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            textDirection: pw.TextDirection.rtl,
+            theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
+            build: (context) {
+              return pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  // Header مضغوط
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(10),
+                    color: PdfColor.fromHex('#3F51B5'),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Text(
+                          'تقرير أداء الطالب',
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white,
+                          ),
+                        ),
+                        pw.Text(
+                          '${studentInfo['name_student'] ?? ''} - ${studentInfo['name_circle'] ?? ''}',
+                          style: const pw.TextStyle(fontSize: 11, color: PdfColors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  pw.SizedBox(height: 10),
+
+                  // جدول واحد مضغوط
+                  pw.Table(
+                    border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+                    columnWidths: {
+                      0: const pw.FlexColumnWidth(2),
+                      1: const pw.FlexColumnWidth(1),
+                      2: const pw.FlexColumnWidth(1),
+                      3: const pw.FlexColumnWidth(1),
+                      4: const pw.FlexColumnWidth(1),
+                    },
+                    children: [
+                      // Header
+                      pw.TableRow(
+                        decoration: pw.BoxDecoration(color: PdfColor.fromHex('#E8EAF6')),
+                        children: [
+                          _buildCompactCell('البيان', isHeader: true),
+                          _buildCompactCell('العدد', isHeader: true),
+                          _buildCompactCell('المتوسط', isHeader: true),
+                          _buildCompactCell('الأعلى', isHeader: true),
+                          _buildCompactCell('الأقل', isHeader: true),
+                        ],
+                      ),
+                      // التسميع
+                      pw.TableRow(
+                        children: [
+                          _buildCompactCell('التسميع اليومي'),
+                          _buildCompactCell(recitationStats['total_recitations']?.toString() ?? '0'),
+                          _buildCompactCell((double.tryParse(recitationStats['avg_mark']?.toString() ?? '0') ?? 0).toStringAsFixed(1)),
+                          _buildCompactCell(recitationStats['max_mark']?.toString() ?? '0'),
+                          _buildCompactCell(recitationStats['min_mark']?.toString() ?? '0'),
+                        ],
+                      ),
+                      // المراجعة
+                      pw.TableRow(
+                        children: [
+                          _buildCompactCell('المراجعة'),
+                          _buildCompactCell(reviewStats['total_reviews']?.toString() ?? '0'),
+                          _buildCompactCell((double.tryParse(reviewStats['avg_mark']?.toString() ?? '0') ?? 0).toStringAsFixed(1)),
+                          _buildCompactCell(reviewStats['max_mark']?.toString() ?? '0'),
+                          _buildCompactCell(reviewStats['min_mark']?.toString() ?? '0'),
+                        ],
+                      ),
+                      // الحضور - صف خاص
+                      pw.TableRow(
+                        decoration: pw.BoxDecoration(color: PdfColor.fromHex('#F5F5F5')),
+                        children: [
+                          _buildCompactCell('الحضور والغياب'),
+                          _buildCompactCell(attendanceStats['total_days']?.toString() ?? '0'),
+                          _buildCompactCell(attendanceStats['present_count']?.toString() ?? '0'),
+                          _buildCompactCell(attendanceStats['absent_count']?.toString() ?? '0'),
+                          _buildCompactCell(_calculateAttendanceRateForPdf(attendanceStats)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      } else {
+        // PDF لجميع الطلاب
+        final students = performanceData['students'] ?? [];
+
+        pdf.addPage(
+          pw.MultiPage(
+            pageFormat: PdfPageFormat.a4,
+            textDirection: pw.TextDirection.rtl,
+            theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
+            build: (context) {
+              return [
+                // Header مضغوط
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(8),
+                  color: PdfColor.fromHex('#3F51B5'),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        'تقرير أداء الطلاب',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white,
+                        ),
+                      ),
+                      pw.Text(
+                        'عدد الطلاب: ${students.length}',
+                        style: const pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                // جدول مضغوط
+                pw.Table(
+                  border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(3),
+                    1: const pw.FlexColumnWidth(1.5),
+                    2: const pw.FlexColumnWidth(1.5),
+                    3: const pw.FlexColumnWidth(1.5),
+                    4: const pw.FlexColumnWidth(1.5),
+                    5: const pw.FlexColumnWidth(1.5),
+                  },
+                  children: [
+                    pw.TableRow(
+                      decoration: pw.BoxDecoration(color: PdfColor.fromHex('#E8EAF6')),
+                      children: [
+                        _buildCompactCell('الطالب', isHeader: true),
+                        _buildCompactCell('التسميع', isHeader: true),
+                        _buildCompactCell('م.تسميع', isHeader: true),
+                        _buildCompactCell('المراجعة', isHeader: true),
+                        _buildCompactCell('م.مراجعة', isHeader: true),
+                        _buildCompactCell('الحضور%', isHeader: true),
+                      ],
+                    ),
+                    ...students.map((student) {
+                      final presentCount = int.tryParse(student['present_count']?.toString() ?? '0') ?? 0;
+                      final absentCount = int.tryParse(student['absent_count']?.toString() ?? '0') ?? 0;
+                      final totalDays = presentCount + absentCount;
+                      final attendanceRate = totalDays > 0 ? (presentCount / totalDays * 100) : 0.0;
+                      final avgRecitation = double.tryParse(student['avg_recitation_mark']?.toString() ?? '0') ?? 0;
+                      final avgReview = double.tryParse(student['avg_review_mark']?.toString() ?? '0') ?? 0;
+
+                      return pw.TableRow(
+                        children: [
+                          _buildCompactCell(student['name_student'] ?? '-'),
+                          _buildCompactCell(student['total_recitations']?.toString() ?? '0'),
+                          _buildCompactCell(avgRecitation.toStringAsFixed(1)),
+                          _buildCompactCell(student['total_reviews']?.toString() ?? '0'),
+                          _buildCompactCell(avgReview.toStringAsFixed(1)),
+                          _buildCompactCell('${attendanceRate.toStringAsFixed(0)}%'),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ];
+            },
+          ),
+        );
+      }
+
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+        name: 'تقرير_أداء_الطالب_الشامل.pdf',
+      );
+
+      mySnackbar("نجح", "تم إنشاء التقرير بنجاح", type: "g");
+    } catch (e) {
+      print("PDF Error: $e");
+      mySnackbar("خطأ", "حدث خطأ أثناء إنشاء التقرير: $e");
+    }
+  }
+
+  // دالة واحدة مضغوطة للخلايا
+  pw.Widget _buildCompactCell(String text, {bool isHeader = false}) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(4),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: isHeader ? 9 : 8,
+          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
+          color: isHeader ? PdfColor.fromHex('#3F51B5') : PdfColors.black,
+        ),
+        textAlign: pw.TextAlign.center,
+      ),
+    );
+  }
+
+  String _calculateAttendanceRateForPdf(Map<String, dynamic> stats) {
+    final present = int.tryParse(stats['present_count']?.toString() ?? '0') ?? 0;
+    final total = int.tryParse(stats['total_days']?.toString() ?? '0') ?? 0;
+    if (total == 0) return '0%';
+    return '${(present / total * 100).toStringAsFixed(0)}%';
   }
 }

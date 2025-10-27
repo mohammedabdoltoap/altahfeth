@@ -1,32 +1,29 @@
-
-import 'package:althfeth/view/screen/dilaysAndRevoews/daily_report.dart';
 import 'package:althfeth/view/screen/login.dart';
-import 'package:althfeth/view/screen/test.dart';
-import 'package:althfeth/view/widget/home/appBarHome.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/date_symbol_data_local.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-void main(){
+import 'constants/AppTheme.dart';
+import 'constants/function.dart';
+import 'utils/ErrorHandler.dart';
 
-  runApp(Rout());
+void main() {
+  // تفعيل معالج الأخطاء العام
+  ErrorHandler.initialize();
+  
+  runApp(MyApp());
 }
-//
-class Rout extends StatelessWidget {
 
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-     home:Login(),
-     //  home:ParentsPage(),
+      home: Login(),
       debugShowCheckedModeBanner: false,
+      locale: Locale(Get.deviceLocale?.languageCode ?? 'ar'),
+      theme: AppTheme.lightTheme,
 
-      locale: Locale(Get.deviceLocale!.languageCode),
     );
   }
 }
-
-
-
-
 

@@ -51,7 +51,7 @@ class TeacherResignationPage extends StatelessWidget {
                     const Divider(),
                     _buildInfoRow("الاسم:", controller.userName),
                     _buildInfoRow("المنصب:", controller.userPosition),
-                    _buildInfoRow("تاريخ التوظيف:", controller.hireDate),
+              
                   ],
                 ),
               ),
@@ -242,7 +242,6 @@ class TeacherResignationController extends GetxController {
   
   String get userName => dataArg?["username"] ?? "غير محدد";
   String get userPosition => "أستاذ"; 
-  String get hireDate => "2023-01-01"; // يمكن جلبه من البيانات
 
   @override
   void onInit() {
@@ -267,6 +266,12 @@ class TeacherResignationController extends GetxController {
   }
 
   Future<void> submitResignation() async {
+    // التحقق من إدخال التاريخ
+    if (resignationDateController.text.isEmpty) {
+      mySnackbar("تنبيه", "الرجاء اختيار تاريخ الاستقالة");
+      return;
+    }
+
     try {
       final res = await handleRequest<dynamic>(
         isLoading: isLoading,
@@ -274,10 +279,24 @@ class TeacherResignationController extends GetxController {
         useDialog: true,
         immediateLoading: true,
         action: () async {
-          // استخدام نفس بنية البيانات الموجودة في الكنترولر الأصلي
-          return await postData(Linkapi.addResignation, {
+          // إرسال جميع البيانات المطلوبة إلى PHP
+          Map<String, dynamic> requestData = {
             "id_user": dataArg["id_user"],
-          });
+            "resignation_date": resignationDateController.text,
+            "reason": selectedReason.value,
+          };
+
+          // إضافة التفاصيل الإضافية إذا كانت موجودة
+          if (additionalDetailsController.text.isNotEmpty) {
+            requestData["notes"] = additionalDetailsController.text;
+          }
+
+          // إضافة id_circle إذا كان موجوداً
+          if (dataArg["id_circle"] != null) {
+            requestData["id_circle"] = dataArg["id_circle"];
+          }
+
+          return await postData(Linkapi.addResignation, requestData);
         },
       );
 
@@ -312,7 +331,12 @@ class TeacherResignationController extends GetxController {
             ],
           ),
         );
+      } else if (res["stat"] == "no") {
+        // حالة وجود استقالة مسبقة أو خطأ منطقي
+        String errorMsg = res["message"] ?? res["msg"] ?? "لا يمكن تقديم الطلب";
+        mySnackbar("تنبيه", errorMsg);
       } else {
+        // حالة خطأ في الخادم
         String errorMsg = res["msg"] ?? res["message"] ?? "حصل خطأ أثناء تقديم الطلب";
         mySnackbar("خطأ", errorMsg);
       }

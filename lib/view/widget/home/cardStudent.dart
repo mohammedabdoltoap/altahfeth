@@ -24,15 +24,25 @@ class CardStudent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primary = theme.colorScheme.primary;
+    final onPrimary = theme.colorScheme.onPrimary;
+    final secondary = theme.colorScheme.secondary;
+    final onSecondary = theme.colorScheme.onSecondary;
+    final tertiary = theme.colorScheme.tertiary;
+    final onTertiary = theme.colorScheme.onTertiary;
+    final primaryContainer = theme.colorScheme.primaryContainer;
+    final onPrimaryContainer = theme.colorScheme.onPrimaryContainer;
+    final secondaryContainer = theme.colorScheme.secondaryContainer;
+    final onSecondaryContainer = theme.colorScheme.onSecondaryContainer;
+    final error = theme.colorScheme.error;
+    final onError = theme.colorScheme.onError;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF008080), // primaryTeal
-            Color(0xFF66CCCC), // lightTeal
-          ],
+        gradient: LinearGradient(
+          colors: [primary.withOpacity(0.9), primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -46,7 +56,7 @@ class CardStudent extends StatelessWidget {
         ],
       ),
       child: Card(
-        color: Colors.white.withOpacity(0.9),
+        color: theme.cardColor.withOpacity(0.95),
         shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
@@ -60,25 +70,18 @@ class CardStudent extends StatelessWidget {
                 children: [
                   Text(
                     student['name_student'],
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF004D66), // deepBlue
-                    ),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   Container(
                     padding:
                     const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF008080),
+                      color: primary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       student['name_stages'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(color: onPrimary, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -86,13 +89,10 @@ class CardStudent extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 "المستوى: ${student['name_level']}",
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87),
+                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
-              const Divider(thickness: 2, color: Color(0xFF008080)),
+              Divider(thickness: 2, color: primary),
               const SizedBox(height: 12),
 
               // الأزرار (كل صف يحتوي على زرين)
@@ -101,11 +101,23 @@ class CardStudent extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildButton("التسميع اليومي", add_rep, Colors.teal),
+                        child: AppButton(
+                          text: "التسميع اليومي",
+                          onPressed: add_rep,
+                          height: 45,
+                          color: primary,
+                          foregroundColor: onPrimary,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildButton("المراجعة اليومية", review, Colors.teal),
+                        child: AppButton(
+                          text: "المراجعة اليومية",
+                          onPressed: review,
+                          height: 45,
+                          color: secondary,
+                          foregroundColor: onSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -113,11 +125,23 @@ class CardStudent extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildButton("تعديل البيانات", updateData, Colors.blue),
+                        child: AppButton(
+                          text: "تعديل البيانات",
+                          onPressed: updateData,
+                          height: 45,
+                          color: tertiary,
+                          foregroundColor: onTertiary,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildButton("تقرير التسميع", dailyReports, Colors.blue),
+                        child: AppButton(
+                          text: "تقرير التسميع",
+                          onPressed: dailyReports,
+                          height: 45,
+                          color: primaryContainer,
+                          foregroundColor: onPrimaryContainer,
+                        ),
                       ),
                     ],
                   ),
@@ -125,11 +149,23 @@ class CardStudent extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildButton("تقرير المراجعة", reviewReports, Colors.blue),
+                        child: AppButton(
+                          text: "تقرير المراجعة",
+                          onPressed: reviewReports,
+                          height: 45,
+                          color: secondaryContainer,
+                          foregroundColor: onSecondaryContainer,
+                        ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: _buildButton("تقرير الغياب", absence, Colors.redAccent),
+                        child: AppButton(
+                          text: "تقرير الغياب",
+                          onPressed: absence,
+                          height: 45,
+                          color: error,
+                          foregroundColor: onError,
+                        ),
                       ),
                     ],
                   ),
@@ -137,28 +173,6 @@ class CardStudent extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildButton(String text, VoidCallback? onPressed, Color color) {
-    return SizedBox(
-      height: 45,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          elevation: 3,
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          textAlign: TextAlign.center,
         ),
       ),
     );

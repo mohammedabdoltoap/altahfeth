@@ -13,62 +13,78 @@ class SmolleStudentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
       elevation: 6,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      shadowColor: Colors.grey.withOpacity(0.3),
+      margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      shadowColor: theme.colorScheme.primary.withOpacity(0.3),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
         onTap: onAddGrades,
-        splashColor: Colors.teal.withOpacity(0.2),
+        splashColor: theme.colorScheme.primary.withOpacity(0.1),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
-              colors: [Colors.white, Colors.teal.shade50],
+              colors: [
+                theme.colorScheme.surface,
+                theme.colorScheme.surfaceVariant.withOpacity(0.6),
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // دائرة باسم الطالب أو أول حرف
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.2),
+                child: Text(
+                  studentName.isNotEmpty ? studentName[0] : "",
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+
               // اسم الطالب
               Expanded(
                 child: Text(
                   studentName,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal.shade800,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
 
-              // زر إضافة الدرجات
+              // زر إضافة الدرجات مع تأثير خفيف
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.teal.shade100,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.teal.withOpacity(0.3),
-                      blurRadius: 6,
-                      offset: const Offset(2, 2),
-                    ),
-                  ],
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.primary.withOpacity(0.2),
+                      theme.colorScheme.primary.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
                 child: IconButton(
                   onPressed: onAddGrades,
                   icon: Icon(
                     Icons.add_circle_outline,
-                    color: Colors.teal.shade700,
-                    size: 32,
+                    color: theme.colorScheme.primary,
+                    size: 28,
                   ),
                   tooltip: 'إضافة درجات',
                 ),

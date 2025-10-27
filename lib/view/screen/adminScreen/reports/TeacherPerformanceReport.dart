@@ -233,8 +233,11 @@ class TeacherPerformanceReport extends StatelessWidget {
   }
 
   double _calculateRate(dynamic count, dynamic total) {
-    if (total == null || total == 0) return 0;
-    return ((count ?? 0) / total) * 100;
+    final numCount = count is String ? int.tryParse(count) ?? 0 : (count ?? 0);
+    final numTotal = total is String ? int.tryParse(total) ?? 0 : (total ?? 0);
+    
+    if (numTotal == 0) return 0;
+    return (numCount / numTotal) * 100;
   }
 
   Color _getRateColor(double rate) {
@@ -432,8 +435,11 @@ class TeacherPerformanceReportController extends GetxController {
   }
 
   double _calculateRate(dynamic count, dynamic total) {
-    if (total == null || total == 0) return 0;
-    return ((count ?? 0) / total) * 100;
+    final numCount = count is String ? int.tryParse(count) ?? 0 : (count ?? 0);
+    final numTotal = total is String ? int.tryParse(total) ?? 0 : (total ?? 0);
+    
+    if (numTotal == 0) return 0;
+    return (numCount / numTotal) * 100;
   }
 
   String _getMonthName(int month) {

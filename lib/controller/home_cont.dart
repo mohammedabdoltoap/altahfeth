@@ -30,25 +30,40 @@ class HomeCont extends GetxController {
   RxList<Map<String, dynamic>> students = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> filteredStudents = <Map<String, dynamic>>[].obs;
   RxString searchQuery = ''.obs;
-  RxInt statLastDailyReport = 0.obs;
-  RxInt statCheck_Attendance = 0.obs;
+  RxnInt statCheck_Attendance = RxnInt(null);
 
   var lastDailyReport = Rxn<Map<String, dynamic>>();
-  RxBool loding_getLastDailyReport = false.obs;
   RxBool loding_get_circle_and_students = false.obs;
 
   Future getstudents() async {
+    if (loding_get_circle_and_students.value) return;
+    final res = await handleRequest<dynamic>(
+      isLoading: loding_get_circle_and_students,
+      loadingMessage: "جاري تحميل الطلاب...",
+      useDialog: false,
+      immediateLoading: true,
+      action: () async {
+        await select_Holiday_Days();
+        return await postData(Linkapi.getstudents, {"id_circle": dataArg["id_circle"]});
+      },
+    );
 
-    loding_get_circle_and_students.value=true;
-    showLoading();
-    await del();
-    await select_Holiday_Days();
-    var res = await postData(Linkapi.getstudents, {"id_circle": dataArg["id_circle"],});
-    hideLoading();
-    loding_get_circle_and_students.value=false;
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
-      students.assignAll(RxList<Map<String, dynamic>>.from(res["data"]));
+      students.assignAll(List<Map<String, dynamic>>.from(res["data"]));
       filteredStudents.assignAll(students);
+    } else if (res["stat"] == "no") {
+      students.clear();
+      filteredStudents.clear();
+      String errorMsg = res["msg"] ?? "لا يوجد طلاب في هذه الحلقة حالياً";
+      mySnackbar("تنبيه", errorMsg);
+    } else {
+      String errorMsg = res["msg"] ?? "تعذّر تحميل قائمة الطلاب";
+      mySnackbar("خطأ", errorMsg);
     }
   }
 
@@ -62,42 +77,45 @@ class HomeCont extends GetxController {
     }
   }
 
+  // RxBool loding_getLastDailyReport = false.obs;
+  RxInt statLastDailyReport = 0.obs;
 
   Future getLastDailyReport(id_student, id_level) async {
-    loding_getLastDailyReport.value = true;
-    showLoading();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري التحقق من آخر تسميع...",
+      action: () async {
+        return await postData(Linkapi.getLastDailyReport, {
+          "id_student": id_student,
+          "id_level": id_level,
+        });
+      },
+    );
 
-    await del();
-    var res = await postData(Linkapi.getLastDailyReport, {
-      "id_student": id_student,
-      "id_level": id_level
-    });
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       lastDailyReport.value = Map<String, dynamic>.from(res["data"]);
     }
     if (lastDailyReport.value?["date"] != null) {
-      dbDate = DateTime.parse(lastDailyReport.value!["date"]);
+      dbDate = DateTime.parse(lastDailyReport.value?["date"]);
       now = DateTime.now();
-
+      if(dbDate!=null)
       if (onlyDate(dbDate!) == onlyDate(now!)) {
-        print("قد دخلنا له اليوم");
         statLastDailyReport.value = 2;
-      }
-      else {
+      } else {
         statLastDailyReport.value = 1;
-        print("نضيف جديد وقد معه من قبل ");
       }
-    }
-    else {
+    } else {
       statLastDailyReport.value = 1;
-      print("اول مره نضيف لهذا الشخص");
     }
-    loding_getLastDailyReport.value = false;
-    hideLoading();
   }
 
 
-  DateTime onlyDate(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
+  DateTime? onlyDate(DateTime dt) => DateTime(dt.year  , dt.month, dt.day);
 
 
   Future check_attendance() async {
@@ -106,127 +124,118 @@ class HomeCont extends GetxController {
         .padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
 
     print("formattedDate=${formattedDate}");
-    showLoading();
-    await del();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "التحقق من الحضور...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.check_attendance, {
+          "date": formattedDate,
+          "id_circle": dataArg["id_circle"],
+        });
+      },
+    );
 
-    var res = await postData(Linkapi.check_attendance, {
-      "date": formattedDate,
-      "id_circle": dataArg["id_circle"],
-    });
-    hideLoading();
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       statCheck_Attendance.value = 1;
-    }
-    else if (res["stat"] == "no") {
+    } else if (res["stat"] == "no") {
       statCheck_Attendance.value = 0;
-    }
-    else {
-      mySnackbar(
-          "حصل خطا حاول لاحقا", "حصل خطا اثناء التحققstatCheck_Attendance  ");
+    } else {
+      String errorMsg = res["msg"] ?? "حصل خطأ أثناء التحقق من الحضور";
+      mySnackbar("خطأ", errorMsg);
     }
   }
 
 
 
 
-  // Future select_users_attendance_today() async {
-  //   DateTime selectedDate = DateTime.now(); // أو التاريخ اللي تختاره
-  //   String formattedDate = "${selectedDate.year}-${selectedDate.month.toString()
-  //       .padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
-  //
-  //   showLoading();
-  //   await del();
-  //   var res = await postData(Linkapi.select_users_attendance_today, {
-  //     "attendance_date": formattedDate,
-  //     "id_circle": dataArg["id_circle"],
-  //     "id_user":dataArg["id_user"]
-  //   });
-  //   hideLoading();
-  //   if (res["stat"] == "No_record_today") {
-  //     print("خليو يسجل حضور وانصرف");
+  // تم تعطيل هذه الدالة واستبدالها بصفحة طلب الاستقالة الجديدة
+  // Future addResignation() async {
+  //   final res = await handleRequest<dynamic>(
+  //     isLoading: RxBool(false),
+  //     loadingMessage: "إرسال طلب الاستقالة...",
+  //     useDialog: true,
+  //     immediateLoading: true,
+  //     action: () async {
+  //       await del();
+  //       return await postData(Linkapi.addResignation, {
+  //         "id_user": dataArg["id_user"],
+  //       });
+  //     },
+  //   );
+
+  //   if (res == null) return;
+  //   if (res is! Map) {
+  //     mySnackbar("خطأ", "فشل الاتصال بالخادم");
+  //     return;
   //   }
-  //   else if (res["stat"] == "No_check_out_time") {
-  //     print("يسجل انصراف بس");
-  //   }
-  //   else if (res["stat"] == "He_check_all") {
-  //     print("لاتخليو يسجل شي");
-  //   }
-  //   else {
-  //     mySnackbar(
-  //         "حصل خطا حاول لاحقا", "حصل خطا اثناء التحققstatCheck_Attendance  ");
+  //   if (res["stat"] == "ok") {
+  //     mySnackbar("تم تقديم طلب الاستقالة", "سيتم المراجعة قريباً", type: "g");
+  //   } else {
+  //     String errorMsg = res["msg"] ?? res["message"] ?? "حصل خطأ أثناء تقديم الطلب";
+  //     mySnackbar("خطأ", errorMsg);
   //   }
   // }
-
-  Future addResignation() async {
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.addResignation, {
-      "id_user": dataArg["id_user"],
-    });
-    hideLoading();
-    if (res["stat"] == "ok") {
-      mySnackbar("تم تقديم طلب الاستقاله ", "سيتم المراجعة قريبا", type: "g");
-    }
-    else if (res["stat"] == "no") {
-      mySnackbar("حصل خطا  ", res["message"]);
-    }
-    else {
-      mySnackbar("حصل خطا  ", "تواصل مع الادارة ");
-    }
-  }
 
 
   var dataLastReview = Rxn<Map<String, dynamic>>();
   int stat_getLastReview = 0;
 
   Future<void> getLastReview(id_student, id_level) async {
-    try {
-      showLoading();
-      await del();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري التحقق من آخر مراجعة...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.getLastReview, {
+          "id_student": id_student,
+          "id_level": id_level,
+        });
+      },
+    );
 
-      final res = await postData(Linkapi.getLastReview, {
-        "id_student": id_student,
-        "id_level": id_level,
-      });
+    if (res == null) {
+      stat_getLastReview = 0;
+      return;
+    }
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      stat_getLastReview = 0;
+      return;
+    }
 
-      hideLoading();
-
-      switch (res["stat"]) {
-        case "NoBecauseNoDailyReport":
-          stat_getLastReview = 3;
-          print("لايمكن اضافة مراجعة قبل الحفظ");
-          break;
-
-        case "ok":
-          final data = Map<String, dynamic>.from(res["data"]);
-          dataLastReview.value = data;
-
-          final dateStr = data["date"]?.toString();
-          if (dateStr != null && dateStr.isNotEmpty) {
-            dbDate = DateTime.parse(dateStr);
-            now = DateTime.now();
-
-            if (onlyDate(dbDate!) == onlyDate(now!)) {
-              stat_getLastReview = 1;
-              print("قد دخلنا له اليوم");
-            } else {
-              stat_getLastReview = 2;
-              print("نضيف جديد وقد معه من قبل");
-            }
+    switch (res["stat"]) {
+      case "NoBecauseNoDailyReport":
+        stat_getLastReview = 3;
+        break;
+      case "ok":
+        print("res=====${res}");
+        final data = Map<String, dynamic>.from(res["data"]);
+        dataLastReview.value = data;
+        final dateStr = data["date"]?.toString();
+        if (dateStr != null && dateStr.isNotEmpty) {
+          dbDate = DateTime.parse(dateStr);
+          now = DateTime.now();
+          if (onlyDate(dbDate!) == onlyDate(now!)) {
+            stat_getLastReview = 1;
           } else {
             stat_getLastReview = 2;
-            print("اول مره نضيف لهذا الشخص");
           }
-          break;
-
-        default:
-          stat_getLastReview = 0;
-          print("خطأ في الاتصال");
-      }
-    } catch (e) {
-      hideLoading();
-      stat_getLastReview = 0;
-      print("حدث استثناء: $e");
+        } else {
+          stat_getLastReview = 2;
+        }
+        break;
+      default:
+        stat_getLastReview = 0;
     }
   }
 
@@ -265,53 +274,86 @@ class HomeCont extends GetxController {
   List<Map<String,dynamic>> absences=<Map<String,dynamic>>[];
 
   Future select_daily_report(id_student) async {
-
-    showLoading();
-   await del();
-    var res = await postData(Linkapi.select_daily_report, {"id_student": id_student});
-   hideLoading();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري جلب تقرير التسميع...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.select_daily_report, {"id_student": id_student});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       daily_report.assignAll(List<Map<String, dynamic>>.from(res["daily_report"]));
-
-     await showDaily_report();
-
+      await showDaily_report();
     } else if (res["stat"] == "no") {
-      mySnackbar("تنبيه", "لايوجد سجلات سابقة للطالب");
+      String errorMsg = res["msg"] ?? "لا يوجد سجلات سابقة للطالب";
+      mySnackbar("تنبيه", errorMsg);
     } else {
-      mySnackbar("تنبيه", "حصل خطأ تحقق من الاتصال ");
+      String errorMsg = res["msg"] ?? "حصل خطأ في جلب التقرير";
+      mySnackbar("خطأ", errorMsg);
     }
-
   }
-  Future select_review_report(id_student) async {
 
-    showLoading();
-   await del();
-    var res = await postData(Linkapi.select_review_report, {"id_student": id_student});
-   hideLoading();
+  Future select_review_report(id_student) async {
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري جلب تقرير المراجعة...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.select_review_report, {"id_student": id_student});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       review_report.assignAll(List<Map<String, dynamic>>.from(res["reviews"]));
-     await showReview_report();
-
+      await showReview_report();
     } else if (res["stat"] == "no") {
-      mySnackbar("تنبيه", "لايوجد سجلات سابقة للطالب");
+      String errorMsg = res["msg"] ?? "لا يوجد سجلات سابقة للطالب";
+      mySnackbar("تنبيه", errorMsg);
     } else {
-      mySnackbar("تنبيه", "حصل خطأ تحقق من الاتصال ");
+      String errorMsg = res["msg"] ?? "حصل خطأ في جلب التقرير";
+      mySnackbar("خطأ", errorMsg);
     }
   }
-  Future select_absence_report(id_student,name_student) async {
 
-    showLoading();
-   await del();
-    var res = await postData(Linkapi.select_absence_report, {"id_student": id_student});
-   hideLoading();
+  Future select_absence_report(id_student,name_student) async {
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري جلب تقرير الغياب...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+
+        return await postData(Linkapi.select_absence_report, {"id_student": id_student});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       absences.assignAll(List<Map<String, dynamic>>.from(res["attendance"]));
-     await showAbsencesReport(name_student);
-
+      await showAbsencesReport(name_student);
     } else if (res["stat"] == "no") {
-      mySnackbar("تنبيه", "لايوجد غيابات للطالب");
+      String errorMsg = res["msg"] ?? "لا يوجد غيابات للطالب";
+      mySnackbar("تنبيه", errorMsg);
     } else {
-      mySnackbar("تنبيه", "حصل خطأ تحقق من الاتصال ");
+      String errorMsg = res["msg"] ?? "حصل خطأ في جلب التقرير";
+      mySnackbar("خطأ", errorMsg);
     }
   }
 
@@ -322,10 +364,8 @@ class HomeCont extends GetxController {
       'التاريخ',
       'المرحلة',
       'المستوى',
-      'إلى آية',
-      'من آية',
-      'إلى سورة',
-      'من سورة',
+      'إلى سورة ',
+      'من سورة ',
       'اسم استاذ الحلقة',
       'اسم الحلقة',
     ];
@@ -333,10 +373,8 @@ class HomeCont extends GetxController {
       (r['date']?.split(' ')[0] ?? 'غير متوفر').toString(),
       (r['name_stages'] ?? 'غير متوفر').toString(),
       (r['name_level'] ?? 'غير متوفر').toString(),
-      (r['to_id_aya'] ?? 'غير متوفر').toString(),
-      (r['from_id_aya'] ?? 'غير متوفر').toString(),
-      (r['to_soura_name'] ?? 'غير متوفر').toString(),
-      (r['from_soura_name'] ?? 'غير متوفر').toString(),
+      "${r['to_soura_name'] ?? 'غير متوفر'} (${r['to_id_aya'] ?? 'غير متوفر'})",
+      "${r['from_soura_name'] ?? 'غير متوفر'} (${r['from_id_aya'] ?? 'غير متوفر'})",
       (r['username'] ?? 'غير متوفر').toString(),
       (r['name_circle'] ?? 'غير متوفر').toString(),
     ]).toList();
@@ -353,10 +391,8 @@ class HomeCont extends GetxController {
       'التاريخ',
       'المرحلة',
       'المستوى',
-      'إلى آية',
-      'من آية',
-      'إلى سورة',
-      'من سورة',
+      'إلى سورة ',
+      'من سورة ',
       'اسم استاذ الحلقة',
       'اسم الحلقة',
     ];
@@ -364,10 +400,8 @@ class HomeCont extends GetxController {
       (r['date']?.split(' ')[0] ?? 'غير متوفر').toString(),
       (r['name_stages'] ?? 'غير متوفر').toString(),
       (r['name_level'] ?? 'غير متوفر').toString(),
-      (r['to_id_aya'] ?? 'غير متوفر').toString(),
-      (r['from_id_aya'] ?? 'غير متوفر').toString(),
-      (r['to_soura_name'] ?? 'غير متوفر').toString(),
-      (r['from_soura_name'] ?? 'غير متوفر').toString(),
+      "${r['to_soura_name'] ?? 'غير متوفر'} (${r['to_id_aya'] ?? 'غير متوفر'})",
+      "${r['from_soura_name'] ?? 'غير متوفر'} (${r['from_id_aya'] ?? 'غير متوفر'})",
       (r['username'] ?? 'غير متوفر').toString(),
       (r['name_circle'] ?? 'غير متوفر').toString(),
     ]).toList();

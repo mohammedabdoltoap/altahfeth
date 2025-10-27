@@ -173,7 +173,7 @@ class CirclesListScreen extends StatelessWidget {
       "id_circle": circle["id_circle"],
       "circle_name": circle["name_circle"],
     };
-    
+
     Get.to(() => NotesListScreen(), arguments: arguments);
   }
 }

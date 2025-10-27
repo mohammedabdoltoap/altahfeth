@@ -1,8 +1,7 @@
 import 'package:althfeth/api/LinkApi.dart';
 import 'package:althfeth/api/apiFunction.dart';
-import 'package:althfeth/constants/color.dart';
 import 'package:althfeth/constants/function.dart';
-import 'package:althfeth/constants/loadingWidget.dart';
+import 'package:althfeth/constants/inline_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../constants/SmolleStudentCard.dart';
@@ -17,9 +16,14 @@ class StudentList_Skill extends StatelessWidget {
       appBar: AppBar(
         title: const Text("المهارات "),
         centerTitle: true,
-        backgroundColor: primaryGreen, // primaryTeal
+        toolbarHeight: 88,
       ),
       body: Obx(() {
+
+        if (controller.students.isEmpty && controller.isLodingStudent.value)
+          return InlineLoading(message: "تحميل اسماء الطلاب",);
+
+
         if (controller.students.isEmpty) {
           return const Center(
             child: Text(
@@ -51,15 +55,6 @@ class StudentList_Skill extends StatelessWidget {
   }
 }
 
-
-
-
-
-
-
-
-
-
 class StudentList_SkillController extends GetxController{
 
   var data;
@@ -73,11 +68,26 @@ class StudentList_SkillController extends GetxController{
   }
 
   RxList<Map<String,dynamic>> students=<Map<String,dynamic>>[].obs;
+  RxBool isLodingStudent=false.obs;
   Future getstudents()async{
-    showLoading();
-    await del() ;
-    var res=await postData(Linkapi.getstudents, {"id_circle":data["id_circle"]});
-    hideLoading();
+
+    final res = await handleRequest<dynamic>(
+      isLoading: isLodingStudent,
+      loadingMessage: "جاري تحميل الطلاب...",
+      useDialog: false,
+      action: () async {
+    await del();
+        return await postData(Linkapi.getstudents, {"id_circle":data["id_circle"]});
+      },
+    );
+
+    if(res==null)return;
+
+    if(res is! Map )
+      {
+        mySnackbar("تنبية", "فشل الاتصال");
+        return ;
+      }
     if(res["stat"]=="ok"){
       students.assignAll(List<Map<String,dynamic>>.from(res["data"]));
     }else if(res["stat"]=="erorr"){
@@ -87,8 +97,6 @@ class StudentList_SkillController extends GetxController{
     }else{
       mySnackbar("تنبية", "حصل خطا تاكد من الاتصال");
     }
-
-
   }
 
 

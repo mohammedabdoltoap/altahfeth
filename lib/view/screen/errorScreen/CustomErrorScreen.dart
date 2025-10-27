@@ -104,7 +104,7 @@ class CustomErrorScreen extends StatelessWidget {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          if (Get.canPop()) {
+                          if (Navigator.canPop(context)) {
                             Get.back();
                           } else {
                             // إذا لم تكن هناك صفحة سابقة، اذهب للصفحة الرئيسية

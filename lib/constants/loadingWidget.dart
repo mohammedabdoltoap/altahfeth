@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'color.dart';
-import 'package:flutter/material.dart';
 
 class LoadingWidget extends StatelessWidget {
   final String message;
@@ -20,7 +19,7 @@ class LoadingWidget extends StatelessWidget {
         width: size,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
+          color: Colors.black.withOpacity(0.7),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
@@ -38,7 +37,7 @@ class LoadingWidget extends StatelessWidget {
               width: 50,
               height: 50,
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade400),
+                valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
                 strokeWidth: 6,
               ),
             ),
@@ -47,7 +46,7 @@ class LoadingWidget extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.teal.shade100,
+                color: whiteColor,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 decoration: TextDecoration.none,
@@ -61,21 +60,8 @@ class LoadingWidget extends StatelessWidget {
   }
 }
 
-void showLoading({String message = "تحميل..."}) {
-  if (!(Get.isDialogOpen ?? false)) {
-    Get.dialog(
-      WillPopScope(
-        onWillPop: () async => true, // 🔒 يمنع الإغلاق بزر الرجوع
-        child: LoadingWidget(message: message),
-      ),
-      barrierDismissible: false, // يمنع الإغلاق بالضغط خارج المربع
-    );
-  }
-}
+void showLoading({String message = "تحميل..."}) {}
 
+void hideLoading() {}
 
-void hideLoading() {
-  if (Get.isDialogOpen ?? false) {
-    Get.back();
-  }
-}
+void forceHideLoading() {}

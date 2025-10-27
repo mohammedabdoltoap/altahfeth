@@ -1,6 +1,22 @@
 import 'package:althfeth/constants/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../constants/function.dart';
+import 'reports/TeacherAttendanceReport.dart';
+import 'reports/LeaveRequestsReport.dart';
+import 'reports/ResignationRequestsReport.dart';
+import 'reports/TeacherPerformanceReport.dart';
+import 'reports/StudentAttendanceReport.dart';
+import 'reports/DailyRecitationReport.dart';
+import 'reports/ReviewRecitationReport.dart';
+import 'reports/AbsenceReport.dart';
+import 'reports/ComprehensiveStudentPerformance.dart';
+import 'reports/CircleStatisticsReport.dart';
+import 'reports/ComprehensiveCircleReport.dart';
+import 'reports/CircleComparisonReport.dart';
+import 'reports/VisitStatisticsReport.dart';
+import 'reports/VisitResultsReport.dart';
+import 'reports/VisitNotesReport.dart';
 
 class AdminReportsPage extends StatelessWidget {
   final AdminReportsController controller = Get.put(AdminReportsController());
@@ -347,36 +363,36 @@ class AdminReportsController extends GetxController {
 
   // تقارير الأساتذة
   void showTeacherAttendanceReport() {
-    Get.snackbar("قريباً", "تقرير حضور وانصراف الأساتذة");
+    Get.to(() => TeacherAttendanceReport(), arguments: dataArg);
   }
 
   void showLeaveRequestsReport() {
-    Get.snackbar("قريباً", "تقرير طلبات الإجازات");
+    Get.to(() => LeaveRequestsReport(), arguments: dataArg);
   }
 
   void showResignationReport() {
-    Get.snackbar("قريباً", "تقرير طلبات الاستقالة");
+    Get.to(() => ResignationRequestsReport(), arguments: dataArg);
   }
 
   void showTeacherPerformanceReport() {
-    Get.snackbar("قريباً", "تقرير أداء الأساتذة");
+    Get.to(() => TeacherPerformanceReport(), arguments: dataArg);
   }
 
   // تقارير الطلاب
   void showStudentAttendanceReport() {
-    Get.snackbar("قريباً", "تقرير حضور وغياب الطلاب");
+    Get.to(() => StudentAttendanceReport(), arguments: dataArg);
   }
 
   void showDailyRecitationReport() {
-    Get.snackbar("قريباً", "تقرير التسميع اليومي");
+    Get.to(() => DailyRecitationReport(), arguments: dataArg);
   }
 
   void showReviewReport() {
-    Get.snackbar("قريباً", "تقرير المراجعة");
+    Get.to(() => ReviewRecitationReport(), arguments: dataArg);
   }
 
   void showAbsenceReport() {
-    Get.snackbar("قريباً", "تقرير الغياب");
+    Get.to(() => AbsenceReport(), arguments: dataArg);
   }
 
   void showStudentSkillsReport() {
@@ -384,33 +400,33 @@ class AdminReportsController extends GetxController {
   }
 
   void showStudentPerformanceReport() {
-    Get.snackbar("قريباً", "تقرير أداء الطلاب الشامل");
+    Get.to(() => ComprehensiveStudentPerformance(), arguments: dataArg);
   }
 
   // تقارير الزيارات
   void showVisitResultsReport() {
-    Get.snackbar("قريباً", "تقرير نتائج الزيارات الفنية");
+    Get.to(() => VisitResultsReport(), arguments: dataArg);
   }
 
   void showVisitNotesReport() {
-    Get.snackbar("قريباً", "تقرير ملاحظات الزيارات");
+    Get.to(() => VisitNotesReport(), arguments: dataArg);
   }
 
   void showVisitStatisticsReport() {
-    Get.snackbar("قريباً", "تقرير إحصائيات الزيارات");
+    Get.to(() => VisitStatisticsReport(), arguments: dataArg);
   }
 
   // تقارير الحلقات
   void showCircleStatisticsReport() {
-    Get.snackbar("قريباً", "تقرير إحصائيات الحلقات");
+    Get.to(() => CircleStatisticsReport(), arguments: dataArg);
   }
 
   void showCircleComprehensiveReport() {
-    Get.snackbar("قريباً", "تقرير شامل للحلقة");
+    Get.to(() => ComprehensiveCircleReport(), arguments: dataArg);
   }
 
   void showCircleComparisonReport() {
-    Get.snackbar("قريباً", "تقرير مقارنة بين الحلقات");
+    Get.to(() => CircleComparisonReport(), arguments: dataArg);
   }
 
   // تقارير عامة

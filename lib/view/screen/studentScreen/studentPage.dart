@@ -1,5 +1,4 @@
 import 'package:althfeth/constants/appButton.dart';
-import 'package:althfeth/constants/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../controller/studentControllers/StudentPageController.dart';
@@ -8,10 +7,12 @@ class StudentPage extends StatelessWidget {
   StudentPageController controller=Get.put(StudentPageController());
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text("بيانات الطالب"),
-        backgroundColor: primaryGreen,
+        centerTitle: true,
+        toolbarHeight: 88,
+        title: const Text("بيانات الطالب"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -25,10 +26,10 @@ class StudentPage extends StatelessWidget {
                 Center(
                   child: Text(
                     "بيانات الطالب",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: primaryGreen),
+                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary),
                   ),
                 ),
-                Divider(thickness: 2, color: primaryGreen),
+                Divider(thickness: 2, color: theme.colorScheme.primary),
                 SizedBox(height: 10),
                 _buildRow("الاسم الكامل", "${controller.student['name_student']}"),
                 _buildRow("اللقب", "${controller.student['surname']}"),
@@ -47,18 +48,32 @@ class StudentPage extends StatelessWidget {
                 _buildRow("الأمراض المزمنة", "${controller.student['chronic_diseases']}"),
                 _buildRow("القارى", "${controller.student['Reader']}"),
                 _buildRow("الحالة", controller.student['status'] == 1 ? "نشط" : "غير نشط"),
-                Divider(thickness: 2, color: primaryGreen),
-             AppButton(text: "خطة الطالب PDF", onPressed: () {},),
+                Divider(thickness: 2, color: theme.colorScheme.primary),
+             AppButton(
+               text: "خطة الطالب PDF",
+               onPressed: () {},
+               color: theme.colorScheme.secondaryContainer,
+               foregroundColor: theme.colorScheme.onSecondaryContainer,
+             ),
              SizedBox(height: 10,),
-             AppButton(text: "التسميع", onPressed: () {
-               controller.select_daily_report();
-             },),
-                AppButton(text: "المراجعة ", onPressed: () {
-               controller.select_review_report();
-             },),
-                AppButton(text: "الحضور والغياب", onPressed: () {
-               controller.select_absence_report();
-             },),
+             AppButton(
+               text: "التسميع",
+               onPressed: () { controller.select_daily_report(); },
+               color: theme.colorScheme.primary,
+               foregroundColor: theme.colorScheme.onPrimary,
+             ),
+                AppButton(
+                  text: "المراجعة ",
+                  onPressed: () { controller.select_review_report(); },
+                  color: theme.colorScheme.secondary,
+                  foregroundColor: theme.colorScheme.onSecondary,
+                ),
+                AppButton(
+                  text: "الحضور والغياب",
+                  onPressed: () { controller.select_absence_report(); },
+                  color: theme.colorScheme.tertiary,
+                  foregroundColor: theme.colorScheme.onTertiary,
+                ),
 
 
               ],
@@ -79,7 +94,7 @@ class StudentPage extends StatelessWidget {
             flex: 3,
             child: Text(
               title,
-              style: TextStyle(fontWeight: FontWeight.bold, color: childyGreen),
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
           Expanded(

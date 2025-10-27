@@ -2,6 +2,7 @@ import 'package:althfeth/constants/appButton.dart';
 import 'package:althfeth/constants/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../constants/inline_loading.dart';
 import '../../controller/User_AttendanceController.dart';
 
 class User_Attendance extends StatelessWidget {
@@ -20,11 +21,35 @@ class User_Attendance extends StatelessWidget {
         final data = controller.data_attendance_today;
         final hasCheckIn = data["check_in_time"] != null;
         final hasCheckOut = data["check_out_time"] != null;
+       print("===${controller.lodingUsersAttendanceToday.value}");
+         if(controller.lodingUsersAttendanceToday.value && controller.data_attendance_today.isEmpty)
+           return InlineLoading( message: "تحميل الحضور والانصراف",indicatorSize: 40,);
+
+         // if(controller.data_attendance_today.isEmpty)
+         //   return Center(
+         //     child: Column(
+         //       mainAxisAlignment: MainAxisAlignment.center,
+         //       children: [
+         //         Text(
+         //           "لايوجد بيانات ",
+         //           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+         //         ),
+         //         const SizedBox(height: 16),
+         //         SizedBox(
+         //           width: 220,
+         //           child: ElevatedButton(
+         //             onPressed: () => controller.select_users_attendance_today(),
+         //             child: const Text("إعادة المحاولة"),
+         //           ),
+         //         ),
+         //       ],
+         //     ),
+         //   );
 
         return Padding(
           padding: const EdgeInsets.all(20.0),
           child: Center(
-            child: controller.lodingUsersAttendanceToday.value?SizedBox():Column(
+            child:Column(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 const SizedBox(height: 10),
@@ -40,17 +65,35 @@ class User_Attendance extends StatelessWidget {
 
                 // 🔹 الحالة الحالية (حضور / انصراف / مكتمل)
                 if (!hasCheckIn && !hasCheckOut) ...[
-                  Icon(Icons.login, color: primaryGreen, size: 80),
+                  Icon(Icons.login, color: Colors.blue, size: 80),
                   const SizedBox(height: 15),
                   const Text(
                     "لم تسجل حضورك بعد",
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 25),
-                  AppButton(
-                    text: "تسجيل الحضور",
-                    onPressed: controller.add_check_in_time_usersAttendance,
+                  Obx(() =>
+                      AppButton(
+                        color: Colors.blue,
+                        text: "تسجيل الحضور",
+                        onPressed: controller.add_check_in_time_usersAttendance,
+                        isLoading: controller.add_check_in.value,
+                      )),
+                  const SizedBox(height: 15),
+                  const Divider(),
+                  const SizedBox(height: 10),
+                  const Text(
+                    "أو",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
+                  const SizedBox(height: 10),
+                  Obx(() =>
+                      AppButton(
+                        color: Colors.purple,
+                        text: "تسجيل تغطية",
+                        onPressed: controller.addSubstituteAttendance,
+                        isLoading: controller.addingSubstitute.value,
+                      )),
                 ] else if (hasCheckIn && !hasCheckOut) ...[
                   Icon(Icons.logout, color: Colors.orange.shade600, size: 80),
                   const SizedBox(height: 15),
@@ -60,10 +103,13 @@ class User_Attendance extends StatelessWidget {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 25),
-                  AppButton(
-                    text: "تسجيل الانصراف",
-                    onPressed: controller.add_check_out_time_usersAttendance,
-                  ),
+                  Obx(() =>
+                      AppButton(
+                        color: Colors.orange.shade600,
+                        text: "تسجيل الانصراف",
+                        onPressed: controller.add_check_out_time_usersAttendance,
+                        isLoading: controller.add_check_out.value,
+                      )),
                 ] else ...[
                   Icon(Icons.check_circle, color: Colors.green, size: 80),
                   const SizedBox(height: 15),
@@ -81,7 +127,7 @@ class User_Attendance extends StatelessWidget {
                   AttendanceCard(
                     title: "🕒 وقت الحضور",
                     time: data["check_in_time"] ?? "--:--:--",
-                    color: Colors.teal,
+                    color: Colors.blue,
                   ),
                 ],
                 if (hasCheckOut) ...[
@@ -93,6 +139,7 @@ class User_Attendance extends StatelessWidget {
                 ],
               ],
             ),
+
           ),
         );
 

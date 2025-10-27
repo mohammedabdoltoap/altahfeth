@@ -1,18 +1,170 @@
 
-
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
-
+import 'dart:async';
+import '../controller/NewWork/NetworkController.dart';
+import '../utils/ErrorHandler.dart';
+import 'loadingWidget.dart';
 
 mySnackbar( titile, messige,{type="r"}){
-  if(type=="r")
-   Get.snackbar("$titile", "$messige",colorText:Colors.white,backgroundColor: Colors.red,duration: Duration(seconds: 2));
-  else if(type=="y")
-    Get.snackbar("$titile", "$messige",colorText:Colors.white,backgroundColor: Colors.amberAccent,duration: Duration(seconds: 2));
-  else
-     Get.snackbar("$titile", "$messige",colorText:Colors.white,backgroundColor: Colors.green,duration: Duration(seconds: 2));
+  final Color bg = type=="r" ? Colors.red : type=="y" ? Colors.amberAccent : Colors.green;
+  Get.snackbar(
+    "$titile",
+    "$messige",
+    colorText: Colors.white,
+    backgroundColor: bg,
+    duration: const Duration(seconds: 3),
+    snackPosition: SnackPosition.BOTTOM,
+    margin: const EdgeInsets.all(12),
+    borderRadius: 12,
+  );
+}
+
+Future<T?> handleRequest<T>({
+  required RxBool isLoading,
+  required Future<T> Function() action,
+  String loadingMessage = "جاري المعالجة...",
+  String defaultErrorTitle = "خطأ",
+    bool useDialog = true,
+  bool immediateLoading = false,
+}) async {
+  if (isLoading.value) return null;
+  if (immediateLoading) {
+    isLoading.value = true;
+  }
+
+  //
+  if (!await checkInternet()) {
+    if (immediateLoading) {
+      isLoading.value = false;
+    }
+    return null;
+  }
+
+  String? _message;
+  String _title = defaultErrorTitle;
+  if (!immediateLoading) {
+    isLoading.value = true;
+  }
+  try {
+    if (useDialog) {
+      // تصميم حديث للويدجت مع تدرّج وظل لتفاصيل بصرية محسّنة
+      final theme = Get.theme;
+      final cs = theme.colorScheme;
+      final txt = theme.textTheme;
+      final Widget overlay = Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                cs.surface,
+                cs.surfaceVariant,
+              ],
+            ),
+            border: Border.all(color: cs.primary.withOpacity(0.4), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 28,
+                width: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3.2,
+                  valueColor: AlwaysStoppedAnimation(cs.primary),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loadingMessage,
+                    style: txt.bodyMedium?.copyWith(
+                      color: cs.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: 200,
+                    height: 6,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        backgroundColor: cs.outlineVariant.withOpacity(0.35),
+                        valueColor: AlwaysStoppedAnimation(cs.primary),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+      return await Get.showOverlay<T?>(
+        asyncFunction: () async {
+          final start = DateTime.now();
+          try {
+            final result = await action().timeout(const Duration(seconds: 15));
+            return result;
+          } finally {
+            final elapsed = DateTime.now().difference(start);
+            const minDuration = Duration(milliseconds: 1200);
+            if (elapsed < minDuration) {
+              await Future.delayed(minDuration - elapsed);
+            }
+          }
+        },
+        loadingWidget: overlay,
+        opacityColor: theme.colorScheme.scrim.withOpacity(0.25),
+        opacity: 1,
+
+      );
+    } else {
+      final result = await action().timeout(const Duration(seconds: 15));
+      return result;
+    }
+  } on TimeoutException {
+    _message = "انتهت مهلة الاتصال. تحقق من الإنترنت وحاول مرة أخرى";
+    mySnackbar("انتهت المهلة", _message, type: "r");
+    return null;
+  } catch (e) {
+    // محاولة قراءة رسالة الخطأ التفصيلية
+    if (e.toString().contains('SocketException')) {
+      _message = "فشل الاتصال بالخادم. تحقق من الإنترنت";
+      ErrorHandler.handleNetworkError();
+    } else if (e.toString().contains('FormatException')) {
+      _message = "خطأ في تنسيق البيانات المستلمة";
+      ErrorHandler.handleApiError(e);
+    } else if (e.toString().contains('HandshakeException')) {
+      _message = "خطأ في الاتصال الآمن بالخادم";
+      ErrorHandler.handleNetworkError();
+    } else {
+      _message = "حدث خطأ غير متوقع أثناء العملية";
+      ErrorHandler.handleError(e, customMessage: _message, showSnackbar: true);
+    }
+    return null;
+  } finally {
+
+    isLoading.value = false;
+    // لا نعرض snackbar هنا لأن ErrorHandler يتولى ذلك
+  }
 }
 
 

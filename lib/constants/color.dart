@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
-final Color primaryGreen =Colors.teal.shade600;
-final Color childyGreen =Colors.green.shade400;
-final Color backGteen =Colors.teal.shade100;
+// أسماء موحّدة وواضحة للألوان الأساسية
+const Color kPrimaryColor   = Color(0xFF006B6B); // أخضر مزرّق (أساسي)
+const Color kSecondaryColor = Color(0xFF00897B); // أخضر متوسط (مساعد)
+const Color kAccentYellow   = Color(0xFFFFB703); // أصفر ذهبي (تمييز)
+const Color kBackground     = Color(0xFFF5F5F5); // رمادي فاتح (خلفية)
+const Color kSurfaceWhite   = Colors.white;      // أبيض للبطاقات والسطوح
 
-final Color whiteColor =Colors.white;
-
-
-const Color secondaryGreen = Color(0xFF66CC66); // لون ثانوي أخضر فاتح
+// إبقاء الأسماء القديمة كعليّات لتجنب كسر الشيفرة الحالية (سنستبدلها تدريجياً)
+// old -> new
+final Color primaryGreen   = kPrimaryColor;
+final Color childyGreen    = kAccentYellow;
+final Color backGteen      = kBackground;
+final Color whiteColor     = kSurfaceWhite;
+const Color secondaryGreen = kSecondaryColor;

@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 
 import '../../../constants/CustomDropdownField.dart';
 import '../../../constants/appButton.dart';
+import '../../../constants/color.dart';
 import '../../../constants/customTextField.dart';
+import '../../../constants/readOnlyTextField.dart';
 import '../../../controller/dilayAndRevoesController/Update_Daily_ReportController.dart';
 class Update_Daily_Report extends StatelessWidget {
   Update_Daily_ReportController controller=Get.put(Update_Daily_ReportController());
@@ -23,80 +25,68 @@ class Update_Daily_Report extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  shadowColor: Colors.teal.shade100,
+                  shadowColor: primaryGreen.withOpacity(0.1),
                   child: Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(10.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Center(
-                          child: Text(
-                            "الاسم: ${controller.dataArg_Student["name_student"]}",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: primaryGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "معلومات الطالب",
+                              style: TextStyle(
+                                fontSize: 17,
+                                color: primaryGreen,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(height: 15),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.teal.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                "المرحلة: ${controller.dataArg_Student["name_stages"]}",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.teal.shade800,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.teal.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                "المستوى: ${controller.dataArg_Student["name_level"]}",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.teal.shade800,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        ReadOnlyTextField(label: "اسم الطالب", value: controller.dataArg_Student["name_student"], color_line: Colors.black),
+                        const SizedBox(height: 15),
+                        ReadOnlyTextField(label: "المرحلة", value: controller.dataArg_Student["name_stages"], color_line: Colors.black),
+                        const SizedBox(height: 15),
+                        ReadOnlyTextField(label: "المستوى", value: controller.dataArg_Student["name_level"], color_line: Colors.black),
+                        const SizedBox(height: 15),
                       ],
                     ),
                   ),
                 ),
               ),
 
+              Divider(height: 2),
+
               // ويدجيت اختيار السورة
               SouraSelectorUpDate(),
               CustomTextField(controller: controller.markController, label: "الدرجة", hint: "الدرجة",keyboardType: TextInputType.number,),
-           Obx(() =>
-              CustomDropdownField(label: "التقييم", items: controller.dataEvaluations, value: controller.selectedEvaluations.value, onChanged: (val){
-
-                controller.selectedEvaluations.value=val;
-
-              }, valueKey: "id_evaluation", displayKey: "name_evaluation"),
-           ),
+           Obx(() {
+             final items = controller.dataEvaluations.toList();
+             return CustomDropdownField(
+               label: "التقييم", 
+               items: items,
+               value: controller.selectedEvaluations.value, 
+               onChanged: (val){
+                 controller.selectedEvaluations.value=val;
+               }, 
+               valueKey: "id_evaluation", 
+               displayKey: "name_evaluation"
+             );
+           }),
               const SizedBox(height: 20),
               AppButton(
-                text: "تعديل التسميع",
+                text: "حفظ التعديلات",
                 onPressed: () {
                   controller.updateDailyReport();
                 },
-              )
+              ),
+              const SizedBox(height: 15),
 
             ],
           ),
@@ -131,14 +121,14 @@ class SouraSelectorUpDate extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
+                          color: primaryGreen.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child:Text(
                           "تعديل تسميع  : ${controller.dataArglastDailyReport.value?["date"]}",
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.teal.shade800,
+                            color: primaryGreen,
                             fontWeight: FontWeight.w500,
                           ),
                         )
@@ -149,43 +139,26 @@ class SouraSelectorUpDate extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade700,
+                        color: primaryGreen,
                       ),
                     ),
 
                     const SizedBox(height: 20),
 
                     // عرض السورة
-                    TextFormField(
-                      enabled: false,
-                      initialValue:controller.dataArglastDailyReport.value?["from_soura_name"],
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.play_arrow, color: Colors.teal),
-                        labelText: "من سورة",
-                        labelStyle: const TextStyle(color: Colors.teal),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      style: const TextStyle(fontSize: 18),
+                    ReadOnlyTextField(
+                      value: controller.dataArglastDailyReport.value?["from_soura_name"],
+                      label: "من سورة",
+                      icon: Icons.play_arrow,
+                      color: primaryGreen,
                     ),
-
 
                     const SizedBox(height: 10),
 
-                    TextFormField(
-                      enabled: false,
-                      initialValue: controller.dataArglastDailyReport.value?["from_id_aya"].toString(),
-
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.format_list_numbered, color: Colors.teal),
-                        labelText:"من الاية",
-                        labelStyle: const TextStyle(color: Colors.teal),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      style: const TextStyle(fontSize: 18),
+                    ReadOnlyTextField(
+                      value: controller.dataArglastDailyReport.value?["from_id_aya"].toString(),
+                      label: "من الاية",
+                      icon: Icons.format_list_numbered,
                     ),
                   ],
                 ),
@@ -206,7 +179,7 @@ class SouraSelectorUpDate extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.teal.shade700,
+                        color: primaryGreen,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -214,9 +187,9 @@ class SouraSelectorUpDate extends StatelessWidget {
                       return DropdownButtonFormField<Map<String, dynamic>>(
                         decoration: InputDecoration(
                           prefixIcon:
-                          const Icon(Icons.play_arrow, color: Colors.teal),
+                           Icon(Icons.play_arrow, color: primaryGreen),
                           labelText: "الي سورة",
-                          labelStyle: TextStyle(color: Colors.teal),
+                          labelStyle: TextStyle(color: primaryGreen),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -264,10 +237,9 @@ class SouraSelectorUpDate extends StatelessWidget {
 
                       return DropdownButtonFormField<int>(
                         decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.format_list_numbered,
-                              color: Colors.teal),
+                          prefixIcon:  Icon(Icons.format_list_numbered, color: primaryGreen),
                           labelText: "الي الآية رقم",
-                          labelStyle: TextStyle(color: Colors.teal),
+                          labelStyle: TextStyle(color: primaryGreen),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -291,12 +263,4 @@ class SouraSelectorUpDate extends StatelessWidget {
 
   }
 }
-
-
-
-
-
-
-
-
 

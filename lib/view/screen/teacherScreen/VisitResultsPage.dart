@@ -3,7 +3,11 @@ import 'package:althfeth/api/apiFunction.dart';
 import 'package:althfeth/constants/color.dart';
 import 'package:althfeth/constants/inline_loading.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../../constants/function.dart';
 
 class VisitResultsPage extends StatelessWidget {
@@ -29,8 +33,13 @@ class VisitResultsPage extends StatelessWidget {
                 Icon(Icons.assignment_outlined, size: 80, color: Colors.grey),
                 SizedBox(height: 16),
                 Text(
-                  "لا توجد زيارات فنية",
+                  "لا توجد زيارات فنية بعد",
                   style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "سيتم عرض الزيارات الفنية هنا",
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
                 ),
               ],
             ),
@@ -177,7 +186,7 @@ class VisitResultsController extends GetxController {
       immediateLoading: true,
       action: () async {
         return await postData(Linkapi.select_previous_visits, {
-          "id_user": dataArg["id_user"],
+          "id_circle": dataArg["id_circle"],
         });
       },
     );
@@ -190,7 +199,12 @@ class VisitResultsController extends GetxController {
     }
 
     if (res["stat"] == "ok") {
-      visits.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      // تصفية الزيارات الفنية فقط (id_visit_type == 1)
+      final allVisits = List<Map<String, dynamic>>.from(res["data"]);
+      final technicalVisits = allVisits.where((visit) => 
+        visit["id_visit_type"] == 1 || visit["id_visit_type"] == "1"
+      ).toList();
+      visits.assignAll(technicalVisits);
     }
   }
 
@@ -211,6 +225,15 @@ class VisitResultsDetailsPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text("نتائج الطلاب"),
         backgroundColor: primaryGreen,
+        actions: [
+          Obx(() => controller.results.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.picture_as_pdf),
+                  tooltip: "طباعة التقرير",
+                  onPressed: () => controller.generatePDF(),
+                )
+              : const SizedBox()),
+        ],
       ),
       body: Obx(() {
         if (controller.loadingResults.value) {
@@ -477,17 +500,262 @@ class VisitResultsDetailsController extends GetxController {
       },
     );
 
-    if (res == null) return;
-
-    if (res is! Map) {
+    if (res == null) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
       return;
     }
 
-    if (res["stat"] == "ok") {
-      results.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-    } else if (res["stat"] == "no") {
-      mySnackbar("تنبيه", res["msg"] ?? "لا توجد نتائج");
+    if (res is! Map) {
+      mySnackbar("خطأ", "استجابة غير صحيحة من الخادم");
+      return;
     }
+    
+    if (res["stat"] == "ok") {
+      if (res["data"] != null && res["data"] is List) {
+        results.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      }
+    } else if (res["stat"] == "no") {
+      mySnackbar("تنبيه", res["msg"] ?? "لا توجد نتائج لهذه الزيارة");
+    } else if (res["stat"] == "error") {
+      mySnackbar("خطأ", res["msg"] ?? "حدث خطأ أثناء جلب البيانات");
+    }
+  }
+
+  Future<void> generatePDF() async {
+    try {
+      final pdf = pw.Document();
+      final visitInfo = dataArg["visit_info"];
+
+      // تحميل خط عربي محلي
+      final fontData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
+      final arabicFont = pw.Font.ttf(fontData);
+      final arabicBoldFont = pw.Font.ttf(fontData);
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          textDirection: pw.TextDirection.rtl,
+          theme: pw.ThemeData.withFont(
+            base: arabicFont,
+            bold: arabicBoldFont,
+          ),
+          build: (context) {
+            return [
+              // Header
+              pw.Container(
+                padding: const pw.EdgeInsets.all(20),
+                decoration: pw.BoxDecoration(
+                  color: PdfColor.fromHex('#008080'),
+                  borderRadius: pw.BorderRadius.circular(10),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'تقرير نتائج الطلاب',
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white,
+                      ),
+                    ),
+                    pw.SizedBox(height: 10),
+                    pw.Text(
+                      '${visitInfo["name_visit_type"]} - ${visitInfo["name_circle"]}',
+                      style: const pw.TextStyle(fontSize: 16, color: PdfColors.white),
+                    ),
+                    pw.Text(
+                      '${visitInfo["name_year"]} - ${visitInfo["month_name"]}',
+                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 20),
+
+              // Students Results
+              ...results.map((result) {
+                final hasMonthly = result["from_id_soura_monthly"] != null;
+                final hasRevision = result["from_id_soura_revision"] != null;
+
+                return pw.Container(
+                  margin: const pw.EdgeInsets.only(bottom: 15),
+                  padding: const pw.EdgeInsets.all(15),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey300),
+                    borderRadius: pw.BorderRadius.circular(8),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      // Student Name
+                      pw.Container(
+                        padding: const pw.EdgeInsets.all(8),
+                        decoration: pw.BoxDecoration(
+                          color: PdfColor.fromHex('#008080'),
+                          borderRadius: pw.BorderRadius.circular(5),
+                        ),
+                        child: pw.Text(
+                          result["name_student"],
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white,
+                          ),
+                        ),
+                      ),
+                      pw.SizedBox(height: 10),
+
+                      // Monthly Test
+                      if (hasMonthly) ...[
+                        pw.Text(
+                          'الاختبار الشهري',
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColor.fromHex('#0066CC'),
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        _buildPdfTestRow(
+                          'الحفظ',
+                          result["from_soura_monthly_name"],
+                          result["to_soura_monthly_name"],
+                          result["from_id_aya_monthly"],
+                          result["to_id_aya_monthly"],
+                          result["hifz_monthly"],
+                        ),
+                        pw.SizedBox(height: 3),
+                        _buildPdfTestRow(
+                          'التلاوة',
+                          result["from_soura_monthly_name"],
+                          result["to_soura_monthly_name"],
+                          result["from_id_aya_monthly"],
+                          result["to_id_aya_monthly"],
+                          result["tilawa_monthly"],
+                        ),
+                        pw.SizedBox(height: 10),
+                      ],
+
+                      // Revision Test
+                      if (hasRevision) ...[
+                        pw.Text(
+                          'المراجعة',
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColor.fromHex('#FF8800'),
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        _buildPdfTestRow(
+                          'الحفظ',
+                          result["from_soura_revision_name"],
+                          result["to_soura_revision_name"],
+                          result["from_id_aya_revision"],
+                          result["to_id_aya_revision"],
+                          result["hifz_revision"],
+                        ),
+                        pw.SizedBox(height: 3),
+                        _buildPdfTestRow(
+                          'التلاوة',
+                          result["from_soura_revision_name"],
+                          result["to_soura_revision_name"],
+                          result["from_id_aya_revision"],
+                          result["to_id_aya_revision"],
+                          result["tilawa_revision"],
+                        ),
+                      ],
+
+                      if (!hasMonthly && !hasRevision)
+                        pw.Text(
+                          'لم يتم اختبار الطالب',
+                          style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+                        ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ];
+          },
+        ),
+      );
+
+      // Print or Share PDF
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+        name: 'تقرير_نتائج_${visitInfo["name_circle"]}_${visitInfo["month_name"]}.pdf',
+      );
+    } catch (e) {
+      mySnackbar("خطأ", "حدث خطأ أثناء إنشاء التقرير: $e");
+    }
+  }
+
+  pw.Widget _buildPdfTestRow(
+    String type,
+    String? fromSoura,
+    String? toSoura,
+    dynamic fromAya,
+    dynamic toAya,
+    dynamic mark,
+  ) {
+    if (fromSoura == null) return pw.SizedBox();
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(8),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey100,
+        borderRadius: pw.BorderRadius.circular(5),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  '$type:',
+                  style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.SizedBox(height: 3),
+                pw.Text(
+                  'من: $fromSoura ${fromAya != null ? '($fromAya)' : ''}',
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
+                pw.Text(
+                  'إلى: $toSoura ${toAya != null ? '($toAya)' : ''}',
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+          if (mark != null)
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: pw.BoxDecoration(
+                color: _getPdfMarkColor(mark),
+                borderRadius: pw.BorderRadius.circular(5),
+              ),
+              child: pw.Text(
+                '$mark',
+                style: pw.TextStyle(
+                  fontSize: 14,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  PdfColor _getPdfMarkColor(dynamic mark) {
+    if (mark == null) return PdfColors.grey;
+    final score = double.tryParse(mark.toString()) ?? 0;
+    if (score >= 80) return PdfColors.green;
+    if (score >= 60) return PdfColors.orange;
+    return PdfColors.red;
   }
 }

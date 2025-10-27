@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import '../../api/LinkApi.dart';
 import '../../api/apiFunction.dart';
 import '../../constants/function.dart';
-import '../../constants/loadingWidget.dart';
 import '../../constants/myreport.dart';
 
 
@@ -22,53 +21,82 @@ class StudentPageController extends GetxController{
   List<Map<String,dynamic>> absences=<Map<String,dynamic>>[];
 
   Future select_daily_report() async {
-
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.select_daily_report, {"id_student": student["id_student"]});
-    hideLoading();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري جلب تقرير التسميع...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_daily_report, {"id_student": student["id_student"]});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       daily_report.assignAll(List<Map<String, dynamic>>.from(res["daily_report"]));
-
       await showDaily_report();
-
     } else if (res["stat"] == "no") {
-      mySnackbar("تنبيه", "لايوجد سجلات سابقة للطالب");
+      String errorMsg = res["msg"] ?? "لا يوجد سجلات سابقة للطالب";
+      mySnackbar("تنبيه", errorMsg);
     } else {
-      mySnackbar("تنبيه", "حصل خطأ تحقق من الاتصال ");
+      String errorMsg = res["msg"] ?? "حصل خطأ في جلب التقرير";
+      mySnackbar("خطأ", errorMsg);
     }
 
   }
   Future select_review_report() async {
-
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.select_review_report, {"id_student": student["id_student"]});
-    hideLoading();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري جلب تقرير المراجعة...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_review_report, {"id_student": student["id_student"]});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       review_report.assignAll(List<Map<String, dynamic>>.from(res["reviews"]));
       await showReview_report();
-
     } else if (res["stat"] == "no") {
-      mySnackbar("تنبيه", "لايوجد سجلات سابقة للطالب");
+      String errorMsg = res["msg"] ?? "لا يوجد سجلات سابقة للطالب";
+      mySnackbar("تنبيه", errorMsg);
     } else {
-      mySnackbar("تنبيه", "حصل خطأ تحقق من الاتصال ");
+      String errorMsg = res["msg"] ?? "حصل خطأ في جلب التقرير";
+      mySnackbar("خطأ", errorMsg);
     }
   }
   Future select_absence_report() async {
-
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.select_absence_report, {"id_student": student["id_student"]});
-    hideLoading();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري جلب تقرير الغياب...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_absence_report, {"id_student": student["id_student"]});
+      },
+    );
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       absences.assignAll(List<Map<String, dynamic>>.from(res["attendance"]));
       await showAbsencesReport();
-
     } else if (res["stat"] == "no") {
-      mySnackbar("تنبيه", "لايوجد غيابات للطالب");
+      String errorMsg = res["msg"] ?? "لا يوجد غيابات للطالب";
+      mySnackbar("تنبيه", errorMsg);
     } else {
-      mySnackbar("تنبيه", "حصل خطأ تحقق من الاتصال ");
+      String errorMsg = res["msg"] ?? "حصل خطأ في جلب التقرير";
+      mySnackbar("خطأ", errorMsg);
     }
   }
 

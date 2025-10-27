@@ -4,21 +4,18 @@ import 'package:get/get.dart';
 import '../../api/LinkApi.dart';
 import '../../api/apiFunction.dart';
 import '../../constants/function.dart';
-import '../../constants/loadingWidget.dart';
-
 
 class Update_ReviewController extends GetxController{
-
-
 
   @override
   void onInit() {
     dataArg_Student=Get.arguments["student"];
     dataLastReview=Get.arguments["dataLastReview"];
 
-    print("dataLastReview.value=========${dataLastReview.value}");
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // استدعاء منفصل للطلبين - يعملان بشكل متوازي
       select_fromId_soura_with_to_soura();
+      select_evaluations();
       markController.text=dataLastReview.value?["mark"].toString() ?? "0";
     },);
   }
@@ -26,15 +23,35 @@ class Update_ReviewController extends GetxController{
   var dataLastReview = Rxn<Map<String, dynamic>>();
   TextEditingController markController=TextEditingController();
 
-  RxList<Map<String,dynamic>> dataEvaluations=<Map<String,dynamic>>[].obs;
-  RxnInt selectedEvaluations=RxnInt(null);
-  Future select_evaluations()async {
-    var res = await postData(Linkapi.select_evaluations, {});
-    dataEvaluations.assignAll(RxList<Map<String, dynamic>>.from(checkApi(res)));
-    selectedEvaluations.value = (dataEvaluations.firstWhere((e) =>
-    e["id_evaluation"] == dataLastReview.value?["id_evaluation"],
-      orElse: () => {},
-    )["id_evaluation"]);
+  RxList<Map<String, dynamic>> dataEvaluations = <Map<String, dynamic>>[].obs;
+  RxnInt selectedEvaluations = RxnInt(null);
+
+  Future select_evaluations() async {
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      useDialog: false,
+      // loadingMessage: "جاري تحميل التقييمات...",
+      action: () async {
+        return await postData(Linkapi.select_evaluations, {});
+      },
+    );
+
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
+    if (res["stat"] == "ok") {
+      dataEvaluations.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      selectedEvaluations.value = (dataEvaluations.firstWhere(
+        (e) => e["id_evaluation"] == dataLastReview.value?["id_evaluation"],
+        orElse: () => {},
+      )["id_evaluation"]);
+    } else {
+      String errorMsg = res["msg"] ?? "خطأ في جلب التقييمات";
+      mySnackbar("خطأ", errorMsg);
+    }
   }
 
 
@@ -42,23 +59,39 @@ class Update_ReviewController extends GetxController{
   var toSoura = Rxn<Map<String, dynamic>>();
 
   var datasoura = <Map<String, dynamic>>[].obs;
+
   Future select_fromId_soura_with_to_soura() async {
-
-    showLoading();
-    await del();
-    await select_evaluations();
-    var response = await postData(Linkapi.select_fromId_soura_with_to_soura, {
-      "id_level":dataArg_Student["id_level"],
-      "id_soura":dataLastReview.value!["from_id_soura"],
-    });
-    hideLoading();
-    datasoura.assignAll(List<Map<String, dynamic>>.from(checkApi(response)));
-    toSoura.value = datasoura.firstWhere(
-          (soura) => soura["id_soura"].toString() == dataLastReview.value?["to_id_soura"].toString(),
-      orElse: () => {},
+    final response = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري تحميل سور القرآن...",
+      action: () async {
+        return await postData(Linkapi.select_fromId_soura_with_to_soura, {
+          "id_level": dataArg_Student["id_level"],
+          "id_soura": dataLastReview.value!["from_id_soura"],
+        });
+      },
     );
-    to_id_aya.value = int.tryParse(dataLastReview.value?["to_id_aya"].toString() ?? "");
 
+    if (response == null) return;
+    if (response is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
+    if (response["stat"] == "ok") {
+      datasoura.assignAll(List<Map<String, dynamic>>.from(response["data"]));
+      toSoura.value = datasoura.firstWhere(
+        (soura) => soura["id_soura"].toString() == dataLastReview.value?["to_id_soura"].toString(),
+        orElse: () => {},
+      );
+      to_id_aya.value = int.tryParse(dataLastReview.value?["to_id_aya"].toString() ?? "");
+    } else if (response["stat"] == "no") {
+      String errorMsg = response["msg"] ?? "لا يوجد سور";
+      mySnackbar("تنبيه", errorMsg);
+    } else {
+      String errorMsg = response["msg"] ?? "خطأ في جلب السور";
+      mySnackbar("خطأ", errorMsg);
+    }
   }
 
 
@@ -86,30 +119,38 @@ class Update_ReviewController extends GetxController{
       "to_id_soura": toSoura.value!["id_soura"],
       "to_id_aya": to_id_aya.value,
       "mark": markController.text,
-      "id_evaluation":selectedEvaluations.value,
-
+      "id_evaluation": selectedEvaluations.value,
     };
 
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.updateReview, data);
-    hideLoading();
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري حفظ التعديلات...",
+      defaultErrorTitle: "لم يتم حفظ التعديلات",
+      action: () async {
+        await del();
+        return await postData(Linkapi.updateReview, data);
+      },
+    );
+
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
 
     if (res["stat"] == "ok") {
-      // 🔹 في حال كانت القيم نفسها (بدون تعديل فعلي)
+      // 🔹 لو كانت نفس القيم القديمة
       if (res["msg"] == "no_changes") {
         Get.back();
-        mySnackbar("تم التعديل", "لم يحدث أي تغيير، البيانات كما هي", type: "i");
+        mySnackbar("تنبيه", "لم يحدث أي تغيير، البيانات كما هي", type: "y");
       } else {
-        // 🔹 تعديل فعلي حصل
+        // 🔹 تم التعديل فعليًا
         Get.back();
-        mySnackbar("تم التعديل", "تم التعديل بنجاح", type: "g");
+        mySnackbar("نجاح", "تم التعديل بنجاح", type: "g");
       }
     } else {
-      mySnackbar("تنبيه", "حصل خطأ أثناء التعديل، حاول مرة أخرى");
+      String errorMsg = res["msg"] ?? "حصل خطأ أثناء التعديل";
+      mySnackbar("خطأ", errorMsg);
     }
   }
-
-
-
 }

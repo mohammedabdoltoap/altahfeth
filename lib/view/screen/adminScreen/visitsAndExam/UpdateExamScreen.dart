@@ -223,9 +223,14 @@ class UpdateExamController extends GetxController {
   }
 
   Future fetchSourData() async {
-    var res = await postData(Linkapi.select_sour_quran, {});
-    if (res["stat"] == "ok") {
-      datasoura.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+    try {
+      var res = await postData(Linkapi.select_sour_quran, {});
+      if (res != null && res is Map && res["stat"] == "ok") {
+        datasoura.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      }
+    } catch (e, stackTrace) {
+      print("Error in fetchSourData: $e");
+      print(stackTrace);
     }
   }
 

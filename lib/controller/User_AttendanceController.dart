@@ -35,19 +35,31 @@ class User_AttendanceController extends GetxController {
 
   Future select_users_attendance_today() async {
     DateTime today = DateTime.now();
-    String formattedDate =
-        "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+    String formattedDate = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
-    lodingUsersAttendanceToday.value=true;
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.select_users_attendance_today, {
-      "id_user": dataArg["id_user"],
-      "attendance_date": formattedDate,
-      "id_circle": dataArg["id_circle"]
-    });
-    lodingUsersAttendanceToday.value=false;
-    hideLoading();
+
+    var res = await handleRequest(
+      isLoading: lodingUsersAttendanceToday,
+      immediateLoading: false,
+      useDialog: false,
+
+      action: ()async {
+       await del();
+      return await postData(Linkapi.select_users_attendance_today, {
+        "id_user": dataArg["id_user"],
+        "attendance_date": formattedDate,
+        "id_circle": dataArg["id_circle"]
+      });
+    },) ;
+
+    if(res==null)return;
+
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
+
 
     if (res["stat"] == "No_record_today") {
       data_attendance_today.clear();
@@ -60,41 +72,95 @@ class User_AttendanceController extends GetxController {
     }
   }
 
+  RxBool add_check_in=false.obs;
+
   /// 🔹 تسجيل الحضور
   Future add_check_in_time_usersAttendance() async {
-    showLoading();
-    var res = await postData(Linkapi.add_check_in_time_usersAttendance, {
+
+    var res = await handleRequest(
+      isLoading: add_check_in,
+      useDialog: false,
+      action: ()async {
+       await del();
+      return   await postData(Linkapi.add_check_in_time_usersAttendance, {
       "id_user": dataArg["id_user"],
       "id_circle": dataArg["id_circle"],
     });
-    hideLoading();
+    },) ;
 
+    if(res==null)return;
+
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       Get.back();
       mySnackbar("تم بنجاح", "تم تسجيل الحضور ✅", type: "g");
-
-
     } else {
       mySnackbar("فشل", "حدث خطأ أثناء تسجيل الحضور");
     }
   }
 
+  RxBool add_check_out=false.obs;
   /// 🔹 تسجيل الانصراف
   Future add_check_out_time_usersAttendance() async {
     String currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
 
-    showLoading();
-    var res = await postData(Linkapi.add_check_out_time_usersAttendance, {
+    var res = await handleRequest(
+      isLoading: add_check_out,
+      useDialog: false,
+
+      action: ()async {
+       await del();
+      return await postData(Linkapi.add_check_out_time_usersAttendance, {
       "id": data_attendance_today["id"],
       "check_out_time": currentTime,
     });
-    hideLoading();
+    },) ;
+    if(res==null)return;
 
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
     if (res["stat"] == "ok") {
       Get.back();
       mySnackbar("تم بنجاح", "تم تسجيل الانصراف ✅", type: "g");
     } else {
       mySnackbar("فشل", "حدث خطأ أثناء تسجيل الانصراف");
+    }
+  }
+
+  RxBool addingSubstitute = false.obs;
+
+  /// 🔹 تسجيل التغطية (بدون تحديد من يغطي)
+  Future addSubstituteAttendance() async {
+    var res = await handleRequest(
+      isLoading: addingSubstitute,
+      useDialog: false,
+      action: () async {
+        await del();
+        return await postData(Linkapi.add_substitute_attendance, {
+          "id_user": dataArg["id_user"],
+          "id_circle": dataArg["id_circle"],
+        });
+      },
+    );
+
+    if (res == null) return;
+    print(res);
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+
+    if (res["stat"] == "ok") {
+      Get.back();
+      mySnackbar("تم بنجاح", "تم تسجيل التغطية ✅", type: "g");
+      select_users_attendance_today();
+    } else {
+      mySnackbar("فشل", "حدث خطأ أثناء تسجيل التغطية");
     }
   }
 }

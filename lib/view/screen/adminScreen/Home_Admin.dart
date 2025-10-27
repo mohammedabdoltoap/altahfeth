@@ -1,18 +1,71 @@
+import 'package:althfeth/constants/color.dart';
 import 'package:althfeth/view/screen/adminScreen/visitsAndExam/add%20_Visit.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'AdminReportsPage.dart';
+import 'ResignationRequestPage.dart';
+import '../login.dart';
+import '../../../constants/function.dart';
+import '../../../globals.dart';
 
 class Home_Admin extends StatelessWidget {
   Home_AdminController controller =Get.put(Home_AdminController());
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الصفحة الرئيسية'),
+        title: Column(
+          children: [
+            const Text(
+              'الصفحة الرئيسية - مدير المركز',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              "مرحباً ${controller.data_user?["username"] ?? ""}",
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
         centerTitle: true,
-        backgroundColor: Colors.teal,
+        toolbarHeight: 88,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'resignation':
+                  _showResignationRequest();
+                  break;
+                case 'logout':
+                  _showLogoutDialog();
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'resignation',
+                child: Row(
+                  children: [
+                    Icon(Icons.assignment, size: 20),
+                    SizedBox(width: 8),
+                    Text('طلب استقالة'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, size: 20, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('تسجيل الخروج', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -24,7 +77,7 @@ class Home_Admin extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               elevation: 8,
-              color: Colors.teal[400],
+              color: kPrimaryColor,
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
                 onTap: () {
@@ -65,7 +118,7 @@ class Home_Admin extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
                 onTap: () {
-                  print("التقارير");
+                  Get.to(() => AdminReportsPage(), arguments: controller.data_user);
                 },
                 child: Container(
                   width: double.infinity,
@@ -93,6 +146,59 @@ class Home_Admin extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showResignationRequest() {
+    Get.to(() => ResignationRequestPage(), arguments: controller.data_user);
+  }
+
+  void _showLogoutDialog() {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.logout, color: Colors.red),
+            SizedBox(width: 8),
+            Text("تسجيل الخروج"),
+          ],
+        ),
+        content: const Text(
+          "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("إلغاء"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Get.back();
+              _logout();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("تسجيل الخروج"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _logout() {
+    // مسح البيانات المحفوظة
+    data_user_globle.clear();
+    
+    // العودة لصفحة تسجيل الدخول
+    Get.offAll(() => Login());
+    
+    // عرض رسالة تأكيد
+    mySnackbar("تم بنجاح", "تم تسجيل الخروج بنجاح", type: "g");
   }
 }
 

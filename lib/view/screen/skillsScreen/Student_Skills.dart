@@ -2,141 +2,204 @@ import 'package:althfeth/api/LinkApi.dart';
 import 'package:althfeth/api/apiFunction.dart';
 import 'package:althfeth/constants/CustomDropdownField.dart';
 import 'package:althfeth/constants/customTextField.dart';
-import 'package:althfeth/constants/loadingWidget.dart';
+import 'package:althfeth/constants/appButton.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../constants/function.dart';
+import '../../../constants/loadingWidget.dart';
 
 class Student_Skills extends StatelessWidget {
   final Student_SkillsController controller = Get.put(Student_SkillsController());
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "مهارات الطالب",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-        ),
-        backgroundColor: Colors.teal.shade600,
+        title: const Text("مهارات الطالب"),
         centerTitle: true,
+        toolbarHeight: 88,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Obx(() => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "أضف مهارة جديدة للطالب:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-
-            CustomDropdownField(
-              label: "اختر المهارة",
-              items: controller.availableSkills,
-              value: controller.selectedIdSkile.value,
-              onChanged: (val) => controller.selectedIdSkile.value = val,
-              valueKey: "id_skill",
-              displayKey: "name_skill",
-            ),
-
-            const SizedBox(height: 10),
-
-            CustomTextField(controller: controller.evalController, label: "أدخل تقييم المهارة", hint: "(من 0 إلى 100)",
-            keyboardType: TextInputType.number,
-            ),
-
-            const SizedBox(height: 10),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: controller.selectedIdSkile.value == null
-                    ? null
-                    : ()async {
-                  await controller.addSkillToStudent();
-
-                  },
-                icon: const Icon(Icons.add),
-                label: const Text(
-                  "إضافة المهارة",
-                  style: TextStyle(fontSize: 16),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal.shade600,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      resizeToAvoidBottomInset: true,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Obx(() => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                // قسم إضافة المهارة داخل Card
+                Card(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            child: Icon(Icons.stars, color: theme.colorScheme.onPrimaryContainer),
+                          ),
+                          title: Text(
+                            "أضف مهارة جديدة للطالب",
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Obx(() {
+                          // مراقبة التغييرات في القوائم
+                          controller.skills.length;
+                          controller.skills_Sudent.length;
+                          final items = controller.availableSkills.toList();
+                          return CustomDropdownField(
+                            label: "اختر المهارة",
+                            items: items,
+                            value: controller.selectedIdSkile.value,
+                            onChanged: (val) => controller.selectedIdSkile.value = val,
+                            valueKey: "id_skill",
+                            displayKey: "name_skill",
+                          );
+                        }),
+                        const SizedBox(height: 10),
+                        CustomTextField(
+                          controller: controller.evalController,
+                          label: "أدخل تقييم المهارة",
+                          hint: "(من 0 إلى 100)",
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: Obx(() => AppButton(
+                                text: "إضافة المهارة",
+                                icon: Icons.add,
+                                isLoading: controller.isAdding.value,
+                                onPressed: (controller.selectedIdSkile.value == null || controller.isAdding.value)
+                                    ? null
+                                    : () async {
+                                        await controller.addSkillToStudent();
+                                      },
+                                height: 48,
+                                color: theme.colorScheme.primary,
+                                foregroundColor: theme.colorScheme.onPrimary,
+                              )),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 20),
-            const Divider(thickness: 1),
-            const SizedBox(height: 10),
+                const SizedBox(height: 16),
 
-            const Text(
-              "مهارات الطالب الحالية:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-
-            Expanded(
-              child: controller.skills_Sudent.isEmpty
-                  ? Center(
-                child: Text(
-                  "لا توجد مهارات مضافة بعد",
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                // عنوان قسم المهارات الحالية
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: theme.colorScheme.secondaryContainer,
+                    child: Icon(Icons.list_alt, color: theme.colorScheme.onSecondaryContainer),
+                  ),
+                  title: Text(
+                    "مهارات الطالب الحالية",
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
                 ),
-              )
-                  : ListView.separated(
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemCount: controller.skills_Sudent.length,
-                itemBuilder: (context, index) {
-                  final element = controller.skills_Sudent[index];
-                  return Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 3,
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Colors.teal.shade600,
-                        child: Text(
-                          element["name_skill"][0],
-                          style: const TextStyle(color: Colors.white),
+                const SizedBox(height: 8),
+
+                controller.skills_Sudent.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.school_outlined, size: 56, color: Colors.grey.shade500),
+                              const SizedBox(height: 8),
+                              Text(
+                                "لا توجد مهارات مضافة بعد",
+                                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      title: Text(
-                        element["name_skill"],
-                        style: const TextStyle(
-                            fontSize: 17, fontWeight: FontWeight.w600),
-                      ),
-                      subtitle: Text(
-                        "التقييم: ${element["avaluation"] ?? "غير محدد"}",
-                        style: const TextStyle(color: Colors.black54),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                            onPressed: () => controller.updateSkill(element),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.redAccent),
-                            onPressed: () => controller.deleteSkill(element),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        )),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemCount: controller.skills_Sudent.length,
+                        itemBuilder: (context, index) {
+                            final element = controller.skills_Sudent[index];
+                            final int? score = int.tryParse("${element["avaluation"]}");
+                            final bool hasScore = score != null;
+                            final Color chipBg = hasScore
+                                ? (score! >= 80
+                                    ? theme.colorScheme.primaryContainer
+                                    : score >= 50
+                                        ? theme.colorScheme.tertiaryContainer
+                                        : theme.colorScheme.errorContainer)
+                                : theme.colorScheme.surfaceVariant;
+                            final Color chipFg = hasScore
+                                ? (score >= 80
+                                    ? theme.colorScheme.onPrimaryContainer
+                                    : score >= 50
+                                        ? theme.colorScheme.onTertiaryContainer
+                                        : theme.colorScheme.onErrorContainer)
+                                : theme.colorScheme.onSurfaceVariant;
+
+                            return Card(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 2,
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: theme.colorScheme.primary,
+                                  child: Text(
+                                    element["name_skill"][0],
+                                    style: TextStyle(color: theme.colorScheme.onPrimary),
+                                  ),
+                                ),
+                                title: Text(
+                                  element["name_skill"],
+                                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: hasScore
+                                    ? Padding(
+                                        padding: const EdgeInsets.only(top: 6.0),
+                                        child: Wrap(
+                                          spacing: 6,
+                                          children: [
+                                            Chip(
+                                              label: Text("التقييم: ${score}"),
+                                              backgroundColor: chipBg,
+                                              labelStyle: TextStyle(color: chipFg),
+                                              visualDensity: VisualDensity.compact,
+                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : Text("التقييم: غير محدد", style: const TextStyle(color: Colors.black54)),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit, color: theme.colorScheme.primary),
+                                      onPressed: () => controller.updateSkill(element),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete, color: theme.colorScheme.error),
+                                      onPressed: () => controller.deleteSkill(element),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+              ],
+            )),
+        ),
       ),
     );
   }
@@ -148,6 +211,7 @@ class Student_SkillsController extends GetxController {
   RxList<Map<String, dynamic>> skills = <Map<String, dynamic>>[].obs;
   RxnInt selectedIdSkile = RxnInt(null);
   TextEditingController evalController = TextEditingController();
+  RxBool isAdding = false.obs;
 
   RxList<Map<String, dynamic>> get availableSkills {
     final ownedIds = skills_Sudent.map((s) => s["id_skill"]).toSet();
@@ -160,27 +224,46 @@ class Student_SkillsController extends GetxController {
     super.onInit();
     data = Get.arguments;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await select_student_skill();
+       select_student_skill();
+        select_skill();
+
     });
   }
 
-  Future select_student_skill() async {
-    showLoading();
-    await del();
-    var res = await postData(Linkapi.select_student_skill, {"id_student": data["id_student"]});
-    await select_skill();
-    hideLoading();
+  @override
+  void onClose() {
+    // إغلاق أي لودينج متبقّي عند مغادرة الصفحة
+    isAdding.value = false;
+    super.onClose();
+  }
 
+  Future select_student_skill() async {
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري تحميل مهارات الطالب...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_student_skill, {"id_student": data["id_student"]});
+      },
+    );
     if (res["stat"] == "ok") {
       skills_Sudent.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-      print("skills_Sudent==${skills_Sudent}");
     } else if (res["stat"] == "error") {
       mySnackbar("تنبيه", res["msg"]);
     }
   }
 
   Future select_skill() async {
-    var res = await postData(Linkapi.select_skill, {});
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري تحميل قائمة المهارات...",
+      useDialog: false,
+      immediateLoading: false,
+      action: () async {
+        return await postData(Linkapi.select_skill, {});
+      },
+    );
     if (res["stat"] == "ok") {
       skills.assignAll(List<Map<String, dynamic>>.from(res["data"]));
     } else if (res["stat"] == "error") {
@@ -212,11 +295,15 @@ class Student_SkillsController extends GetxController {
       "id_skill":selectedIdSkile.value,
       "avaluation":evalValue,
     };
-    print("data===${data2}");
-    showLoading();
-    await del();
-    var res=await postData(Linkapi.insert_student_skills, data2);
-    hideLoading();
+    final res = await handleRequest<dynamic>(
+      isLoading: isAdding,
+      loadingMessage: "جاري إضافة المهارة...",
+      useDialog: false,
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.insert_student_skills, data2);
+      },
+    );
 
     int idLast;
     if(res["stat"]=="ok") {
@@ -304,13 +391,15 @@ class Student_SkillsController extends GetxController {
             mySnackbar("تنبيه", "الرجاء إدخال تقييم صحيح بين 0 و 100");
             return;
           }
-          showLoading();
-          try {
-            var res = await postData(Linkapi.update_student_skill, {
-              "id": skill["id"],
-              "avaluation": val, // استخدام القيمة الجديدة
-            });
-            hideLoading();
+          final res = await handleRequest<dynamic>(
+            isLoading: RxBool(false),
+            loadingMessage: "جاري حفظ التعديل...",
+            useDialog: true,
+            immediateLoading: true,
+            action: () async {
+              return await postData(Linkapi.update_student_skill, {"id": skill["id"], "avaluation": val});
+            },
+          );
 
             if (res["stat"] == "ok") {
               skill["avaluation"] = val; // تحديث القيمة محليًا
@@ -322,10 +411,6 @@ class Student_SkillsController extends GetxController {
             } else if (res["stat"] == "error") {
               mySnackbar("خطأ", "${res["msg"]}");
             }
-          } catch (e) {
-            hideLoading();
-            mySnackbar("خطأ", "حدث خطأ غير متوقع: $e");
-          }
         },
         style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
         child: const Text("حفظ"),
@@ -345,14 +430,16 @@ class Student_SkillsController extends GetxController {
       middleText: "هل تريد حذف هذه المهارة من الطالب؟",
       confirm: ElevatedButton(
         onPressed: () async {
-          Get.back(); // أغلق الديالوج أولًا
-          showLoading(); // عرض شاشة التحميل
-          try {
-            var res = await postData(Linkapi.delet_student_skills, {
-              "id": skill["id"],
-            });
-
-            hideLoading(); // إخفاء شاشة التحميل
+          Get.back();
+          final res = await handleRequest<dynamic>(
+            isLoading: RxBool(false),
+            loadingMessage: "جاري حذف المهارة...",
+            useDialog: true,
+            immediateLoading: true,
+            action: () async {
+              return await postData(Linkapi.delet_student_skills, {"id": skill["id"]});
+            },
+          );
 
             if (res["stat"] == "ok") {
               skills_Sudent.remove(skill);
@@ -362,10 +449,6 @@ class Student_SkillsController extends GetxController {
             } else {
               mySnackbar("خطأ", "حدث خطأ، تحقق من الاتصال بالإنترنت");
             }
-          } catch (e) {
-            hideLoading();
-            mySnackbar("خطأ", "حدث خطأ غير متوقع: $e");
-          }
         },
         style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
         child: const Text("نعم"),
