@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../../constants/ErrorRetryWidget.dart';
 import '../../../constants/function.dart';
 
 class VisitResultsPage extends StatelessWidget {
@@ -26,7 +27,10 @@ class VisitResultsPage extends StatelessWidget {
         }
 
         if (controller.visits.isEmpty) {
-          return Center(
+
+
+          if(controller.noHasData.value)
+          return  Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: const [
@@ -44,6 +48,12 @@ class VisitResultsPage extends StatelessWidget {
               ],
             ),
           );
+
+          return ErrorRetryWidget(
+            onRetry: () => controller.loadVisits(),
+          );
+
+
         }
 
         return ListView.builder(
@@ -171,6 +181,7 @@ class VisitResultsController extends GetxController {
   var dataArg;
   RxList<Map<String, dynamic>> visits = <Map<String, dynamic>>[].obs;
   RxBool loadingVisits = false.obs;
+  RxBool noHasData = false.obs;
 
   @override
   void onInit() {
@@ -205,6 +216,10 @@ class VisitResultsController extends GetxController {
         visit["id_visit_type"] == 1 || visit["id_visit_type"] == "1"
       ).toList();
       visits.assignAll(technicalVisits);
+    }
+    else if(res["stat"]=="no"){
+      visits.clear();
+      noHasData.value=true;
     }
   }
 

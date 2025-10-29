@@ -6,6 +6,7 @@ import '../../controller/show_CircleController.dart';
 import '../../globals.dart';
 import 'package:althfeth/constants/color.dart';
 import 'package:althfeth/constants/inline_loading.dart';
+import '../widget/common/promotional_footer.dart';
 
 class Show_Circle extends StatelessWidget {
   final Show_CircleController show_circleController = Get.put(Show_CircleController());
@@ -110,6 +111,9 @@ class Show_Circle extends StatelessWidget {
                 );
               }),
             ),
+
+            // البصمة الترويجية
+            const PromotionalFooter(),
           ],
         ),
       ),

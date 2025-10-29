@@ -16,10 +16,11 @@ class AddstudentController extends GetxController{
   void onInit() {
     dataArg=Get.arguments;
 
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async{
-    await  select_level();
+    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) async{
+      select_level();
       select_reders();
-    },);
+    select_qualification();
+    // },);
 
     // TODO: implement onInit
     super.onInit();
@@ -38,10 +39,10 @@ class AddstudentController extends GetxController{
     jop.clear();
     chronic_diseases.clear();
     password.clear();
-    selectedLevelId!.value = 0;
-    selectedStageId!.value = 0;
+    selectedLevelId?.value = 0;
+    selectedStageId?.value = 0;
     selectedReaderId?.value = 0;
-    qualification_selected.value = null;
+    qualification_selected?.value = 0;
     selectedGender.value = null;
     levels.clear();
   }
@@ -60,11 +61,11 @@ class AddstudentController extends GetxController{
    TextEditingController chronic_diseases=TextEditingController();
    TextEditingController password=TextEditingController();
    RxnString selectedGender=RxnString(null);
-   RxnString qualification_selected=RxnString(null);
+
+
    // RxnString reder_selected=RxnString(null);
 
   final List<String> genders = ['ذكر', 'أنثى'];
-  final List<String> qualification = ['اجازة', 'حفظ'];
 
   // RxBool isLoading_addStudent=false.obs;
   List<Map<String, dynamic>>dataStageAndLevel=[];
@@ -121,7 +122,7 @@ class AddstudentController extends GetxController{
        "status": 0,
        "id_circle": dataArg["id_circle"],
        "sex":selectedGender.value,
-       "qualification":qualification_selected.value,
+       "id_qualification":qualification_selected?.value,
        "chronic_diseases":chronic_diseases.text,
        "id_reder":selectedReaderId?.value,
        "password":password.text.trim(),
@@ -136,6 +137,7 @@ class AddstudentController extends GetxController{
         return await postData(Linkapi.insertStudents, dataBody);
       },
     );
+
     if (data == null) return;
     if (data is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
@@ -153,6 +155,8 @@ class AddstudentController extends GetxController{
   }
 
   RxBool isLodingLevel=false.obs;
+  RxBool hasLevelData=false.obs; // للتحقق من وجود بيانات (تبدأ false)
+  
   Future select_level()async {
     final response = await handleRequest<dynamic>(
       isLoading: isLodingLevel,
@@ -163,9 +167,16 @@ class AddstudentController extends GetxController{
         return await postData(Linkapi.select_levels, {});
       },
     );
-    if(response==null) return;
+    // var response=await postData(Linkapi.select_levels, {});
+    print("dataStageAndLevel====${dataStageAndLevel}    ===response${response}           ");
+
+    if(response==null) {
+      hasLevelData.value = false;
+      return;
+    }
     if (response is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      hasLevelData.value = false;
       return;
     }
     if(response["stat"]=="ok"){
@@ -176,10 +187,18 @@ class AddstudentController extends GetxController{
           .map((e) => {"id": e["id_stages"], "name": e["name_stages"]})
           .toList();
       stages.assignAll(uniqueStages);
+      hasLevelData.value = true;
+    }
+    else if(response["stat"]=="no"){
+      // لا توجد مراحل أو مستويات في النظام
+      mySnackbar("تنبيه", "لا توجد مراحل أو مستويات متاحة في النظام", type: "y");
+      hasLevelData.value = false;
+      stages.clear();
     }
     else{
       String errorMsg = response["msg"] ?? "تعذّر تحميل المراحل والمستويات";
       mySnackbar("خطأ", errorMsg);
+      hasLevelData.value = false;
     }
 
   }
@@ -197,6 +216,9 @@ class AddstudentController extends GetxController{
 
   RxInt? selectedReaderId = RxInt(0);
   RxList<Map<String, dynamic>> reder=<Map<String, dynamic>>[].obs;
+
+  RxBool hasReaderData=false.obs; // للتحقق من وجود قراء (تبدأ false)
+  RxBool hasQualificationData=false.obs; // للتحقق من وجود قراء (تبدأ false)
   Future select_reders()async {
     final response = await handleRequest<dynamic>(
       isLoading: RxBool(false),
@@ -207,20 +229,73 @@ class AddstudentController extends GetxController{
         return await postData(Linkapi.select_reders, {});
       },
     );
-    if(response==null) return;
+    if(response==null) {
+      hasReaderData.value = false;
+      return;
+    }
     if (response is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      hasReaderData.value = false;
       return;
     }
     if(response["stat"]=="ok"){
       reder.assignAll(RxList<Map<String, dynamic>>.from(response["data"]));
+      hasReaderData.value = true;
+    }
+    else if(response["stat"]=="no"){
+      // لا يوجد قراء في النظام
+      mySnackbar("تنبيه", "لا يوجد قرّاء متاحون في النظام", type: "y");
+      hasReaderData.value = false;
+      reder.clear();
     }
     else{
       String errorMsg = response["msg"] ?? "تعذّر تحميل قائمة القرّاء";
       mySnackbar("خطأ", errorMsg);
+      hasReaderData.value = false;
     }
 
   }
+
+
+  RxInt? qualification_selected = RxInt(0);
+  RxList<Map<String, dynamic>> qualification=<Map<String, dynamic>>[].obs;
+  Future select_qualification()async {
+    final response = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري تحميل الموهلات...",
+      useDialog: false,
+      immediateLoading: false,
+      action: () async {
+        return await postData(Linkapi.select_qualification, {});
+      },
+    );
+    if(response==null) {
+      hasQualificationData.value = false;
+      return;
+    }
+    if (response is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      hasQualificationData.value = false;
+      return;
+    }
+    if(response["stat"]=="ok"){
+      qualification.assignAll(RxList<Map<String, dynamic>>.from(response["data"]));
+      hasQualificationData.value = true;
+    }
+    else if(response["stat"]=="no"){
+      // لا يوجد قراء في النظام
+      mySnackbar("تنبيه", "لا يوجد قرّاء متاحون في النظام", type: "y");
+      hasQualificationData.value = false;
+      qualification.clear();
+    }
+    else{
+      String errorMsg = response["msg"] ?? "تعذّر تحميل الموهلات";
+      mySnackbar("خطأ", errorMsg);
+      hasQualificationData.value = false;
+    }
+
+  }
+
 
 }
 

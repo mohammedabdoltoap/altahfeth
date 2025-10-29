@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../constants/ErrorRetryWidget.dart';
 import '../../../controller/circlesController.dart';
 import '../../../constants/inline_loading.dart';
 import '../notesScreen/NotesListScreen.dart';
@@ -22,11 +23,13 @@ class CirclesListScreen extends StatelessWidget {
       ),
       body: Obx(() {
         if (circlesController.isLoading.value) {
-          return Center(child: InlineLoading());
+          return Center(child: InlineLoading(message: "جاري تحميل الحلقات .....",));
         }
 
         if (circlesController.circles.isEmpty) {
-          return Center(
+          if(circlesController.noHasStudent.value)
+
+            return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -58,6 +61,12 @@ class CirclesListScreen extends StatelessWidget {
               ],
             ),
           );
+
+          return ErrorRetryWidget(
+            onRetry: () => circlesController.fetchCircles(),
+          );
+
+
         }
 
         return RefreshIndicator(

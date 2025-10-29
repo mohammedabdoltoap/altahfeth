@@ -17,6 +17,7 @@ class Update_StudentController extends GetxController {
     dataArg = Get.arguments;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       select_reders();
+      select_qualification();
       shwoData();
     },);
 
@@ -41,7 +42,7 @@ class Update_StudentController extends GetxController {
     chronic_diseases.text=dataArg["chronic_diseases"];
     selectedGender.value= dataArg["sex"]=="ذكر"? "ذكر":"أنثى";
     selectedReaderId.value=dataArg["id_reder"];
-    qualification_selected.value=dataArg["qualification"]=="اجازة"?"اجازة":"حفظ";
+    qualification_selected.value=dataArg["id_qualification"];
   }
   // RxInt? selectedStageId = 0.obs;
   // RxInt? selectedLevelId = 0.obs;
@@ -58,11 +59,9 @@ class Update_StudentController extends GetxController {
   TextEditingController chronic_diseases = TextEditingController();
   TextEditingController password = TextEditingController();
   RxnString selectedGender = RxnString(null);
-  RxnString qualification_selected = RxnString(null);
 
 
   final List<String> genders = ['ذكر', 'أنثى'];
-  final List<String> qualification = ['اجازة', 'حفظ'];
 
   // RxBool isLoading_addStudent=false.obs;
 
@@ -122,7 +121,7 @@ class Update_StudentController extends GetxController {
       "guardian": guardian.text,
       "jop": jop.text,
       "sex": selectedGender.value,
-      "qualification": qualification_selected.value,
+      "id_qualification": qualification_selected.value,
       "chronic_diseases": chronic_diseases.text,
       "id_reder": selectedReaderId.value,
       "password": password.text.trim(),
@@ -157,31 +156,93 @@ class Update_StudentController extends GetxController {
   RxInt selectedReaderId = RxInt(0);
   RxList<Map<String, dynamic>> reder=<Map<String, dynamic>>[].obs;
   RxBool isLodeReder=false.obs;
+  RxBool hasReaderData=false.obs; // للتحقق من وجود قراء (تبدأ false)
+  
   Future select_reders()async {
     final response = await handleRequest<dynamic>(
       isLoading: isLodeReder,
       loadingMessage: "جاري تحميل القرّاء...",
       useDialog: false,
-      immediateLoading: false,
+      immediateLoading: true,
       action: () async {
         return await postData(Linkapi.select_reders, {});
       },
     );
-    if(response==null) return;
+    if(response==null) {
+      hasReaderData.value = false;
+      return;
+    }
     if (response is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      hasReaderData.value = false;
       return;
     }
     if(response["stat"]=="ok"){
       reder.assignAll(RxList<Map<String, dynamic>>.from(response["data"]));
+      hasReaderData.value = true;
+    }
+    else if(response["stat"]=="no"){
+      // لا يوجد قراء في النظام
+      mySnackbar("تنبيه", "لا يوجد قرّاء متاحون في النظام", type: "y");
+      hasReaderData.value = false;
+      reder.clear();
     }
     else{
       String errorMsg = response["msg"] ?? "تعذر تحميل قائمة القرّاء";
       mySnackbar("خطأ", errorMsg);
+      hasReaderData.value = false;
     }
 
 
   }
+
+
+
+
+  RxBool hasQualificationData=false.obs; // للتحقق من وجود قراء (تبدأ false)
+
+  RxInt qualification_selected = RxInt(0);
+
+  RxList<Map<String, dynamic>> qualification=<Map<String, dynamic>>[].obs;
+  Future select_qualification()async {
+    final response = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "جاري تحميل الموهلات...",
+      useDialog: false,
+      immediateLoading: false,
+      action: () async {
+        return await postData(Linkapi.select_qualification, {});
+      },
+    );
+    if(response==null) {
+      hasQualificationData.value = false;
+      return;
+    }
+    if (response is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      hasQualificationData.value = false;
+      return;
+    }
+    if(response["stat"]=="ok"){
+      qualification.assignAll(RxList<Map<String, dynamic>>.from(response["data"]));
+      hasQualificationData.value = true;
+    }
+    else if(response["stat"]=="no"){
+      // لا يوجد قراء في النظام
+      mySnackbar("تنبيه", "لا يوجد قرّاء متاحون في النظام", type: "y");
+      hasQualificationData.value = false;
+      qualification.clear();
+    }
+    else{
+      String errorMsg = response["msg"] ?? "تعذّر تحميل الموهلات";
+      mySnackbar("خطأ", errorMsg);
+      hasQualificationData.value = false;
+    }
+
+  }
+
+
+
 }
 
 

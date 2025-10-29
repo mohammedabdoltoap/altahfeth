@@ -1,8 +1,11 @@
 
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'dart:async';
+import 'dart:io';
 import '../controller/NewWork/NetworkController.dart';
 import '../utils/ErrorHandler.dart';
 import 'loadingWidget.dart';
@@ -36,9 +39,7 @@ Future<T?> handleRequest<T>({
 
   //
   if (!await checkInternet()) {
-    if (immediateLoading) {
-      isLoading.value = false;
-    }
+    isLoading.value = false; // إيقاف Loading في جميع الحالات
     return null;
   }
 
@@ -125,7 +126,7 @@ Future<T?> handleRequest<T>({
             return result;
           } finally {
             final elapsed = DateTime.now().difference(start);
-            const minDuration = Duration(milliseconds: 1200);
+            const minDuration = Duration(milliseconds: 100);
             if (elapsed < minDuration) {
               await Future.delayed(minDuration - elapsed);
             }
@@ -144,24 +145,40 @@ Future<T?> handleRequest<T>({
     _message = "انتهت مهلة الاتصال. تحقق من الإنترنت وحاول مرة أخرى";
     mySnackbar("انتهت المهلة", _message, type: "r");
     return null;
+  } on SocketException {
+    // خطأ في الاتصال بالشبكة (لا يوجد إنترنت، الخادم غير متاح، إلخ)
+    _message = "فشل الاتصال بالخادم. تحقق من الإنترنت";
+    ErrorHandler.handleNetworkError();
+    return null;
+  } on HandshakeException {
+    // خطأ في SSL/TLS (شهادة غير صالحة، مشاكل في الاتصال الآمن)
+    _message = "خطأ في الاتصال الآمن بالخادم";
+    ErrorHandler.handleNetworkError();
+    return null;
+  } on FormatException {
+    // خطأ في تحويل البيانات (JSON غير صالح، بيانات تالفة)
+    _message = "خطأ في تنسيق البيانات المستلمة";
+    ErrorHandler.handleApiError("$_message: ${e.toString()}");
+    return null;
+  } on HttpException catch (e) {
+    // أخطاء HTTP (404, 500, إلخ)
+    _message = "خطأ في الخادم: ${e.message}";
+    ErrorHandler.handleApiError(_message);
+    return null;
   } catch (e) {
-    // محاولة قراءة رسالة الخطأ التفصيلية
-    if (e.toString().contains('SocketException')) {
-      _message = "فشل الاتصال بالخادم. تحقق من الإنترنت";
-      ErrorHandler.handleNetworkError();
-    } else if (e.toString().contains('FormatException')) {
-      _message = "خطأ في تنسيق البيانات المستلمة";
-      ErrorHandler.handleApiError(e);
-    } else if (e.toString().contains('HandshakeException')) {
-      _message = "خطأ في الاتصال الآمن بالخادم";
-      ErrorHandler.handleNetworkError();
+    // التحقق إذا كان الخطأ من API (يحتوي على "خطأ API:")
+    String errorString = e.toString();
+    if (errorString.contains('خطأ API:')) {
+      // خطأ من API (قاعدة بيانات، validation، إلخ)
+      _message = errorString.replaceAll('Exception: ', '').replaceAll('خطأ API: ', '');
+      ErrorHandler.handleApiError(_message);
     } else {
+      // أي خطأ آخر غير متوقع (أخطاء في الكود، null pointer، إلخ)
       _message = "حدث خطأ غير متوقع أثناء العملية";
       ErrorHandler.handleError(e, customMessage: _message, showSnackbar: true);
     }
     return null;
   } finally {
-
     isLoading.value = false;
     // لا نعرض snackbar هنا لأن ErrorHandler يتولى ذلك
   }

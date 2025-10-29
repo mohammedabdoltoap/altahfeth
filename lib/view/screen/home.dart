@@ -15,6 +15,8 @@ import 'dilaysAndRevoews/update_review.dart';
 import 'package:althfeth/constants/inline_loading.dart';
 import 'adminScreen/ResignationRequestPage.dart';
 import 'login.dart';
+import '../widget/common/promotional_footer.dart';
+import 'studentScreen/StudentPlanReport.dart';
 
 
 
@@ -40,44 +42,7 @@ class Home extends StatelessWidget {
             ),
           ],
         ),
-        actions: [
-          // زر طلب الاستقالة (للمدراء فقط)
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'resignation':
-                  _showResignationRequest();
-                  break;
-                case 'logout':
-                  _showLogoutDialog();
-                  break;
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'resignation',
-                child: Row(
-                  children: [
-                    Icon(Icons.assignment, size: 20),
-                    SizedBox(width: 8),
-                    Text('طلب استقالة'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 20, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('تسجيل الخروج', style: TextStyle(color: Colors.red)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
+
       ),
       body:
         Container(
@@ -91,20 +56,23 @@ class Home extends StatelessWidget {
             ],
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: RefreshIndicator(
-            onRefresh: () => controller.getstudents(),
-            child: Obx(() {
-            // حالة التحميل داخل الصفحة
-            if (controller.loding_get_circle_and_students.value && controller.filteredStudents.isEmpty) {
-              return const InlineLoading(message: "جاري تحميل الطلاب...");
-            }
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: RefreshIndicator(
+                  onRefresh: () => controller.getstudents(),
+                  child: Obx(() {
+                  // حالة التحميل داخل الصفحة
+                  if (controller.loding_get_circle_and_students.value && controller.filteredStudents.isEmpty) {
+                    return const InlineLoading(message: "جاري تحميل الطلاب...");
+                  }
 
-            return ListView.builder(
-              itemCount: controller.filteredStudents.length + 1,
+                  return ListView.builder(
+                    itemCount: controller.filteredStudents.length + 1,
 
-              itemBuilder: (context, index) {
+                    itemBuilder: (context, index) {
                 // أول عنصر = شريط البحث + حالة فارغة
                 if (index == 0) {
                   if (controller.filteredStudents.isNotEmpty) {
@@ -249,13 +217,28 @@ class Home extends StatelessWidget {
                     Get.to(()=>UpdateStudent(),arguments: student);
 
                   },
+                  viewPlan: (){
+                    Get.to(() => StudentPlanReport(), arguments: {
+                      "id_student": student["id_student"],
+                      "name_student": student["name_student"],
+                      "current_level_id": student["id_level"],
+                      "current_stage_id": student["id_stages"],
+                    });
+                  },
                 );
               },
             );
           }),
         ),
       ),
-    )
+            ),
+            // البصمة الترويجية
+            const PromotionalFooter(
+              backgroundColor: Colors.white,
+            ),
+          ],
+        ),
+      )
     );
   }
 
@@ -285,7 +268,7 @@ class Home extends StatelessWidget {
           Expanded(
             child: _buildStatCard(
               "الحلقة",
-              controller.dataArg["name_circle"]?.toString().split(' ').first ?? "",
+              controller.dataArg["name_circle"]?.toString() ?? "",
               Icons.school,
               Colors.orange,
             ),
@@ -336,58 +319,9 @@ class Home extends StatelessWidget {
     );
   }
 
-  void _showResignationRequest() {
-    Get.to(() => ResignationRequestPage(), arguments: controller.dataArg);
-  }
 
-  void _showLogoutDialog() {
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.logout, color: Colors.red),
-            SizedBox(width: 8),
-            Text("تسجيل الخروج"),
-          ],
-        ),
-        content: const Text(
-          "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text("إلغاء"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              _logout();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text("تسجيل الخروج"),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _logout() {
-    // مسح البيانات المحفوظة
-    data_user_globle.clear();
-    
-    // العودة لصفحة تسجيل الدخول
-    Get.offAll(() => Login());
-    
-    // عرض رسالة تأكيد
-    mySnackbar("تم بنجاح", "تم تسجيل الخروج بنجاح", type: "g");
-  }
+
 }
 
 

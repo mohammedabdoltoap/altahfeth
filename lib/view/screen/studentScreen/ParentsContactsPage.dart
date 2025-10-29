@@ -1,9 +1,11 @@
+import 'package:althfeth/constants/function.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../api/LinkApi.dart';
 import '../../../api/apiFunction.dart';
+import '../../../constants/ErrorRetryWidget.dart';
 
 class ParentsContactsPage extends StatelessWidget {
   final ParentsContactsController controller = Get.put(ParentsContactsController());
@@ -40,7 +42,9 @@ class ParentsContactsPage extends StatelessWidget {
         }
 
         if (controller.parentsList.isEmpty) {
-          return Center(
+
+          if(controller.noHasStudent.value)
+            return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -53,6 +57,11 @@ class ParentsContactsPage extends StatelessWidget {
               ],
             ),
           );
+
+          return ErrorRetryWidget(
+            onRetry: () => controller.loadParentsContacts(),
+          );
+
         }
 
         return Column(
@@ -254,34 +263,78 @@ class ParentsContactsPage extends StatelessWidget {
     );
   }
 
+  // void _openWhatsApp(String phoneNumber) async {
+  //   // تنظيف رقم الهاتف
+  //   String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+  //
+  //   // ✅ رمز الدولة اليمني +967
+  //   if (!cleanPhone.startsWith('+')) {
+  //     if (cleanPhone.startsWith('0')) {
+  //       cleanPhone = '+967${cleanPhone.substring(1)}'; // اليمن
+  //     } else if (!cleanPhone.startsWith('967')) {
+  //       print("cleanPhone===${cleanPhone}");
+  //       cleanPhone = '+967$cleanPhone';
+  //     } else {
+  //       cleanPhone = '+$cleanPhone';
+  //     }
+  //   }
+  //
+  //   final whatsappUrl = Uri.parse('https://wa.me/$cleanPhone');
+  //
+  //   try {
+  //     if (await canLaunchUrl(whatsappUrl)) {
+  //       await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+  //     } else {
+  //       Get.snackbar(
+  //         "خطأ",
+  //         "لا يمكن فتح واتساب. تأكد من تثبيت التطبيق",
+  //         backgroundColor: Colors.red.shade100,
+  //         colorText: Colors.red.shade900,
+  //       );
+  //     }
+  //   } catch (e) {
+  //     Get.snackbar(
+  //       "خطأ",
+  //       "حدث خطأ: $e",
+  //       backgroundColor: Colors.red.shade100,
+  //       colorText: Colors.red.shade900,
+  //     );
+  //   }
+  // }
   void _openWhatsApp(String phoneNumber) async {
-    // تنظيف رقم الهاتف
+    // تنظيف الرقم
     String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
-    // ✅ رمز الدولة اليمني +967
+    // ✅ إضافة رمز الدولة اليمني +967
     if (!cleanPhone.startsWith('+')) {
       if (cleanPhone.startsWith('0')) {
-        cleanPhone = '+967${cleanPhone.substring(1)}'; // اليمن
+        cleanPhone = '+967${cleanPhone.substring(1)}';
       } else if (!cleanPhone.startsWith('967')) {
-        print("cleanPhone===${cleanPhone}");
         cleanPhone = '+967$cleanPhone';
       } else {
         cleanPhone = '+$cleanPhone';
       }
     }
 
-    final whatsappUrl = Uri.parse('https://wa.me/$cleanPhone');
+    // 🔗 رابط تطبيق واتساب المباشر
+    final whatsappUri = Uri.parse('whatsapp://send?phone=$cleanPhone');
 
     try {
-      if (await canLaunchUrl(whatsappUrl)) {
-        await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
+      if (await canLaunchUrl(whatsappUri)) {
+        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
       } else {
-        Get.snackbar(
-          "خطأ",
-          "لا يمكن فتح واتساب. تأكد من تثبيت التطبيق",
-          backgroundColor: Colors.red.shade100,
-          colorText: Colors.red.shade900,
-        );
+        // fallback إلى wa.me لو فشل البروتوكول (احتمال نادر)
+        final fallbackUri = Uri.parse('https://wa.me/$cleanPhone');
+        if (await canLaunchUrl(fallbackUri)) {
+          await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
+        } else {
+          Get.snackbar(
+            "خطأ",
+            "لا يمكن فتح واتساب. تأكد من تثبيت التطبيق",
+            backgroundColor: Colors.red.shade100,
+            colorText: Colors.red.shade900,
+          );
+        }
       }
     } catch (e) {
       Get.snackbar(
@@ -292,12 +345,15 @@ class ParentsContactsPage extends StatelessWidget {
       );
     }
   }
+
 }
 
 
 class ParentsContactsController extends GetxController {
   var dataArg;
-  var loading = true.obs;
+  var loading = false.obs;
+  var noHasStudent = false.obs;
+
   var parentsList = <Map<String, dynamic>>[].obs;
 
   @override
@@ -308,25 +364,26 @@ class ParentsContactsController extends GetxController {
   }
 
   Future<void> loadParentsContacts() async {
-    loading.value = true;
 
-    try {
       // 📨 إرسال الطلب إلى الـ API مع id_circle
-      final response = await postData(Linkapi.select_parents_contacts, {
-        "id_circle": dataArg?["id_circle"]?.toString(),
+      final response =await handleRequest(
+          useDialog: false,
+          immediateLoading: true,
+          isLoading: loading, action: ()async {
+        return await postData(Linkapi.select_parents_contacts, {
+          "id_circle": dataArg?["id_circle"]?.toString(),
+      },)  ;
       });
 
       // ✅ التحقق من النتيجة
       if (response["stat"] == "ok") {
         parentsList.assignAll(List<Map<String, dynamic>>.from(response["data"]));
-      } else {
+      } else if(response["stat"]=="no"){
+        noHasStudent.value=true;
         parentsList.clear();
+      }else {
+        mySnackbar("تنبية", response["msg"]?? "حصل خطا في تحميل البيانات ");
       }
-    } catch (e) {
-      print("Error loading parents contacts: $e");
-      parentsList.clear();
-    } finally {
-      loading.value = false;
-    }
+
   }
 }

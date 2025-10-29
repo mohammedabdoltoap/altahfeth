@@ -6,6 +6,7 @@ import '../constants/function.dart';
 class CirclesController extends GetxController {
   var circles = <Map<String, dynamic>>[].obs;
   var isLoading = false.obs;
+  var noHasStudent = false.obs;
   var dataArg;
 
   @override
@@ -15,11 +16,12 @@ class CirclesController extends GetxController {
     fetchCircles();
   }
 
+
   Future<void> fetchCircles() async {
     final response = await handleRequest<dynamic>(
       isLoading: isLoading,
       loadingMessage: "جاري تحميل الحلقات...",
-      useDialog: true,
+      useDialog:false,
       immediateLoading: true,
       action: () async {
         return await postData(Linkapi.get_circle, {
@@ -37,7 +39,10 @@ class CirclesController extends GetxController {
 
     if (response["stat"] == "ok") {
       circles.assignAll(List<Map<String, dynamic>>.from(response["data"]));
-    } else {
+    } else if(response["stat"]=="no") {
+      circles.clear();
+      noHasStudent.value=true;
+    }else{
       String errorMsg = response["msg"] ?? "تعذّر تحميل الحلقات";
       mySnackbar("خطأ", errorMsg);
     }

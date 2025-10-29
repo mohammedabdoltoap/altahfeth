@@ -7,7 +7,9 @@ import 'package:althfeth/constants/loadingWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
+import '../../constants/ErrorRetryWidget.dart';
 import '../../constants/function.dart';
+import '../widget/common/promotional_footer.dart';
 class LeaveRequestsPage extends StatelessWidget {
 
   LeaveRequestsPageController controller=Get.put(LeaveRequestsPageController());
@@ -30,12 +32,22 @@ class LeaveRequestsPage extends StatelessWidget {
           if(controller.lodeleave_requests.value)
             return InlineLoading(message: "تحميل الاجازات السابقة",);
 
-          if(controller. leaveRequests.isEmpty && !controller.lodeleave_requests.value)
+          if(controller.leaveRequests.isEmpty &&  controller.noHasLeaveRequests.value)
             return Center(child: Text("لا توجد طلبات إجازة بعد"));
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.leaveRequests.length,
+          if(controller.leaveRequests.isEmpty &&  !controller.noHasLeaveRequests.value)
+            return ErrorRetryWidget(
+              onRetry: () => controller.select_leave_requests(),
+            );
+
+
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.leaveRequests.length,
             itemBuilder: (context, index) {
               final leave = controller.leaveRequests[index];
               final isApproved = leave["status"] == 1;
@@ -165,12 +177,15 @@ class LeaveRequestsPage extends StatelessWidget {
                 ),
               );
             },
+          ),
+              ),
+              // البصمة الترويجية
+              const PromotionalFooter(),
+            ],
           );
-
-        },
-        )
-
+        })
     );
+
 
 
   }
@@ -212,35 +227,44 @@ class LeaveRequestsPageController extends GetxController {
   RxString leaveType = 'single'.obs; // single or period
 
   @override
-  void onInit() {
+  void onInit()async {
     dataArg_user = Get.arguments;
     super.onInit();
-    WidgetsBinding.instance.addPostFrameCallback((_) => select_leave_requests());
+  await  select_leave_requests();
+    // WidgetsBinding.instance.addPostFrameCallback((_) => select_leave_requests());
   }
 
   RxBool lodeleave_requests=false.obs;
+  RxBool noHasLeaveRequests=false.obs;
   Future select_leave_requests() async {
 
 
     var res = await handleRequest(
         isLoading: lodeleave_requests,
         useDialog: false,
-        immediateLoading: false,
+        immediateLoading: true,
         action:()async{
-         await del();
       return await postData(Linkapi.select_leave_requests, {
         "id_user": dataArg_user["id_user"]
       });
     });
-    if(res==null)return;
+    if(res==null)
+      return;
 
     if (res is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
       return;
     }
     if (res["stat"] == "ok") {
-
       leaveRequests.assignAll(RxList<Map<String, dynamic>>.from(res["data"]));
+    }
+    else if(res["stat"]=="no"){
+      leaveRequests.clear();
+      noHasLeaveRequests.value=true;
+    }
+    else if(res["stat"]=="erorr"){
+      mySnackbar("تنبية", res["msg"] ?? "خطا في جلب الاجازات" );
+
     }
 
   }

@@ -42,7 +42,7 @@ class LoginController extends GetxController {
         });
       },
     );
-
+    print("response========${response}");
     if (response == null) return;
     if (response is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
@@ -53,7 +53,7 @@ class LoginController extends GetxController {
       data_user = response["data"];
       if (data_user["status"] == 1) {
         data_user_globle = data_user;
-        if (data_user["role"] == adminRole) {
+        if (data_user["role_id"] == adminRole) {
           Get.offAll(() => Home_Admin(), arguments: data_user);
         } else {
           Get.offAll(() => Show_Circle(), arguments: data_user);

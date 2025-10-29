@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../controller/AttendanceController.dart';
+import '../widget/common/promotional_footer.dart';
 
 class Attendance extends StatelessWidget {
   final AttendanceController controller = Get.put(AttendanceController());
@@ -123,6 +124,10 @@ class Attendance extends StatelessWidget {
                 onPressed: controller.insertAttendance,
               )),
 
+              const SizedBox(height: 12),
+
+              // البصمة الترويجية
+              const PromotionalFooter(),
             ],
           );
         }),

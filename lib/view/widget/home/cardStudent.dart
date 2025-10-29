@@ -10,6 +10,7 @@ class CardStudent extends StatelessWidget {
   final VoidCallback? dailyReports;
   final VoidCallback? reviewReports;
   final VoidCallback? absence;
+  final VoidCallback? viewPlan;
 
   const CardStudent({
     super.key,
@@ -20,6 +21,7 @@ class CardStudent extends StatelessWidget {
     required this.dailyReports,
     required this.reviewReports,
     required this.absence,
+    this.viewPlan,
   });
 
   @override
@@ -165,6 +167,21 @@ class CardStudent extends StatelessWidget {
                           height: 45,
                           color: error,
                           foregroundColor: onError,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          text: "عرض خطة الطالب",
+                          onPressed: viewPlan,
+                          height: 45,
+                          color: Colors.purple,
+                          foregroundColor: Colors.white,
+                          icon: Icons.assignment_outlined,
                         ),
                       ),
                     ],

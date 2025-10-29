@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../constants/SmolleStudentCard.dart';
 import '../../../../controller/visitAndExamController/Add_VisitController.dart';
+import '../../../constants/ErrorRetryWidget.dart';
 import 'Student_Skills.dart';
 
 class StudentList_Skill extends StatelessWidget {
@@ -20,17 +21,28 @@ class StudentList_Skill extends StatelessWidget {
       ),
       body: Obx(() {
 
-        if (controller.students.isEmpty && controller.isLodingStudent.value)
+        if (controller.isLodingStudent.value)
           return InlineLoading(message: "تحميل اسماء الطلاب",);
 
 
+
         if (controller.students.isEmpty) {
-          return const Center(
+
+          if(controller.noHasStudent.value)
+            return const Center(
             child: Text(
-              "لا يوجد بيانات",
+              "لايوجد طلاب في الحلقة ",
               style: TextStyle(fontSize: 18, color: Colors.grey),
             ),
           );
+
+          return ErrorRetryWidget(
+            onRetry: () => controller.getstudents(),
+          );
+
+
+
+
         }
 
         return ListView.builder(
@@ -69,14 +81,17 @@ class StudentList_SkillController extends GetxController{
 
   RxList<Map<String,dynamic>> students=<Map<String,dynamic>>[].obs;
   RxBool isLodingStudent=false.obs;
+  RxBool noHasStudent=false.obs;
   Future getstudents()async{
 
     final res = await handleRequest<dynamic>(
       isLoading: isLodingStudent,
       loadingMessage: "جاري تحميل الطلاب...",
       useDialog: false,
+      immediateLoading: true,
+
       action: () async {
-    await del();
+    
         return await postData(Linkapi.getstudents, {"id_circle":data["id_circle"]});
       },
     );
@@ -93,6 +108,8 @@ class StudentList_SkillController extends GetxController{
     }else if(res["stat"]=="erorr"){
       mySnackbar("تنبية", "${res["msg"]}");
     }else if(res["stat"]=="no"){
+      students.clear();
+      noHasStudent.value=true;
       mySnackbar("تنبية", "لايوجد بيانات ");
     }else{
       mySnackbar("تنبية", "حصل خطا تاكد من الاتصال");

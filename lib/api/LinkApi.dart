@@ -1,6 +1,8 @@
 class Linkapi {
   // ==================== SERVER URL ====================
-  static const String server = "http://192.168.212.65/alt/";
+  // static const String server = "https://masart.io/alt/";
+  static const String server = "http://192.168.118.65/alt/";
+
 
   // ==================== STUDENT APIs ====================
   
@@ -28,8 +30,10 @@ class Linkapi {
   static const String select_review_report = "${server}student/select.php?mark=select_review_report";
   static const String select_absence_report = "${server}student/select.php?mark=select_absence_report";
   static const String select_reders = "${server}student/select.php?mark=select_reders";
+  static const String select_qualification = "${server}student/select.php?mark=select_qualification";
   static const String select_skill = "${server}student/select.php?mark=select_skill";
   static const String select_student_skill = "${server}student/select.php?mark=select_student_skill";
+  static const String select_student_plan = "${server}student/select.php?mark=select_student_plan";
 
   // UPDATE
   static const String updateAttendance = "${server}student/update.php?mark=updateAttendance";
@@ -99,6 +103,7 @@ class Linkapi {
   static const String insert_leave_requests = "${server}users/insert.php?mark=insert_leave_requests";
   static const String insert_visit_exam_result = "${server}users/insert.php?mark=insert_visit_exam_result";
   static const String insert_notes_for_teacher = "${server}users/insert.php?mark=insert_notes_for_teacher";
+  static const String insert_public_visits = "${server}users/insert.php?mark=insert_public_visits";
 
   // UPDATE
   static const String updateDailyReport = "${server}users/update.php?mark=updateDailyReport";

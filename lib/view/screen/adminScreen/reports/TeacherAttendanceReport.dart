@@ -138,29 +138,7 @@ class TeacherAttendanceReport extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(
-                            labelText: "الأستاذ",
-                            isDense: true,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                          value: controller.selectedTeacher.value,
-                          items: [
-                            const DropdownMenuItem(value: 'all', child: Text("الكل")),
-                            ...controller.teachersList.map((teacher) {
-                              return DropdownMenuItem(
-                                value: teacher['id_user'].toString(),
-                                child: Text(teacher['username'] ?? ''),
-                              );
-                            }).toList(),
-                          ],
-                          onChanged: (val) {
-                            controller.selectedTeacher.value = val;
-                            controller.applyFilters();
-                          },
-                        ),
-                      ),
+
                       const SizedBox(width: 8),
                       Expanded(
                         child: DropdownButtonFormField<String>(
@@ -227,12 +205,26 @@ class TeacherAttendanceReport extends StatelessWidget {
                           color: Colors.white,
                         ),
                       ),
-                      title: Text(
-                        item['username'] ?? '',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      title: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            item['username'] ?? '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+
+                          Text(
+                            item['attendance_date'] ?? '',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+
+                            ),
+                          ),
+                        ],
                       ),
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,11 +308,11 @@ class TeacherAttendanceReportController extends GetxController {
   var dataArg;
   
   // قوائم الفلاتر
-  var teachersList = <Map<String, dynamic>>[].obs;
+  // var teachersList = <Map<String, dynamic>>[].obs;
   var circlesList = <Map<String, dynamic>>[].obs;
   
   // الفلاتر المختارة
-  var selectedTeacher = Rxn<String>();
+  // var selectedTeacher = Rxn<String>();
   var selectedCircle = Rxn<String>();
   var useDateRange = false.obs;
 
@@ -334,13 +326,13 @@ class TeacherAttendanceReportController extends GetxController {
   Future<void> loadTeachersAndCircles() async {
     try {
       // جلب قائمة الأساتذة
-      final teachersResponse = await postData(Linkapi.select_users, {
-        "id_user": dataArg?['id_user']?.toString(),
-      });
-      
-      if (teachersResponse['stat'] == 'ok') {
-        teachersList.assignAll(List<Map<String, dynamic>>.from(teachersResponse['data']));
-      }
+      // final teachersResponse = await postData(Linkapi.select_users, {
+      //   "id_user": dataArg?['id_user']?.toString(),
+      // });
+      //
+      // if (teachersResponse['stat'] == 'ok') {
+      //   teachersList.assignAll(List<Map<String, dynamic>>.from(teachersResponse['data']));
+      // }
       
       // جلب قائمة الحلقات
       final circlesResponse = await postData(Linkapi.select_circle_for_center, {
@@ -363,11 +355,11 @@ class TeacherAttendanceReportController extends GetxController {
     
     var filtered = attendanceList.where((item) {
       // فلتر الأستاذ
-      if (selectedTeacher.value != null && selectedTeacher.value != 'all') {
-        if (item['id_user'].toString() != selectedTeacher.value) {
-          return false;
-        }
-      }
+      // if (selectedTeacher.value != null && selectedTeacher.value != 'all') {
+      //   if (item['id_user'].toString() != selectedTeacher.value) {
+      //     return false;
+      //   }
+      // }
       
       // فلتر الحلقة
       if (selectedCircle.value != null && selectedCircle.value != 'all') {
@@ -383,7 +375,7 @@ class TeacherAttendanceReportController extends GetxController {
   }
   
   void clearFilters() {
-    selectedTeacher.value = null;
+    // selectedTeacher.value = null;
     selectedCircle.value = null;
     filteredAttendanceList.assignAll(attendanceList);
   }
@@ -493,6 +485,7 @@ class TeacherAttendanceReportController extends GetxController {
     } finally {
       loading.value = false;
     }
+    selectedCircle.value="all";
   }
 
   Future<void> exportToPDF() async {
@@ -518,36 +511,6 @@ class TeacherAttendanceReportController extends GetxController {
           build: (context) {
             return [
               // Header
-              pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#2196F3'),
-                  borderRadius: pw.BorderRadius.circular(10),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'تقرير حضور وانصراف الأساتذة',
-                      style: pw.TextStyle(
-                        fontSize: 24,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white,
-                      ),
-                    ),
-                    pw.SizedBox(height: 10),
-                    pw.Text(
-                      'التاريخ: $dateStr',
-                      style: const pw.TextStyle(fontSize: 16, color: PdfColors.white),
-                    ),
-                    pw.Text(
-                      'عدد السجلات: ${attendanceList.length}',
-                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
 
               // Table
               pw.Table(

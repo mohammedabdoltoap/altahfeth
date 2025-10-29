@@ -6,6 +6,7 @@ import '../../constants/appButton.dart';
 import '../../constants/customTextField.dart';
 import '../../controller/loginController.dart';
 import '../widget/login/isStudentCheke.dart';
+import '../widget/common/promotional_footer.dart';
 
 class Login extends StatelessWidget {
   final LoginController loginController = Get.put(LoginController());
@@ -113,6 +114,11 @@ class Login extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 24),
+
+                // البصمة الترويجية
+                const PromotionalFooter(),
               ],
             ),
           ),

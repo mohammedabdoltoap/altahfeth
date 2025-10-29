@@ -32,6 +32,7 @@ class User_AttendanceController extends GetxController {
 
   /// 🔹 جلب حالة الحضور اليوم
   RxBool lodingUsersAttendanceToday=false.obs;
+  RxBool isTodayNew=false.obs;
 
   Future select_users_attendance_today() async {
     DateTime today = DateTime.now();
@@ -40,11 +41,11 @@ class User_AttendanceController extends GetxController {
 
     var res = await handleRequest(
       isLoading: lodingUsersAttendanceToday,
-      immediateLoading: false,
+      immediateLoading: true,  // تفعيل Loading فوراً
       useDialog: false,
 
       action: ()async {
-       await del();
+
       return await postData(Linkapi.select_users_attendance_today, {
         "id_user": dataArg["id_user"],
         "attendance_date": formattedDate,
@@ -52,7 +53,7 @@ class User_AttendanceController extends GetxController {
       });
     },) ;
 
-    if(res==null)return;
+    if(res==null) return;
 
     if (res is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
@@ -63,6 +64,7 @@ class User_AttendanceController extends GetxController {
 
     if (res["stat"] == "No_record_today") {
       data_attendance_today.clear();
+      isTodayNew.value=true;
     } else if (res["stat"] == "No_check_out_time") {
       data_attendance_today.assignAll(res["data"]);
     } else if (res["stat"] == "He_check_all") {

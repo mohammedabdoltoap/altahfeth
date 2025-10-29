@@ -5,6 +5,7 @@ import 'package:althfeth/api/apiFunction.dart';
 import 'package:althfeth/constants/function.dart';
 import 'package:althfeth/constants/loadingWidget.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -243,7 +244,6 @@ class HomeCont extends GetxController {
 
 
   Future select_Holiday_Days()async {
-    print("holidayData====${holidayData["is_holiday"]}");
 
     await initializeDateFormatting('ar', null);
     Intl.defaultLocale = 'ar';
@@ -259,6 +259,7 @@ class HomeCont extends GetxController {
     var res=await postData(Linkapi.select_Holiday_Days, data);
     holidayData.clear();
     holidayData.assignAll(res);
+    print("todayName=======${todayName}");
     print("holidayData====${holidayData}");
   }
 
@@ -439,85 +440,143 @@ class HomeCont extends GetxController {
 
 
 
+  RxBool isSave=false.obs;
+  Future insert_public_visits()async{
+
+    var res=await handleRequest(isLoading: RxBool(false), action: ()async {
+
+      return await postData(Linkapi.insert_public_visits, {
+
+        "id_circle":dataArg["id_circle"],
+        "id_user":dataArg["id_user"],
+        "visitor_name":_nameController.text,
+        "notes":_noteController.text
+      });
+    },
+      immediateLoading: true
+    );
+
+    if (res == null) return;
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+    if (res["stat"] == "ok") {
+      isSave.value=true;
+    } else if (res["stat"] == "no") {
+      mySnackbar("تنبية", "لم يتم الاضافة ");
+    } else {
+      String errorMsg = res["msg"] ?? "حصل خطأ في جلب التقرير";
+      mySnackbar("خطأ", errorMsg);
+    }
+
+  }
 
 
+  final _nameController = TextEditingController();
+  final _noteController = TextEditingController();
 
+  Future showVisitorDialog({
+    required BuildContext context,
+    String title = "إضافة زيارة",
+    String hintName = "اسم الزائر",
+    String hintNote = "ملاحظة (اختياري)",
+    String confirmText = "حفظ",
+    String cancelText = "إلغاء",
+  }) {
+    final _formKey = GlobalKey<FormState>();
 
-  // Future  showReportStudent()async{
-  //   final  absencesRows = absences.map((a) => [
-  //     (a["date"].split(' ')[0] ?? "غير متوفر ").toString(),
-  //     (a["notes"] ?? "غير متوفر").toString(),
-  //   ]).toList();
-  //
-  //   // 🔹 نضيف صف إجمالي الغياب بشكل ديناميكي
-  //   absencesRows.add([
-  //     absences.length.toString(),
-  //     "إجمالي الغياب",
-  //   ]);
-  //
-  //   await generateDynamicPdfMulite(
-  //     [
-  //       {
-  //         "title": "تقرير التسميع اليومي",
-  //         "headers": [
-  //           'التاريخ',
-  //           'المرحلة',
-  //           'المستوى',
-  //           'إلى آية',
-  //           'من آية',
-  //           'إلى سورة',
-  //           'من سورة',
-  //           'اسم استاذ الحلقة',
-  //           'اسم الحلقة',
-  //         ],
-  //         "rows": reports.map((r) => [
-  //           r['date']?.split(' ')[0] ?? 'غير متوفر',
-  //           r['name_stages'] ?? 'غير متوفر',
-  //           r['name_level'] ?? 'غير متوفر',
-  //           r['to_id_aya']?.toString() ?? 'غير متوفر',
-  //           r['from_id_aya']?.toString() ?? 'غير متوفر',
-  //           r['to_soura_name'] ?? 'غير متوفر',
-  //           r['from_soura_name'] ?? 'غير متوفر',
-  //           r['username'] ?? 'غير متوفر',
-  //           r['name_circle'] ?? 'غير متوفر',
-  //         ]).toList(),
-  //       },
-  //       {
-  //         "title": "تقرير المراجعة",
-  //         "headers": [
-  //           'التاريخ',
-  //           'المرحلة',
-  //           'المستوى',
-  //           'إلى آية',
-  //           'من آية',
-  //           'إلى سورة',
-  //           'من سورة',
-  //           'اسم استاذ الحلقة',
-  //           'اسم الحلقة',
-  //         ],
-  //         "rows": reviews.map((r) => [
-  //           r['date']?.split(' ')[0] ?? 'غير متوفر',
-  //           r['name_stages'] ?? 'غير متوفر',
-  //           r['name_level'] ?? 'غير متوفر',
-  //           r['to_id_aya']?.toString() ?? 'غير متوفر',
-  //           r['from_id_aya']?.toString() ?? 'غير متوفر',
-  //           r['to_soura_name'] ?? 'غير متوفر',
-  //           r['from_soura_name'] ?? 'غير متوفر',
-  //           r['username'] ?? 'غير متوفر',
-  //           r['name_circle'] ?? 'غير متوفر',
-  //         ]).toList(),
-  //       },
-  //
-  //       {
-  //         "title": "جدول الغياب",
-  //         "headers": ["التاريخ", "سبب الغياب"],
-  //         "rows": absencesRows,
-  //       },
-  //     ],
-  //     mainTitle: "التقرير العام للطالب",
-  //   );
-  //
-  // }
+    return showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.person_add_alt_1, size: 60, color: theme.primaryColor),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // اسم الزائر
+                  TextFormField(
+                    controller: _nameController,
+                    textAlign: TextAlign.right,
+                    decoration: InputDecoration(
+                      hintText: hintName,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: const Icon(Icons.person_outline),
+                    ),
+                    validator: (v) => v!.trim().isEmpty ? "الرجاء إدخال اسم الزائر" : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // ملاحظة
+                  TextFormField(
+                    controller: _noteController,
+                    textAlign: TextAlign.right,
+                    minLines: 3,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      hintText: hintNote,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      prefixIcon: const Icon(Icons.note_alt_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // الأزرار
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(ctx).pop(null),
+                          child: Text(cancelText),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: ()async {
+                            if (_formKey.currentState!.validate()) {
+                              await insert_public_visits();
+                              if(isSave.value)
+                               {
+                                 _nameController.clear();
+                                 _noteController.clear();
+                                 Get.back();
+                                 mySnackbar("تم بنجاح", "تم الاضافة بنجاح ",type: "g");
+
+                               }
+
+                            }
+                          },
+                          child: Text(confirmText),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
 
 
 }

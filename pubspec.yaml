@@ -1,5 +1,5 @@
 name: althfeth
-description: "A new Flutter project."
+description: "تطبيق مسارات - نظام متكامل لإدارة الطلاب والحضور والتقارير التعليمية"
 publish_to: 'none' # لا تنشر على pub.dev
 
 version: 1.0.0+1

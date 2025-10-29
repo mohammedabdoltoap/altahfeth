@@ -366,32 +366,6 @@ class LeaveRequestsReportController extends GetxController {
           theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
           build: (context) {
             return [
-              pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#9C27B0'),
-                  borderRadius: pw.BorderRadius.circular(10),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'تقرير طلبات الإجازات',
-                      style: pw.TextStyle(
-                        fontSize: 24,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white,
-                      ),
-                    ),
-                    pw.SizedBox(height: 10),
-                    pw.Text(
-                      'عدد الطلبات: ${filteredLeaveRequests.length}',
-                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
 
               pw.Table(
                 border: pw.TableBorder.all(color: PdfColors.grey300),

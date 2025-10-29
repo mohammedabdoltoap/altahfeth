@@ -2,6 +2,7 @@ import 'package:althfeth/constants/appButton.dart';
 import 'package:althfeth/constants/color.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../constants/ErrorRetryWidget.dart';
 import '../../constants/inline_loading.dart';
 import '../../controller/User_AttendanceController.dart';
 
@@ -18,33 +19,21 @@ class User_Attendance extends StatelessWidget {
         elevation: 4,
       ),
       body: Obx(() {
+
+
+
+
+
         final data = controller.data_attendance_today;
         final hasCheckIn = data["check_in_time"] != null;
         final hasCheckOut = data["check_out_time"] != null;
-       print("===${controller.lodingUsersAttendanceToday.value}");
-         if(controller.lodingUsersAttendanceToday.value && controller.data_attendance_today.isEmpty)
+         if(controller.lodingUsersAttendanceToday.value)
            return InlineLoading( message: "تحميل الحضور والانصراف",indicatorSize: 40,);
 
-         // if(controller.data_attendance_today.isEmpty)
-         //   return Center(
-         //     child: Column(
-         //       mainAxisAlignment: MainAxisAlignment.center,
-         //       children: [
-         //         Text(
-         //           "لايوجد بيانات ",
-         //           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-         //         ),
-         //         const SizedBox(height: 16),
-         //         SizedBox(
-         //           width: 220,
-         //           child: ElevatedButton(
-         //             onPressed: () => controller.select_users_attendance_today(),
-         //             child: const Text("إعادة المحاولة"),
-         //           ),
-         //         ),
-         //       ],
-         //     ),
-         //   );
+         if(controller.data_attendance_today.isEmpty && !controller.isTodayNew.value)
+           return ErrorRetryWidget(
+             onRetry: () => controller.select_users_attendance_today(),
+           );
 
         return Padding(
           padding: const EdgeInsets.all(20.0),

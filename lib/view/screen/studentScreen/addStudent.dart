@@ -23,43 +23,66 @@ class Addstudent extends StatelessWidget {
           padding: const EdgeInsets.all(12.0),
           child:
           Obx(() {
+            // إذا كان التحميل جاري
+            if(addStudentController.isLodingLevel.value) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-            if(addStudentController.stages.isEmpty && !addStudentController.isLodingLevel.value)
+            // إذا لم تكن البيانات متوفرة (لا مراحل أو لا قراء)
+            if(!addStudentController.hasLevelData.value || !addStudentController.hasReaderData.value) {
               return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        "لم يتم جلب البيانات بسبب الاتصال ",
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        size: 64,
+                        color: Colors.orange,
                       ),
                       const SizedBox(height: 16),
+                      Text(
+                        "لا يمكن إضافة طالب",
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        !addStudentController.hasLevelData.value 
+                          ? "لا توجد مراحل أو مستويات متاحة في النظام"
+                          : "لا يوجد قرّاء متاحون في النظام",
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
                       SizedBox(
                         width: 220,
-                        child: ElevatedButton(
+                        child: ElevatedButton.icon(
                           onPressed: () {
                             addStudentController.select_level();
                             addStudentController.select_reders();
-
                           },
-                          child: const Text("إعادة المحاولة"),
+                          icon: Icon(Icons.refresh),
+                          label: const Text("إعادة المحاولة"),
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text("العودة للخلف"),
                       ),
                     ],
                   ),
                 );
+            }
 
-
+            // عرض النموذج فقط إذا كانت البيانات متوفرة
             return Stack(
                 children: [
                   Form(
                     key: addStudentController.formKey,
                     child: ListView(
                     children: [
-                      // اسم الطالب
-                      SizedBox(
-                        height: 10,
-                      ),
                       CustomTextField(
                         controller: addStudentController.name_student,
                         label: "اسم الطالب",
@@ -74,8 +97,6 @@ class Addstudent extends StatelessWidget {
                           return null;
                         },
                       ),
-                      SizedBox(height: 15),
-
                       //لقب وولي الامر
                       Row(
                         children: [
@@ -84,12 +105,12 @@ class Addstudent extends StatelessWidget {
                                   padding: const EdgeInsets.only(right: 5),
                                   child: CustomTextField(
                                     controller: addStudentController.guardian,
-                                    label: "رقم ولي الامر",
-                                    hint: "رقم ولي الامر",
-                                    keyboardType: TextInputType.phone,
+                                    label: "اسم ولي الامر",
+                                    hint: " ولي الامر",
+
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
-                                        return 'يرجى إدخال رقم ولي الأمر';
+                                        return 'يرجى إدخال اسم ولي الأمر';
                                       }
                                       return null;
                                     },
@@ -110,7 +131,6 @@ class Addstudent extends StatelessWidget {
                                   ))),
                         ],
                       ),
-                      SizedBox(height: 15),
 
                       CustomTextField(
                         controller: addStudentController.address_student,
@@ -123,7 +143,6 @@ class Addstudent extends StatelessWidget {
                           return null;
                         },
                       ),
-                      SizedBox(height: 15),
 
                       Row(
                         children: [
@@ -173,7 +192,6 @@ class Addstudent extends StatelessWidget {
                                   ))),
                         ],
                       ),
-                      SizedBox(height: 15),
                       Row(
                         children: [
                           Expanded(
@@ -206,7 +224,6 @@ class Addstudent extends StatelessWidget {
                                   ))),
                         ],
                       ),
-                      SizedBox(height: 15),
 
                       Row(
                         children: [
@@ -224,7 +241,7 @@ class Addstudent extends StatelessWidget {
                                   padding: const EdgeInsets.only(right: 5),
                                   child: CustomTextField(
                                     controller: addStudentController.phone,
-                                    label: "رقم الهاتف ",
+                                    label: "رقم ولي لامر ",
                                     hint: "الهاتف",
                                     keyboardType: TextInputType.phone,
                                     validator: (value) {
@@ -236,7 +253,6 @@ class Addstudent extends StatelessWidget {
                                   ))),
                         ],
                       ),
-                      SizedBox(height: 15),
 
                       Row(
                         children: [
@@ -265,10 +281,11 @@ class Addstudent extends StatelessWidget {
                                   ))),
                         ],
                       ),
-                      SizedBox(height: 15),
+                      // SizedBox(height: 15),
 
                       // المرحلة + المستوى
                       Row(
+
                         children: [
                           Expanded(
                             child: Padding(
@@ -300,6 +317,7 @@ class Addstudent extends StatelessWidget {
                                   },
                                 ))),
                           ),
+                          SizedBox(width: 7,),
                           Expanded(
                             child: Padding(
                                 padding: const EdgeInsets.only(left: 5),
@@ -340,7 +358,7 @@ class Addstudent extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SizedBox(height: 15),
+                      // SizedBox(height: 15),
                       //الجنس و الموهل
                       Row(
                         children: [
@@ -373,28 +391,25 @@ class Addstudent extends StatelessWidget {
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.only(right: 5),
-                              child: DropdownButtonFormField<String>(
-                                decoration: const InputDecoration(
-                                  labelText: 'الموهل القراني',
-                                ),
-                                value: addStudentController.qualification_selected.value == null ? null : addStudentController.qualification_selected.value,
-                                items: addStudentController.qualification
-                                    .map((gender) {
-                                  return DropdownMenuItem<String>(
-                                    value: gender,
-                                    child: Text(gender),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  addStudentController
-                                      .qualification_selected.value = value;
-                                },
-                              ),
+                              child:  Obx(() {
+                                final items = addStudentController.qualification.toList();
+                                return CustomDropdownField(
+                                  label: "اختر الموهل",
+                                  items: items,
+                                  value: addStudentController.qualification_selected?.value,
+                                  valueKey: "id_qualification",
+                                  displayKey: "name_qualification",
+                                  onChanged: (val) {
+                                    addStudentController.qualification_selected?.value = val ?? 0;
+                                  },
+
+                                );
+                              }),
+
                             ),
                           )
                         ],
                       ),
-                      SizedBox(height: 15),
 
                       Obx(() {
                         final items = addStudentController.reder.toList();
@@ -407,11 +422,9 @@ class Addstudent extends StatelessWidget {
                           onChanged: (val) {
                             addStudentController.selectedReaderId?.value = val ?? 0;
                           },
-                          icon: Icons.person,
                         );
                       }),
 
-                      SizedBox(height: 15),
 
                       // زر الحفظ
                       AppButton(
