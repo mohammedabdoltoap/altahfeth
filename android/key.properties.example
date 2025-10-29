@@ -1,0 +1,4 @@
+storePassword=althfeth2024
+keyPassword=althfeth2024
+keyAlias=upload
+storeFile=upload-keystore.jks
