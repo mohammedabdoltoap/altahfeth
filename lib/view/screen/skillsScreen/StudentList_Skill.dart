@@ -45,10 +45,26 @@ class StudentList_Skill extends StatelessWidget {
 
         }
 
+        // ════════════════════════════════════════════════════════════════
+        // 🎓 مثال آخر لاستخدام ListView.builder (for loop ذكي)
+        // ════════════════════════════════════════════════════════════════
+        // هنا نعرض قائمة الطلاب باستخدام ListView.builder
+        // 
+        // 🔄 تخيل لو كتبناها بـ for عادية:
+        //   List<Widget> studentCards = [];
+        //   for(int i = 0; i < students.length; i++) {
+        //     studentCards.add(SmolleStudentCard(...));
+        //   }
+        //   return ListView(children: studentCards);
+        //
+        // ⚡ المشكلة: لو عندك 500 طالب، راح يرسم 500 بطاقة مرة وحدة!
+        // ✅ الحل: ListView.builder يرسم فقط البطاقات المرئية (Lazy Loading)
+        // ════════════════════════════════════════════════════════════════
         return ListView.builder(
           padding: const EdgeInsets.all(12),
-          itemCount: controller.students.length,
+          itemCount: controller.students.length, // 🔢 عدد الطلاب
           itemBuilder: (context, index) {
+            // 📌 نحصل على بيانات الطالب رقم index
             final student = controller.students[index];
             return SmolleStudentCard(
               studentName: student["name_student"],

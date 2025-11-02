@@ -1,5 +1,5 @@
+import 'package:althfeth/view/screen/examples/ForLoopExamplePage.dart';
 import 'package:althfeth/view/screen/login.dart';
-import 'package:althfeth/view/screen/test.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,7 +12,7 @@ import 'utils/ErrorHandler.dart';
 void main() {
   // تفعيل معالج الأخطاء العام
   ErrorHandler.initialize();
-  
+
   runApp(MyApp());
 }
 
@@ -21,8 +21,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return GetMaterialApp(
+      // home: ForLoopExamplePage(),
       home: Login(),
-      // home: TestVisitorDialogPage(),
       debugShowCheckedModeBanner: false,
       locale: Locale(Get.deviceLocale?.languageCode ?? 'ar'),
       theme: AppTheme.lightTheme,

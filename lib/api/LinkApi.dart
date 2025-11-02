@@ -91,6 +91,15 @@ class Linkapi {
   static const String select_data_visit_previous = "${server}users/select.php?mark=select_data_visit_previous";
   static const String select_notes_for_teacher_by_circle = "${server}users/select.php?mark=select_notes_for_teacher_by_circle";
 
+  // ==================== PROMOTION (ترفيع) APIs ====================
+  static const String select_centers = "${server}users/select.php?mark=select_centers";
+  static const String select_circles_by_center = "${server}users/select.php?mark=select_circles_by_center";
+  static const String select_promotion_committee = "${server}users/select.php?mark=select_promotion_committee";
+  static const String select_promotion_subjects = "${server}users/select.php?mark=select_promotion_subjects";
+  static const String insert_promotion = "${server}users/insert.php?mark=insert_promotion";
+  static const String select_my_promotions_pending = "${server}users/select.php?mark=select_my_promotions_pending";
+  static const String select_promotion_details = "${server}users/select.php?mark=select_promotion_details";
+
   // INSERT
   static const String addDailyReport = "${server}users/insert.php?mark=addDailyReport";
   static const String addResignation = "${server}users/insert.php?mark=addResignation";

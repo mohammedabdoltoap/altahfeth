@@ -15,6 +15,7 @@ import '../../screen/skillsScreen/StudentList_Skill.dart';
 import '../../screen/updateAttendance.dart';
 import '../../screen/user_attendance.dart';
 import '../../screen/circlesScreen/CirclesListScreen.dart';
+import '../../screen/promotion_pending.dart';
 
 class AppDrawer extends StatelessWidget {
   final HomeCont homeCont = Get.find();
@@ -87,6 +88,15 @@ class AppDrawer extends StatelessWidget {
                 icon: Icons.exit_to_app_rounded,
                 text: "طلب استقالة",
                 onTap: () => _navigateIfNotHoliday(context, () => TeacherResignationPage()),
+                theme: theme,
+              ),
+              _drawerItem(
+                icon: Icons.history_rounded,
+                text: "الترفيعات المعلقة",
+                onTap: () {
+                  Get.back();
+                  Get.to(() => const PromotionPendingScreen());
+                },
                 theme: theme,
               ),
 

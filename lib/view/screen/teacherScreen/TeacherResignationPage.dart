@@ -40,7 +40,7 @@ class TeacherResignationPage extends StatelessWidget {
                         Icon(Icons.person, color: theme.primaryColor),
                         const SizedBox(width: 8),
                         Text(
-                          "معلومات الأستاذ",
+                          "معلومات ",
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: theme.primaryColor,
@@ -50,8 +50,7 @@ class TeacherResignationPage extends StatelessWidget {
                     ),
                     const Divider(),
                     _buildInfoRow("الاسم:", controller.userName),
-                    _buildInfoRow("المنصب:", controller.userPosition),
-              
+
                   ],
                 ),
               ),
@@ -241,7 +240,6 @@ class TeacherResignationController extends GetxController {
   var isLoading = false.obs;
   
   String get userName => dataArg?["username"] ?? "غير محدد";
-  String get userPosition => "أستاذ"; 
 
   @override
   void onInit() {

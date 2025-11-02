@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../globals.dart';
 import '../view/screen/adminScreen/Home_Admin.dart';
+import '../view/screen/promotion_screen.dart';
 import '../view/screen/show_circle.dart';
 
 class LoginController extends GetxController {
@@ -42,7 +43,7 @@ class LoginController extends GetxController {
         });
       },
     );
-    print("response========${response}");
+
     if (response == null) return;
     if (response is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
@@ -54,10 +55,16 @@ class LoginController extends GetxController {
       if (data_user["status"] == 1) {
         data_user_globle = data_user;
         if (data_user["role_id"] == adminRole) {
+
           Get.offAll(() => Home_Admin(), arguments: data_user);
-        } else {
+        } else  if(data_user["role_id"]==teacherRole){
+
           Get.offAll(() => Show_Circle(), arguments: data_user);
         }
+        else  if(data_user["role_id"]==committeeRole){
+          Get.to(() => PromotionScreen(), arguments: data_user);
+        }
+
       } else {
         mySnackbar("حسابك موقف", "تواصل مع الإدارة لحل المشكلة");
       }
