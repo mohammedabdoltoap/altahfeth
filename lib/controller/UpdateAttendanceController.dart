@@ -79,7 +79,12 @@ class UpdateAttendanceController extends GetxController {
     for (int i = 0; i < students.length; i++) {
       students[i]["id_user"] = dataArg["id_user"];
       students[i]["id_circle"] = dataArg["id_circle"];
-      students[i]["status"] = students[i]["status"] == true ? 1 : 0;
+      
+      // ✅ التعامل مع الحالات: 1 = حاضر، 0 = غائب، 2 = غائب بعذر
+      if (students[i]["status"] is bool) {
+        students[i]["status"] = students[i]["status"] == true ? 1 : 0;
+      }
+      // إذا كانت status رقم، نتركها كما هي (1, 0, أو 2)
     }
 
     final res = await handleRequest<dynamic>(

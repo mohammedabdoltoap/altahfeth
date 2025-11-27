@@ -18,444 +18,489 @@ class PromotionScreen extends StatelessWidget {
     final controller = Get.put(PromotionController());
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'نموذج الترفيع الإلكتروني',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Obx(() => Text(
+          controller.isEditMode.value 
+            ? 'تعديل طلب الترفيع' 
+            : 'نموذج طلب الترفيع للطالب',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        )),
         backgroundColor: primaryTeal,
         elevation: 0,
       ),
       drawer: _PromotionDrawer(),
-      body: Obx(() => Stepper(
-              type: StepperType.vertical,
-              currentStep: controller.currentStep.value,
-              onStepContinue: controller.canContinue(controller.currentStep.value)
-                  ? controller.nextStep
-                  : null,
-              onStepCancel:
-                  controller.currentStep.value > 0 ? controller.previousStep : null,
-              controlsBuilder: (context, details) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: Row(
-                    children: [
-                      if (details.stepIndex > 0)
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: details.onStepCancel,
-                            style: OutlinedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: const Text('السابق'),
-                          ),
-                        ),
-                      if (details.stepIndex > 0) const SizedBox(width: 12),
-                      if (details.stepIndex < 5)
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: controller
-                                    .canContinue(controller.currentStep.value)
-                                ? details.onStepContinue
-                                : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryTeal,
-                              foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                              disabledBackgroundColor: Colors.grey[300],
-                            ),
-                            child: const Text('التالي'),
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-              steps: [
-                Step(
-                  title: const Text(
-                    'اختيار المركز',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: controller.selectedCenterName.value != null
-                      ? Text(
-                          'المحدد: ${controller.selectedCenterName.value}',
-                          style: TextStyle(
-                              color: primaryTeal,
-                              fontWeight: FontWeight.w600),
-                        )
-                      : null,
-                  content: _SearchableSelector(
-                    label: 'المركز',
-                    valueText: controller.selectedCenterName.value ?? '',
-                    color: primaryTeal,
-                    onSelect: () async {
-                      final selected = await _openSearchPicker(
-                        context: context,
-                        title: 'اختر مركز',
-                        color: primaryTeal,
-                        items: controller.centers
-                            .map((e) => {
-                                  'id': e['center_id'] as int,
-                                  'label': e['name']?.toString() ?? ''
-                                })
-                            .toList(),
-                        selectedId: controller.selectedCenterId.value,
-                      );
-                      if (selected != null) {
-                        controller.fetchCirclesForCenter(selected['id'] as int);
-                      }
-                    },
-                  ),
-                  isActive: controller.currentStep.value >= 0,
-                  state: controller.currentStep.value > 0
-                      ? StepState.complete
-                      : (controller.currentStep.value == 0
-                          ? StepState.indexed
-                          : StepState.disabled),
-                ),
-                Step(
-                  title: const Text(
-                    'اختيار الحلقة',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: controller.selectedCircleName.value != null
-                      ? Text(
-                          'المحددة: ${controller.selectedCircleName.value}',
-                          style: TextStyle(
-                              color: primaryTeal,
-                              fontWeight: FontWeight.w600),
-                        )
-                      : null,
-                  content: _SearchableSelector(
-                    label: 'الحلقة',
-                    valueText: controller.selectedCircleName.value ?? '',
-                    color: primaryTeal,
-                    onSelect: () async {
-                      final selected = await _openSearchPicker(
-                        context: context,
-                        title: 'اختر حلقة',
-                        color: primaryTeal,
-                        items: controller.circles
-                            .map((e) => {
-                                  'id': e['id_circle'] as int,
-                                  'label': e['name_circle']?.toString() ?? ''
-                                })
-                            .toList(),
-                        selectedId: controller.selectedCircleId.value,
-                      );
-                      if (selected != null) {
-                        final circle = controller.circles.firstWhere(
-                            (e) => e['id_circle'] == selected['id']);
-                        controller.selectCircle(circle);
-                      }
-                    },
-                  ),
-                  isActive: controller.currentStep.value >= 1,
-                  state: controller.currentStep.value > 1
-                      ? StepState.complete
-                      : (controller.currentStep.value == 1
-                          ? StepState.indexed
-                          : StepState.disabled),
-                ),
-                Step(
-                  title: const Text(
-                    'اختيار الطالب',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: controller.selectedStudentName.value != null
-                      ? Text(
-                          'المحدد: ${controller.selectedStudentName.value}',
-                          style: TextStyle(
-                              color: primaryTeal,
-                              fontWeight: FontWeight.w600),
-                        )
-                      : null,
-                  content: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _SearchableSelector(
-                        label: 'الطالب',
-                        valueText: controller.selectedStudentName.value ?? '',
-                        color: primaryTeal,
-                        onSelect: () async {
-                          final selected = await _openSearchPicker(
-                            context: context,
-                            title: 'اختر طالب',
-                            color: primaryTeal,
-                            items: controller.students
-                                .map((e) => {
-                                      'id': e['id_student'] as int,
-                                      'label': e['name_student']?.toString() ?? ''
-                                    })
-                                .toList(),
-                            selectedId: controller.selectedStudentId.value,
-                          );
-                          if (selected != null) {
-                            final id = selected['id'] as int;
-                            controller.selectedStudentId.value = id;
-                            final match = controller.students
-                                .firstWhereOrNull((e) => e['id_student'] == id);
-                            controller.selectedStudentName.value =
-                                match != null ? match['name_student'] : null;
-                          }
-                        },
-                      ),
-                      if (controller.selectedStudentId.value != null) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: primaryTeal.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: primaryTeal.withOpacity(0.2)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.info_outline, color: primaryTeal, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text('معلومات الطالب', style: TextStyle(color: primaryTeal, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _buildSummaryRow('المرحلة', controller.selectedStudentStageName ?? '-'),
-                              _buildSummaryRow('المستوى', controller.selectedStudentLevelName ?? '-'),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  isActive: controller.currentStep.value >= 2,
-                  state: controller.currentStep.value > 2
-                      ? StepState.complete
-                      : (controller.currentStep.value == 2
-                          ? StepState.indexed
-                          : StepState.disabled),
-                ),
-                Step(
-                  title: const Text(
-                    'إدخال الدرجات',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: controller.gradeControllers.values
-                          .any((c) => c.text.isNotEmpty)
-                      ? Text(
-                          'المجموع: ${controller.calculateTotal()} / ${controller.subjects.fold<int>(0, (sum, s) => sum + (s['MaxGrade'] as int))}',
-                          style: TextStyle(
-                              color: primaryTeal,
-                              fontWeight: FontWeight.w600),
-                        )
-                      : null,
-                  content: Column(
-                    children: [
-                      ...controller.subjects.map((subject) => Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: TextFormField(
-                              controller:
-                                  controller.gradeControllers[subject['SubjectID'] as int],
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                      decimal: true),
-                              decoration: _decoration(subject['SubjectName']?.toString() ?? '', primaryTeal).copyWith(
-                                hintText:
-                                    'أدخل الدرجة (حد أقصى ${subject['MaxGrade']})',
-                                prefixIcon:
-                                    Icon(Icons.grade, color: primaryTeal),
-                                suffixText:
-                                    '/ ${subject['MaxGrade']}',
-                              ),
-                              onChanged: (val) {
-                                final value = double.tryParse(val);
-                                if (value != null &&
-                                    value > (subject['MaxGrade'] as num).toDouble()) {
-                                  controller.gradeControllers[subject['SubjectID'] as int]!.text =
-                                      (subject['MaxGrade'] as int).toString();
-                                }
-                                controller.currentStep.refresh();
-                              },
-                            ),
-                          )),
-                      if (controller.gradeControllers.values
-                          .any((c) => c.text.isNotEmpty)) ...[
-                        const SizedBox(height: 20),
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                primaryTeal.withOpacity(0.1),
-                                lightTeal.withOpacity(0.1),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                                color: primaryTeal.withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            children: [
-                              _buildStatCard(
-                                'المجموع',
-                                '${controller.calculateTotal()}',
-                                'من ${controller.subjects.fold<int>(0, (sum, s) => sum + (s['MaxGrade'] as int))}',
-                                Icons.summarize,
-                                primaryTeal,
-                              ),
-                              const SizedBox(height: 16),
-                              _buildStatCard(
-                                'المعدل',
-                                '${controller.calculateAverage().toStringAsFixed(2)}%',
-                                controller.calculateGrade(
-                                    controller.calculateAverage()),
-                                Icons.percent,
-                                _getGradeColor(controller.calculateAverage()),
-                              ),
-                            ],
-                          ),
-                        ),
-                       
-                      ],
-                    ],
-                  ),
-                  isActive: controller.currentStep.value >= 3,
-                  state: controller.currentStep.value > 3
-                      ? StepState.complete
-                      : (controller.currentStep.value == 3
-                          ? StepState.indexed
-                          : StepState.disabled),
-                ),
-                Step(
-                  title: const Text(
-                    'لجنة الترفيع',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  subtitle: (controller.selectedCommitteeIds.length + 1) > 0
-                      ? Text(
-                          '${controller.selectedCommitteeIds.length + 1} عضو محدد',
-                          style: TextStyle(
-                              color: primaryTeal,
-                              fontWeight: FontWeight.w600),
-                        )
-                      : null,
-                  content: _MultiSelectSelector(
-                    label: 'أعضاء اللجنة',
-                    valueText: controller.selectedCommitteeIds.isEmpty
-                        ? ''
-                        : '${controller.selectedCommitteeIds.length} مختار',
-                    color: primaryTeal,
-                    onSelect: () async {
-                      final selected = await _openMultiSelectPicker(
-                        context: context,
-                        title: 'اختر أعضاء اللجنة',
-                        color: primaryTeal,
-                        items: controller.committeeMembers
-                            .map((e) => {
-                                  'id': e['id_user'] as int,
-                                  'label': e['username']?.toString() ?? ''
-                                })
-                            .toList(),
-                        selectedIds: controller.selectedCommitteeIds.toSet(),
-                      );
-                      if (selected != null) {
-                        controller.selectedCommitteeIds.assignAll(selected);
-                      }
-                    },
-                  ),
-                  isActive: controller.currentStep.value >= 4,
-                  state: controller.currentStep.value > 4
-                      ? StepState.complete
-                      : (controller.currentStep.value == 4
-                          ? StepState.indexed
-                          : StepState.disabled),
-                ),
-                Step(
-                  title: const Text(
-                    'تأكيد الترفيع',
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  content: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: primaryTeal.withOpacity(0.3)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ملخص البيانات',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: primaryTeal,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildSummaryRow('الحلقة',
-                                controller.selectedCircleName.value ?? '-'),
-                            _buildSummaryRow('الطالب',
-                                controller.selectedStudentName.value ?? '-'),
-                            _buildSummaryRow('رئيس اللجنة', controller.currentUserName ?? '-'),
-                            _buildSummaryRow('أعضاء اللجنة', (controller.selectedCommitteeNames.isEmpty
-                                    ? '-'
-                                    : controller.selectedCommitteeNames.join('، '))),
-                            _buildSummaryRow(
-                                'المعدل',
-                                '${controller.calculateAverage().toStringAsFixed(2)}%'),
-                            _buildSummaryRow(
-                                'التقدير',
-                                controller.calculateGrade(
-                                    controller.calculateAverage())),
-                            _buildSummaryRow('عدد أعضاء اللجنة',
-                                '${controller.selectedCommitteeIds.length + 1}'),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              controller.canContinue(4) ? controller.submitPromotion : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryTeal,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.grey[300],
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                          icon: const Icon(Icons.save, size: 24),
-                          label: const Text(
-                            'تأكيد الترفيع',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  isActive: controller.currentStep.value >= 5,
-                  state: StepState.complete,
+      body: Obx(() {
+        // ✅ عرض مؤشر تحميل أثناء تحميل البيانات الأولية
+        if (controller.isLoading.value && controller.centers.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: primaryTeal),
+                const SizedBox(height: 16),
+                const Text(
+                  'جاري تحميل البيانات...',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ],
-            )),
+            ),
+          );
+        }
+
+        return Stepper(
+          type: StepperType.vertical,
+          currentStep: controller.currentStep.value,
+          onStepContinue: controller.canContinue(controller.currentStep.value)
+              ? controller.nextStep
+              : null,
+          onStepCancel:
+          controller.currentStep.value > 0 ? controller.previousStep : null,
+          controlsBuilder: (context, details) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Row(
+                children: [
+                  if (details.stepIndex > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: details.onStepCancel,
+                        style: OutlinedButton.styleFrom(
+                          padding:
+                          const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('السابق'),
+                      ),
+                    ),
+                  if (details.stepIndex > 0) const SizedBox(width: 12),
+                  if (details.stepIndex < 5)
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: controller
+                            .canContinue(controller.currentStep.value)
+                            ? details.onStepContinue
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryTeal,
+                          foregroundColor: Colors.white,
+                          padding:
+                          const EdgeInsets.symmetric(vertical: 16),
+                          disabledBackgroundColor: Colors.grey[300],
+                        ),
+                        child: const Text('التالي'),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+          steps: [
+            Step(
+              title: const Text(
+                'اختيار المركز',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: controller.selectedCenterName.value != null
+                  ? Text(
+                'المحدد: ${controller.selectedCenterName.value}',
+                style: TextStyle(
+                    color: primaryTeal,
+                    fontWeight: FontWeight.w600),
+              )
+                  : null,
+              content: _SearchableSelector(
+                label: 'المركز',
+                valueText: controller.selectedCenterName.value ?? '',
+                color: primaryTeal,
+                onSelect: () async {
+                  final selected = await _openSearchPicker(
+                    context: context,
+                    title: 'اختر مركز',
+                    color: primaryTeal,
+                    items: controller.centers
+                        .map((e) =>
+                    {
+                      'id': e['center_id'] as int,
+                      'label': e['name']?.toString() ?? ''
+                    })
+                        .toList(),
+                    selectedId: controller.selectedCenterId.value,
+                  );
+                  if (selected != null) {
+                    controller.fetchCirclesForCenter(selected['id'] as int);
+                  }
+                },
+              ),
+              isActive: controller.currentStep.value >= 0,
+              state: controller.currentStep.value > 0
+                  ? StepState.complete
+                  : (controller.currentStep.value == 0
+                  ? StepState.indexed
+                  : StepState.disabled),
+            ),
+            Step(
+              title: const Text(
+                'اختيار الحلقة',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: controller.selectedCircleName.value != null
+                  ? Text(
+                'المحددة: ${controller.selectedCircleName.value}',
+                style: TextStyle(
+                    color: primaryTeal,
+                    fontWeight: FontWeight.w600),
+              )
+                  : null,
+              content: _SearchableSelector(
+                label: 'الحلقة',
+                valueText: controller.selectedCircleName.value ?? '',
+                color: primaryTeal,
+                onSelect: () async {
+                  final selected = await _openSearchPicker(
+                    context: context,
+                    title: 'اختر حلقة',
+                    color: primaryTeal,
+                    items: controller.circles
+                        .map((e) =>
+                    {
+                      'id': e['id_circle'] as int,
+                      'label': e['name_circle']?.toString() ?? ''
+                    })
+                        .toList(),
+                    selectedId: controller.selectedCircleId.value,
+                  );
+                  if (selected != null) {
+                    final circle = controller.circles.firstWhere(
+                            (e) => e['id_circle'] == selected['id']);
+                    controller.selectCircle(circle);
+                  }
+                },
+              ),
+              isActive: controller.currentStep.value >= 1,
+              state: controller.currentStep.value > 1
+                  ? StepState.complete
+                  : (controller.currentStep.value == 1
+                  ? StepState.indexed
+                  : StepState.disabled),
+            ),
+            Step(
+              title: const Text(
+                'اختيار الطالب',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: controller.selectedStudentName.value != null
+                  ? Text(
+                'المحدد: ${controller.selectedStudentName.value}',
+                style: TextStyle(
+                    color: primaryTeal,
+                    fontWeight: FontWeight.w600),
+              )
+                  : null,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SearchableSelector(
+                    label: 'الطالب',
+                    valueText: controller.selectedStudentName.value ?? '',
+                    color: primaryTeal,
+                    onSelect: () async {
+                      final selected = await _openSearchPicker(
+                        context: context,
+                        title: 'اختر طالب',
+                        color: primaryTeal,
+                        items: controller.students
+                            .map((e) =>
+                        {
+                          'id': e['id_student'] as int,
+                          'label': e['name_student']?.toString() ?? ''
+                        })
+                            .toList(),
+                        selectedId: controller.selectedStudentId.value,
+                      );
+                      if (selected != null) {
+                        final id = selected['id'] as int;
+                        controller.selectedStudentId.value = id;
+                        final match = controller.students
+                            .firstWhereOrNull((e) => e['id_student'] == id);
+                        controller.selectedStudentName.value =
+                        match != null ? match['name_student'] : null;
+                      }
+                    },
+                  ),
+                  if (controller.selectedStudentId.value != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: primaryTeal.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: primaryTeal.withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.info_outline, color: primaryTeal,
+                                  size: 20),
+                              const SizedBox(width: 8),
+                              Text('معلومات الطالب', style: TextStyle(
+                                  color: primaryTeal,
+                                  fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          _buildSummaryRow('المرحلة',
+                              controller.selectedStudentStageName ?? '-'),
+                          _buildSummaryRow('المستوى',
+                              controller.selectedStudentLevelName ?? '-'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              isActive: controller.currentStep.value >= 2,
+              state: controller.currentStep.value > 2
+                  ? StepState.complete
+                  : (controller.currentStep.value == 2
+                  ? StepState.indexed
+                  : StepState.disabled),
+            ),
+            Step(
+              title: const Text(
+                'إدخال الدرجات',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: controller.gradeControllers.values
+                  .any((c) => c.text.isNotEmpty)
+                  ? Text(
+                'المجموع: ${controller.calculateTotal()} / ${controller.subjects
+                    .fold<int>(0, (sum, s) => sum + (s['MaxGrade'] as int))}',
+                style: TextStyle(
+                    color: primaryTeal,
+                    fontWeight: FontWeight.w600),
+              )
+                  : null,
+              content: Column(
+                children: [
+                  ...controller.subjects.map((subject) =>
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: TextFormField(
+                          controller:
+                          controller
+                              .gradeControllers[subject['SubjectID'] as int],
+                          keyboardType:
+                          const TextInputType.numberWithOptions(
+                              decimal: true),
+                          decoration: _decoration(
+                              subject['SubjectName']?.toString() ?? '',
+                              primaryTeal).copyWith(
+                            hintText:
+                            'أدخل الدرجة (حد أقصى ${subject['MaxGrade']})',
+                            prefixIcon:
+                            Icon(Icons.grade, color: primaryTeal),
+                            suffixText:
+                            '/ ${subject['MaxGrade']}',
+                          ),
+                          onChanged: (val) {
+                            final value = double.tryParse(val);
+                            if (value != null &&
+                                value >
+                                    (subject['MaxGrade'] as num).toDouble()) {
+                              controller
+                                  .gradeControllers[subject['SubjectID'] as int]!
+                                  .text =
+                                  (subject['MaxGrade'] as int).toString();
+                            }
+                            controller.currentStep.refresh();
+                          },
+                        ),
+                      )),
+                  if (controller.gradeControllers.values
+                      .any((c) => c.text.isNotEmpty)) ...[
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            primaryTeal.withOpacity(0.1),
+                            lightTeal.withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: primaryTeal.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildStatCard(
+                            'المجموع',
+                            '${controller.calculateTotal()}',
+                            'من ${controller.subjects.fold<int>(
+                                0, (sum, s) => sum + (s['MaxGrade'] as int))}',
+                            Icons.summarize,
+                            primaryTeal,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildStatCard(
+                            'المعدل',
+                            '${controller.calculateAverage().toStringAsFixed(
+                                2)}%',
+                            controller.calculateGrade(
+                                controller.calculateAverage()),
+                            Icons.percent,
+                            _getGradeColor(controller.calculateAverage()),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  ],
+                ],
+              ),
+              isActive: controller.currentStep.value >= 3,
+              state: controller.currentStep.value > 3
+                  ? StepState.complete
+                  : (controller.currentStep.value == 3
+                  ? StepState.indexed
+                  : StepState.disabled),
+            ),
+            Step(
+              title: const Text(
+                'لجنة الترفيع',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              subtitle: (controller.selectedCommitteeIds.length + 1) > 0
+                  ? Text(
+                '${controller.selectedCommitteeIds.length + 1} عضو محدد',
+                style: TextStyle(
+                    color: primaryTeal,
+                    fontWeight: FontWeight.w600),
+              )
+                  : null,
+              content: _MultiSelectSelector(
+                label: 'أعضاء اللجنة',
+                valueText: controller.selectedCommitteeIds.isEmpty
+                    ? ''
+                    : '${controller.selectedCommitteeIds.length} مختار',
+                color: primaryTeal,
+                onSelect: () async {
+                  final selected = await _openMultiSelectPicker(
+                    context: context,
+                    title: 'اختر أعضاء اللجنة',
+                    color: primaryTeal,
+                    items: controller.committeeMembers
+                        .map((e) =>
+                    {
+                      'id': e['id_user'] as int,
+                      'label': e['username']?.toString() ?? ''
+                    })
+                        .toList(),
+                    selectedIds: controller.selectedCommitteeIds.toSet(),
+                  );
+                  if (selected != null) {
+                    controller.selectedCommitteeIds.assignAll(selected);
+                  }
+                },
+              ),
+              isActive: controller.currentStep.value >= 4,
+              state: controller.currentStep.value > 4
+                  ? StepState.complete
+                  : (controller.currentStep.value == 4
+                  ? StepState.indexed
+                  : StepState.disabled),
+            ),
+            Step(
+              title: const Text(
+                'تأكيد طلب الترفيع',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              content: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: primaryTeal.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ملخص البيانات',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: primaryTeal,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSummaryRow('الحلقة',
+                            controller.selectedCircleName.value ?? '-'),
+                        _buildSummaryRow('الطالب',
+                            controller.selectedStudentName.value ?? '-'),
+                        _buildSummaryRow('رئيس اللجنة', controller
+                            .currentUserName ?? '-'),
+                        _buildSummaryRow('أعضاء اللجنة', (controller
+                            .selectedCommitteeNames.isEmpty
+                            ? '-'
+                            : controller.selectedCommitteeNames.join('، '))),
+                        _buildSummaryRow(
+                            'المعدل',
+                            '${controller.calculateAverage().toStringAsFixed(
+                                2)}%'),
+                        _buildSummaryRow(
+                            'التقدير',
+                            controller.calculateGrade(
+                                controller.calculateAverage())),
+                        _buildSummaryRow('عدد أعضاء اللجنة',
+                            '${controller.selectedCommitteeIds.length + 1}'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed:
+                      controller.canContinue(4)
+                          ? controller.submitPromotion
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryTeal,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey[300],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 2,
+                      ),
+                      icon: const Icon(Icons.save, size: 24),
+                      label: const Text(
+                        'تأكيد طلب الترفيع',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              isActive: controller.currentStep.value >= 5,
+              state: StepState.complete,
+            ),
+          ],
+        );
+      }),
     );
   }
 
@@ -598,7 +643,7 @@ class _PromotionDrawer extends StatelessWidget {
               _buildSectionTitle("الإجراءات", theme),
               _drawerItem(
                 icon: Icons.history_rounded,
-                text: "الترفيعات المعلقة",
+                text: "طلبات الترفيعات المعلقة ",
                 onTap: () {
                   Get.back();
                   Get.to(() =>  PromotionPendingScreen() );

@@ -29,7 +29,7 @@ class VisitStatisticsReport extends StatelessWidget {
                         icon: const Icon(Icons.calendar_today, size: 18),
                         label: Obx(() => Text(
                           controller.startDate.value != null
-                              ? DateFormat('yyyy-MM-dd').format(controller.startDate.value!)
+                              ? DateFormat('yyyy-MM-dd', 'en').format(controller.startDate.value!)
                               : "من",
                           style: const TextStyle(fontSize: 12),
                         )),
@@ -42,7 +42,7 @@ class VisitStatisticsReport extends StatelessWidget {
                         icon: const Icon(Icons.calendar_today, size: 18),
                         label: Obx(() => Text(
                           controller.endDate.value != null
-                              ? DateFormat('yyyy-MM-dd').format(controller.endDate.value!)
+                              ? DateFormat('yyyy-MM-dd', 'en').format(controller.endDate.value!)
                               : "إلى",
                           style: const TextStyle(fontSize: 12),
                         )),
@@ -193,8 +193,8 @@ class VisitStatisticsReportController extends GetxController {
     loading.value = true;
     try {
       Map<String, dynamic> requestData = {
-        "start_date": DateFormat('yyyy-MM-dd').format(startDate.value!),
-        "end_date": DateFormat('yyyy-MM-dd').format(endDate.value!),
+        "start_date": DateFormat('yyyy-MM-dd', 'en').format(startDate.value!),
+        "end_date": DateFormat('yyyy-MM-dd', 'en').format(endDate.value!),
       };
       
       if (dataArg?['id_center'] != null) {

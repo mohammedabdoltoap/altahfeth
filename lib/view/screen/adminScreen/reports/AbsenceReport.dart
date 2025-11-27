@@ -394,24 +394,48 @@ class AbsenceReportController extends GetxController {
   }
   
   Future<void> selectStartDate(BuildContext context) async {
+    final now = DateTime.now();
+    final initial = startDate.value ?? now;
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: startDate.value ?? DateTime.now(),
+      initialDate: initial.isAfter(now) ? now : initial,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null) {
       startDate.value = picked;
       useDateRange.value = true;
+      
+      if (endDate.value != null && endDate.value!.isBefore(picked)) {
+        endDate.value = null;
+      }
     }
   }
   
   Future<void> selectEndDate(BuildContext context) async {
+    if (startDate.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار تاريخ البداية أولاً");
+      return;
+    }
+    
+    final now = DateTime.now();
+    final firstDate = startDate.value!;
+    
+    DateTime initialDate;
+    if (endDate.value != null && !endDate.value!.isBefore(firstDate) && !endDate.value!.isAfter(now)) {
+      initialDate = endDate.value!;
+    } else if (firstDate.isAfter(now)) {
+      initialDate = now;
+    } else {
+      initialDate = firstDate;
+    }
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: endDate.value ?? DateTime.now(),
-      firstDate: startDate.value ?? DateTime(2020),
-      lastDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: now,
     );
     if (picked != null) {
       endDate.value = picked;
@@ -428,6 +452,13 @@ class AbsenceReportController extends GetxController {
     if (useDateRange.value && (startDate.value == null || endDate.value == null)) {
       mySnackbar("تنبيه", "الرجاء اختيار تاريخ البداية والنهاية");
       return;
+    }
+    
+    if (useDateRange.value && startDate.value != null && endDate.value != null) {
+      if (startDate.value!.isAfter(endDate.value!)) {
+        mySnackbar("خطأ", "تاريخ البداية يجب أن يكون أصغر من تاريخ النهاية");
+        return;
+      }
     }
     
     if (selectedCircle.value == null) {
@@ -496,63 +527,159 @@ class AbsenceReportController extends GetxController {
       final pdf = pw.Document();
       final fontData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
       final arabicFont = pw.Font.ttf(fontData);
+      
+      // تحميل الشعار
+      final logoData = await rootBundle.load('assets/icon/app_icon.png');
+      final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+
+      final dateStr = selectedDate.value != null 
+          ? DateFormat('yyyy-MM-dd').format(selectedDate.value!)
+          : useDateRange.value && startDate.value != null && endDate.value != null
+              ? 'من ${DateFormat('yyyy-MM-dd').format(startDate.value!)} إلى ${DateFormat('yyyy-MM-dd').format(endDate.value!)}'
+              : '';
+
+      final circleName = circlesList.firstWhere(
+        (circle) => circle['id_circle'].toString() == selectedCircle.value.toString(), 
+        orElse: () => {'name_circle': 'غير محدد'}
+      )['name_circle'];
 
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(20),
           textDirection: pw.TextDirection.rtl,
           theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
           build: (context) {
             return [
+              // رأس الصفحة الاحترافي
               pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#F44336'),
-                  borderRadius: pw.BorderRadius.circular(10),
-                ),
-                child: pw.Column(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      'تقرير الغياب',
-                      style: pw.TextStyle(
-                        fontSize: 24,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white,
-                      ),
+                    // الجانب الأيسر: الشعار + المؤسسة
+                    pw.Row(
+                      children: [
+                        pw.Container(
+                          width: 45,
+                          height: 45,
+                          child: pw.Image(logoImage),
+                        ),
+                        pw.SizedBox(width: 8),
+                        pw.Directionality(
+                          textDirection: pw.TextDirection.rtl,
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'مؤسسة مسارات',
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                              ),
+                              pw.Text(
+                                'للتنمية الإنسانية',
+                                style: const pw.TextStyle(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    pw.SizedBox(height: 10),
-                    pw.Text(
-                      'عدد السجلات: ${absenceList.length}',
-                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
+                    // الجانب الأيمن: اسم التقرير + التفاصيل
+                    pw.Directionality(
+                      textDirection: pw.TextDirection.rtl,
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [
+                          pw.Text(
+                            'تقرير الغياب',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            'التاريخ: $dateStr',
+                            style: const pw.TextStyle(fontSize: 11),
+                          ),
+                          pw.SizedBox(height: 2),
+                          pw.Text(
+                            'الحلقة: $circleName | إجمالي: ${absenceList.length}',
+                            style: const pw.TextStyle(fontSize: 9),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              pw.SizedBox(height: 20),
-              pw.Table(
-                border: pw.TableBorder.all(color: PdfColors.grey300),
-                children: [
-                  pw.TableRow(
-                    decoration: pw.BoxDecoration(
-                      color: PdfColor.fromHex('#FFCDD2'),
-                    ),
-                    children: [
-                      _buildTableCell('الطالب', isHeader: true),
-                      _buildTableCell('الحلقة', isHeader: true),
-                      _buildTableCell('الغياب', isHeader: true),
-                    ],
-                  ),
-                  ...absenceList.map((item) {
-                    return pw.TableRow(
-                      children: [
-                        _buildTableCell(item['name_student'] ?? '-'),
-                        _buildTableCell(item['name_circle'] ?? '-'),
-                        _buildTableCell(item['absent_count']?.toString() ?? '1'),
-                      ],
-                    );
+              pw.SizedBox(height: 8),
+              pw.Divider(thickness: 1.5),
+              pw.SizedBox(height: 15),
+
+              // Table
+              pw.Directionality(
+                textDirection: pw.TextDirection.rtl,
+                child: pw.Table.fromTextArray(
+                  headers: ['الغياب', 'الحلقة', 'الطالب', '#'],
+                  data: absenceList.asMap().entries.map((entry) {
+                    final index = entry.key + 1;
+                    final item = entry.value;
+                    
+                    return [
+                      item['absent_count']?.toString() ?? '1',
+                      item['name_circle'] ?? '-',
+                      item['name_student'] ?? '-',
+                      index.toString(),
+                    ];
                   }).toList(),
-                ],
+                  border: pw.TableBorder.all(width: 0.5, color: PdfColors.red300),
+                  headerStyle: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.white,
+                  ),
+                  headerDecoration: const pw.BoxDecoration(
+                    color: PdfColors.red,
+                  ),
+                  cellStyle: const pw.TextStyle(fontSize: 9),
+                  cellAlignment: pw.Alignment.center,
+                  cellHeight: 22,
+                  headerHeight: 28,
+                  cellDecoration: (index, data, rowNum) {
+                    return pw.BoxDecoration(
+                      color: rowNum % 2 == 0 
+                          ? PdfColors.white 
+                          : PdfColors.grey100,
+                    );
+                  },
+                ),
+              ),
+              
+              pw.Spacer(),
+              
+              // تذييل الصفحة
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.Directionality(
+                textDirection: pw.TextDirection.rtl,
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      "تاريخ الطباعة: ${DateTime.now().toLocal().toString().split(' ')[0]}",
+                      style: const pw.TextStyle(fontSize: 8),
+                    ),
+                    pw.Text(
+                      "مؤسسة مسارات للتنمية الإنسانية",
+                      style: const pw.TextStyle(fontSize: 8),
+                    ),
+                  ],
+                ),
               ),
             ];
           },
@@ -561,7 +688,7 @@ class AbsenceReportController extends GetxController {
 
       await Printing.layoutPdf(
         onLayout: (format) async => pdf.save(),
-        name: 'تقرير_الغياب.pdf',
+        name: 'تقرير_الغياب_${DateTime.now().toLocal().toString().split(' ')[0]}.pdf',
       );
 
       mySnackbar("نجح", "تم إنشاء التقرير بنجاح", type: "g");

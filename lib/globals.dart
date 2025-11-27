@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 
 RxMap<String, dynamic> holidayData = RxMap<String, dynamic>();
 const int adminRole=2;
+
+const String adminModEmail="m15_";
+const String adminModPass="Mod_&&_12";
 const int teacherRole=4;
 const int committeeRole=5;
 

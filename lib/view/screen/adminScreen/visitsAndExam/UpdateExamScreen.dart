@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:althfeth/api/LinkApi.dart';
 import 'package:althfeth/api/apiFunction.dart';
 import 'package:althfeth/constants/function.dart';
+import 'package:althfeth/constants/app_theme.dart';
 import '../../../../constants/appButton.dart';
 import '../../../../constants/customTextField.dart';
 import 'ExamScreen.dart';
@@ -14,29 +15,79 @@ class UpdateExamScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text("تعديل بيانات الطالب"),
-        backgroundColor: Colors.teal,
+        title: Text(
+          "تعديل بيانات الطالب",
+          style: AppTheme.headingMedium.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: AppTheme.primaryColor,
         centerTitle: true,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryColor,
+                AppTheme.primaryColor.withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: Obx(() {
         if (!controller.isLoaded.value) {
-          return const Center(child: CircularProgressIndicator());
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.spacingLarge),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                    boxShadow: AppTheme.cardShadow,
+                  ),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacingLarge),
+                Text(
+                  "جاري تحميل البيانات...",
+                  style: AppTheme.bodyLarge.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          );
         }
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Text(
-              "الحفظ الشهري",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal.shade700,
-              ),
-              textAlign: TextAlign.center,
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.backgroundColor,
+                Colors.white,
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-            const SizedBox(height: 12),
+          ),
+          child: ListView(
+            padding: const EdgeInsets.all(AppTheme.spacingLarge),
+            children: [
+            _buildSectionHeader(
+              title: "الحفظ الشهري",
+              icon: Icons.book_outlined,
+              color: AppTheme.reportColors[0],
+            ),
             RangeCard(
               title: "نطاق البداية",
               selectedSoura: controller.fromSouraMonthly,
@@ -75,17 +126,12 @@ class UpdateExamScreen extends StatelessWidget {
               onChanged: (_) => checkGrade(controller: controller.tilawaMonthly, label: "درجة التلاوة"),
             ),
 
-            const Divider(height: 30, thickness: 2),
-            Text(
-              "المراجعة الشهرية",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.teal.shade700,
-              ),
-              textAlign: TextAlign.center,
+            const SizedBox(height: AppTheme.spacingLarge),
+            _buildSectionHeader(
+              title: "المراجعة الشهرية",
+              icon: Icons.refresh_outlined,
+              color: AppTheme.reportColors[1],
             ),
-            const SizedBox(height: 12),
             RangeCard(
               title: "نطاق البداية",
               selectedSoura: controller.fromSouraRevision,
@@ -123,22 +169,124 @@ class UpdateExamScreen extends StatelessWidget {
               keyboardType: TextInputType.number,
               onChanged: (_) => checkGrade(controller: controller.tilawaRevision, label: "درجة التلاوة"),
             ),
-            Divider(height: 30, thickness: 2),
-
+            const SizedBox(height: AppTheme.spacingLarge),
+            _buildSectionHeader(
+              title: "ملاحظات وتوجيهات",
+              icon: Icons.note_outlined,
+              color: AppTheme.reportColors[2],
+            ),
+            
             CustomTextField(
               controller: controller.notes,
               label: "جوانب يجب اصلاحها في الحفظ والتلاوة",
               hint: "جوانب يجب اصلاحها في الحفظ والتلاوة",
             ),
 
-            const SizedBox(height: 20),
-            AppButton(
-              text: "اعتماد التعديلات",
-              onPressed: () => controller.saveVisitExamResult(),
+            const SizedBox(height: AppTheme.spacingXLarge),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.primaryColor.withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                  onTap: () => controller.saveVisitExamResult(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppTheme.spacingLarge),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(width: AppTheme.spacingSmall),
+                        Text(
+                          "اعتماد التعديلات",
+                          style: AppTheme.headingSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
-        );
+        ));
       }),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.spacingLarge),
+      padding: const EdgeInsets.all(AppTheme.spacingLarge),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.1),
+            color.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppTheme.spacingMedium),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppTheme.spacingMedium),
+          Expanded(
+            child: Text(
+              title,
+              style: AppTheme.headingMedium.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

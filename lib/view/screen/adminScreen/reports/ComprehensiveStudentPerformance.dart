@@ -428,6 +428,9 @@ class ComprehensiveStudentPerformance extends StatelessWidget {
     if (total == 0) return '0%';
     return '${(present / total * 100).toStringAsFixed(0)}%';
   }
+
+  // دالة مساعدة لحساب نسبة الحضور في PDF
+
 }
 
 class ComprehensiveStudentPerformanceController extends GetxController {
@@ -450,60 +453,119 @@ class ComprehensiveStudentPerformanceController extends GetxController {
   }
   
   Future<void> loadCircles() async {
-    try {
-      final response = await postData(Linkapi.select_circle_for_center, {
-        "responsible_user_id": dataArg?['id_user']?.toString(),
-      });
-      
-      if (response['stat'] == 'ok') {
-        circlesList.assignAll(List<Map<String, dynamic>>.from(response['data']));
-        if (circlesList.isNotEmpty) {
-          selectedCircle.value = circlesList.first['id_circle'].toString();
-          loadStudentsByCircle();
-        }
+    var res = await handleRequest(
+      isLoading: RxBool(false),
+      useDialog: true,
+      immediateLoading: true,
+      loadingMessage: "تحميل الحلقات...",
+      action: () async {
+        return await postData(Linkapi.select_circle_for_center, {
+          "responsible_user_id": dataArg?['id_user']?.toString(),
+        });
       }
-    } catch (e) {
-      print("Error loading circles: $e");
+    );
+
+    if (res == null) {
+      return;
+    }
+
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+    
+    if (res["stat"] == "ok") {
+      circlesList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+      if (circlesList.isNotEmpty) {
+        selectedCircle.value = circlesList.first['id_circle'].toString();
+        loadStudentsByCircle();
+      }
+    } else if (res["stat"] == "no") {
+      mySnackbar("تنبيه", "لا يوجد لديك حلقات");
+    } else {
+      mySnackbar("خطأ", res["msg"] ?? "حصل خطأ أثناء جلب البيانات");
     }
   }
 
   Future<void> loadStudentsByCircle() async {
     if (selectedCircle.value == null) return;
     
-    try {
-      final response = await postData(Linkapi.select_students, {
-        "id_circle": selectedCircle.value,
-      });
-      
-      if (response['stat'] == 'ok') {
-        studentsList.assignAll(List<Map<String, dynamic>>.from(response['data']));
-        if (studentsList.isNotEmpty) {
-          selectedStudent.value = studentsList.first['id_student'].toString();
-        }
+    var res = await handleRequest(
+      isLoading: RxBool(false),
+      useDialog: true,
+      immediateLoading: true,
+      loadingMessage: "تحميل الطلاب...",
+      action: () async {
+        return await postData(Linkapi.select_students, {
+          "id_circle": selectedCircle.value,
+        });
       }
-    } catch (e) {
-      print("Error loading students: $e");
+    );
+
+    if (res == null) {
+      return;
+    }
+
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+    
+    if (res["stat"] == "ok") {
+      studentsList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+      if (studentsList.isNotEmpty) {
+        selectedStudent.value = studentsList.first['id_student'].toString();
+      }
+    } else if (res["stat"] == "no") {
+      mySnackbar("تنبيه", "لا يوجد طلاب في هذه الحلقة");
+    } else {
+      mySnackbar("خطأ", res["msg"] ?? "حصل خطأ أثناء جلب البيانات");
     }
   }
 
   Future<void> selectStartDate(BuildContext context) async {
+    final now = DateTime.now();
+    final defaultInitial = now.subtract(const Duration(days: 30));
+    final initial = startDate.value ?? defaultInitial;
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: startDate.value ?? DateTime.now().subtract(const Duration(days: 30)),
+      initialDate: initial.isAfter(now) ? now : initial,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null) {
       startDate.value = picked;
+      
+      if (endDate.value != null && endDate.value!.isBefore(picked)) {
+        endDate.value = null;
+      }
     }
   }
   
   Future<void> selectEndDate(BuildContext context) async {
+    if (startDate.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار تاريخ البداية أولاً");
+      return;
+    }
+    
+    final now = DateTime.now();
+    final firstDate = startDate.value!;
+    
+    DateTime initialDate;
+    if (endDate.value != null && !endDate.value!.isBefore(firstDate) && !endDate.value!.isAfter(now)) {
+      initialDate = endDate.value!;
+    } else if (firstDate.isAfter(now)) {
+      initialDate = now;
+    } else {
+      initialDate = firstDate;
+    }
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: endDate.value ?? DateTime.now(),
-      firstDate: startDate.value ?? DateTime(2020),
-      lastDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: now,
     );
     if (picked != null) {
       endDate.value = picked;
@@ -513,6 +575,11 @@ class ComprehensiveStudentPerformanceController extends GetxController {
   Future<void> loadData() async {
     if (startDate.value == null || endDate.value == null) {
       mySnackbar("تنبيه", "الرجاء اختيار الفترة الزمنية");
+      return;
+    }
+    
+    if (startDate.value!.isAfter(endDate.value!)) {
+      mySnackbar("خطأ", "تاريخ البداية يجب أن يكون أصغر من تاريخ النهاية");
       return;
     }
     
@@ -526,58 +593,59 @@ class ComprehensiveStudentPerformanceController extends GetxController {
       return;
     }
 
-    loading.value = true;
-    try {
-      Map<String, dynamic> requestData = {
-        "start_date": DateFormat('yyyy-MM-dd').format(startDate.value!),
-        "end_date": DateFormat('yyyy-MM-dd').format(endDate.value!),
-      };
-      
-      if (!showAllStudents.value) {
-        requestData["id_student"] = selectedStudent.value;
-      } else {
-        requestData["id_circle"] = selectedCircle.value;
-      }
-      
-      final response = await postData(
-        Linkapi.select_comprehensive_student_performance,
-        requestData,
-      );
-
-      if (response == null) {
-        mySnackbar("خطأ", "فشل الاتصال بالخادم");
-        performanceData.clear();
-        return;
-      }
-
-      if (response is! Map) {
-        mySnackbar("خطأ", "استجابة غير صحيحة من الخادم");
-        performanceData.clear();
-        return;
-      }
-      
-      if (response['stat'] == 'ok') {
-        if (response['data'] != null) {
-          performanceData.assignAll(Map<String, dynamic>.from(response['data']));
-          mySnackbar("نجح", "تم تحميل البيانات", type: "g");
-        } else {
-          performanceData.clear();
-          mySnackbar("تنبيه", "لا توجد بيانات");
-        }
-      } else if (response['stat'] == 'no') {
-        performanceData.clear();
-        mySnackbar("تنبيه", "لا توجد بيانات لهذه الفترة");
-      } else {
-        performanceData.clear();
-        mySnackbar("خطأ", response['msg'] ?? "حدث خطأ");
-      }
-    } catch (e) {
-      print("Error: $e");
-      mySnackbar("خطأ", "حدث خطأ: $e");
-      performanceData.clear();
-    } finally {
-      loading.value = false;
+    Map<String, dynamic> requestData = {
+      "start_date": DateFormat('yyyy-MM-dd').format(startDate.value!),
+      "end_date": DateFormat('yyyy-MM-dd').format(endDate.value!),
+    };
+    
+    if (!showAllStudents.value) {
+      requestData["id_student"] = selectedStudent.value;
+    } else {
+      requestData["id_circle"] = selectedCircle.value;
     }
+
+    var res = await handleRequest(
+      isLoading: loading,
+      useDialog: true,
+      immediateLoading: true,
+      loadingMessage: "جاري تحميل بيانات الأداء الشامل...",
+      action: () async {
+        return await postData(Linkapi.select_comprehensive_student_performance, requestData);
+      }
+    );
+    
+    if (res == null) {
+      performanceData.clear();
+      return;
+    }
+    
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      performanceData.clear();
+      return;
+    }
+    
+    if (res["stat"] == "ok") {
+      if (res['data'] != null) {
+        performanceData.assignAll(Map<String, dynamic>.from(res['data']));
+        mySnackbar("نجح", "تم تحميل البيانات", type: "g");
+      } else {
+        performanceData.clear();
+        mySnackbar("تنبيه", "لا توجد بيانات");
+      }
+    } else if (res["stat"] == "no") {
+      performanceData.clear();
+      mySnackbar("تنبيه", "لا توجد بيانات لهذه الفترة");
+    } else {
+      performanceData.clear();
+      mySnackbar("خطأ", res["msg"] ?? "حدث خطأ أثناء جلب البيانات");
+    }
+  }
+  String _calculateAttendanceRateForPDF(Map<String, dynamic> stats) {
+    final present = int.tryParse(stats['present_count']?.toString() ?? '0') ?? 0;
+    final total = int.tryParse(stats['total_days']?.toString() ?? '0') ?? 0;
+    if (total == 0) return '0';
+    return (present / total * 100).toStringAsFixed(0);
   }
 
   Future<void> exportToPDF() async {
@@ -590,184 +658,332 @@ class ComprehensiveStudentPerformanceController extends GetxController {
       final pdf = pw.Document();
       final fontData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
       final arabicFont = pw.Font.ttf(fontData);
+      
+      // تحميل الشعار
+      final logoData = await rootBundle.load('assets/icon/app_icon.png');
+      final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+
+      final dateStr = startDate.value != null && endDate.value != null
+          ? 'من ${DateFormat('yyyy-MM-dd').format(startDate.value!)} إلى ${DateFormat('yyyy-MM-dd').format(endDate.value!)}'
+          : '';
 
       if (!showAllStudents.value) {
-        // PDF لطالب واحد - شكل جدول مضغوط
+        // PDF لطالب واحد
         final studentInfo = Map<String, dynamic>.from(performanceData['student_info'] ?? {});
         final recitationStats = Map<String, dynamic>.from(performanceData['recitation_stats'] ?? {});
         final reviewStats = Map<String, dynamic>.from(performanceData['review_stats'] ?? {});
         final attendanceStats = Map<String, dynamic>.from(performanceData['attendance_stats'] ?? {});
 
         pdf.addPage(
-          pw.Page(
-            pageFormat: PdfPageFormat.a4,
-            textDirection: pw.TextDirection.rtl,
-            theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
-            build: (context) {
-              return pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  // Header مضغوط
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(10),
-                    color: PdfColor.fromHex('#3F51B5'),
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Text(
-                          'تقرير أداء الطالب',
-                          style: pw.TextStyle(
-                            fontSize: 14,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.white,
-                          ),
-                        ),
-                        pw.Text(
-                          '${studentInfo['name_student'] ?? ''} - ${studentInfo['name_circle'] ?? ''}',
-                          style: const pw.TextStyle(fontSize: 11, color: PdfColors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                  pw.SizedBox(height: 10),
-
-                  // جدول واحد مضغوط
-                  pw.Table(
-                    border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
-                    columnWidths: {
-                      0: const pw.FlexColumnWidth(2),
-                      1: const pw.FlexColumnWidth(1),
-                      2: const pw.FlexColumnWidth(1),
-                      3: const pw.FlexColumnWidth(1),
-                      4: const pw.FlexColumnWidth(1),
-                    },
-                    children: [
-                      // Header
-                      pw.TableRow(
-                        decoration: pw.BoxDecoration(color: PdfColor.fromHex('#E8EAF6')),
-                        children: [
-                          _buildCompactCell('البيان', isHeader: true),
-                          _buildCompactCell('العدد', isHeader: true),
-                          _buildCompactCell('المتوسط', isHeader: true),
-                          _buildCompactCell('الأعلى', isHeader: true),
-                          _buildCompactCell('الأقل', isHeader: true),
-                        ],
-                      ),
-                      // التسميع
-                      pw.TableRow(
-                        children: [
-                          _buildCompactCell('التسميع اليومي'),
-                          _buildCompactCell(recitationStats['total_recitations']?.toString() ?? '0'),
-                          _buildCompactCell((double.tryParse(recitationStats['avg_mark']?.toString() ?? '0') ?? 0).toStringAsFixed(1)),
-                          _buildCompactCell(recitationStats['max_mark']?.toString() ?? '0'),
-                          _buildCompactCell(recitationStats['min_mark']?.toString() ?? '0'),
-                        ],
-                      ),
-                      // المراجعة
-                      pw.TableRow(
-                        children: [
-                          _buildCompactCell('المراجعة'),
-                          _buildCompactCell(reviewStats['total_reviews']?.toString() ?? '0'),
-                          _buildCompactCell((double.tryParse(reviewStats['avg_mark']?.toString() ?? '0') ?? 0).toStringAsFixed(1)),
-                          _buildCompactCell(reviewStats['max_mark']?.toString() ?? '0'),
-                          _buildCompactCell(reviewStats['min_mark']?.toString() ?? '0'),
-                        ],
-                      ),
-                      // الحضور - صف خاص
-                      pw.TableRow(
-                        decoration: pw.BoxDecoration(color: PdfColor.fromHex('#F5F5F5')),
-                        children: [
-                          _buildCompactCell('الحضور والغياب'),
-                          _buildCompactCell(attendanceStats['total_days']?.toString() ?? '0'),
-                          _buildCompactCell(attendanceStats['present_count']?.toString() ?? '0'),
-                          _buildCompactCell(attendanceStats['absent_count']?.toString() ?? '0'),
-                          _buildCompactCell(_calculateAttendanceRateForPdf(attendanceStats)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      } else {
-        // PDF لجميع الطلاب
-        final students = performanceData['students'] ?? [];
-
-        pdf.addPage(
           pw.MultiPage(
             pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(20),
             textDirection: pw.TextDirection.rtl,
             theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
             build: (context) {
               return [
-                // Header مضغوط
+                // رأس الصفحة الاحترافي
                 pw.Container(
-                  padding: const pw.EdgeInsets.all(8),
-                  color: PdfColor.fromHex('#3F51B5'),
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10),
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text(
-                        'تقرير أداء الطلاب',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          fontWeight: pw.FontWeight.bold,
-                          color: PdfColors.white,
-                        ),
+                      // الجانب الأيسر: الشعار + المؤسسة
+                      pw.Row(
+                        children: [
+                          pw.Container(
+                            width: 45,
+                            height: 45,
+                            child: pw.Image(logoImage),
+                          ),
+                          pw.SizedBox(width: 8),
+                          pw.Directionality(
+                            textDirection: pw.TextDirection.rtl,
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  'مؤسسة مسارات',
+                                  style: pw.TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
+                                ),
+                                pw.Text(
+                                  'للتنمية الإنسانية',
+                                  style: const pw.TextStyle(fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      pw.Text(
-                        'عدد الطلاب: ${students.length}',
-                        style: const pw.TextStyle(fontSize: 10, color: PdfColors.white),
+                      // الجانب الأيمن: اسم التقرير + التفاصيل
+                      pw.Directionality(
+                        textDirection: pw.TextDirection.rtl,
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.end,
+                          children: [
+                            pw.Text(
+                              'تقرير أداء الطالب الشامل',
+                              style: pw.TextStyle(
+                                fontSize: 16,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            pw.SizedBox(height: 4),
+                            pw.Text(
+                              'الفترة: $dateStr',
+                              style: const pw.TextStyle(fontSize: 11),
+                            ),
+                            pw.SizedBox(height: 2),
+                            pw.Text(
+                              'الطالب: ${studentInfo['name_student'] ?? '-'}',
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                            pw.Text(
+                              'الحلقة: ${studentInfo['name_circle'] ?? '-'}',
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
                 pw.SizedBox(height: 8),
-                // جدول مضغوط
-                pw.Table(
-                  border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
-                  columnWidths: {
-                    0: const pw.FlexColumnWidth(3),
-                    1: const pw.FlexColumnWidth(1.5),
-                    2: const pw.FlexColumnWidth(1.5),
-                    3: const pw.FlexColumnWidth(1.5),
-                    4: const pw.FlexColumnWidth(1.5),
-                    5: const pw.FlexColumnWidth(1.5),
-                  },
-                  children: [
-                    pw.TableRow(
-                      decoration: pw.BoxDecoration(color: PdfColor.fromHex('#E8EAF6')),
-                      children: [
-                        _buildCompactCell('الطالب', isHeader: true),
-                        _buildCompactCell('التسميع', isHeader: true),
-                        _buildCompactCell('م.تسميع', isHeader: true),
-                        _buildCompactCell('المراجعة', isHeader: true),
-                        _buildCompactCell('م.مراجعة', isHeader: true),
-                        _buildCompactCell('الحضور%', isHeader: true),
+                pw.Divider(thickness: 1.5),
+                pw.SizedBox(height: 15),
+
+                // جدول الإحصائيات
+                pw.Directionality(
+                  textDirection: pw.TextDirection.rtl,
+                  child: pw.Table.fromTextArray(
+                    headers: ['النوع', 'العدد', 'المتوسط', 'الأعلى', 'الأقل'],
+                    data: [
+                      [
+                        'التسميع',
+                        '${recitationStats['total_recitations'] ?? 0}',
+                        '${double.tryParse(recitationStats['avg_mark']?.toString() ?? '0')?.toStringAsFixed(1) ?? '0.0'}',
+                        '${recitationStats['max_mark'] ?? 0}',
+                        '${recitationStats['min_mark'] ?? 0}',
                       ],
+                      [
+                        'المراجعة',
+                        '${reviewStats['total_reviews'] ?? 0}',
+                        '${double.tryParse(reviewStats['avg_mark']?.toString() ?? '0')?.toStringAsFixed(1) ?? '0.0'}',
+                        '${reviewStats['max_mark'] ?? 0}',
+                        '${reviewStats['min_mark'] ?? 0}',
+                      ],
+                      [
+                        'الحضور',
+                        '${attendanceStats['total_days'] ?? 0}',
+                        '${_calculateAttendanceRateForPDF(attendanceStats)}%',
+                        '-',
+                        '-',
+                      ],
+                    ],
+                    border: pw.TableBorder.all(width: 0.5, color: PdfColors.indigo300),
+                    headerStyle: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.white,
                     ),
-                    ...students.map((student) {
+                    headerDecoration: const pw.BoxDecoration(
+                      color: PdfColors.indigo,
+                    ),
+                    cellStyle: const pw.TextStyle(fontSize: 9),
+                    cellAlignment: pw.Alignment.center,
+                    cellHeight: 22,
+                    headerHeight: 28,
+                    cellDecoration: (index, data, rowNum) {
+                      return pw.BoxDecoration(
+                        color: rowNum % 2 == 0 
+                            ? PdfColors.white 
+                            : PdfColors.grey100,
+                      );
+                    },
+                  ),
+                ),
+                
+                pw.Spacer(),
+                
+                // تذييل الصفحة
+                pw.SizedBox(height: 10),
+                pw.Divider(),
+                pw.Directionality(
+                  textDirection: pw.TextDirection.rtl,
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        "تاريخ الطباعة: ${DateTime.now().toLocal().toString().split(' ')[0]}",
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                      pw.Text(
+                        "مؤسسة مسارات للتنمية الإنسانية",
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                    ],
+                  ),
+                ),
+              ];
+            },
+          ),
+        );
+      } else {
+        // PDF لجميع الطلاب
+        final studentsData = performanceData['students'] as List<dynamic>? ?? [];
+        final circleName = circlesList.firstWhere(
+          (circle) => circle['id_circle'].toString() == selectedCircle.value.toString(), 
+          orElse: () => {'name_circle': 'غير محدد'}
+        )['name_circle'];
+
+        pdf.addPage(
+          pw.MultiPage(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(20),
+            textDirection: pw.TextDirection.rtl,
+            theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
+            build: (context) {
+              return [
+                // رأس الصفحة الاحترافي
+                pw.Container(
+                  padding: const pw.EdgeInsets.symmetric(horizontal: 10),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      // الجانب الأيسر: الشعار + المؤسسة
+                      pw.Row(
+                        children: [
+                          pw.Container(
+                            width: 45,
+                            height: 45,
+                            child: pw.Image(logoImage),
+                          ),
+                          pw.SizedBox(width: 8),
+                          pw.Directionality(
+                            textDirection: pw.TextDirection.rtl,
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  'مؤسسة مسارات',
+                                  style: pw.TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
+                                ),
+                                pw.Text(
+                                  'للتنمية الإنسانية',
+                                  style: const pw.TextStyle(fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      // الجانب الأيمن: اسم التقرير + التفاصيل
+                      pw.Directionality(
+                        textDirection: pw.TextDirection.rtl,
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.end,
+                          children: [
+                            pw.Text(
+                              'تقرير أداء الطلاب الشامل',
+                              style: pw.TextStyle(
+                                fontSize: 16,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                            pw.SizedBox(height: 4),
+                            pw.Text(
+                              'الفترة: $dateStr',
+                              style: const pw.TextStyle(fontSize: 11),
+                            ),
+                            pw.SizedBox(height: 2),
+                            pw.Text(
+                              'الحلقة: $circleName | إجمالي: ${studentsData.length}',
+                              style: const pw.TextStyle(fontSize: 9),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                pw.Divider(thickness: 1.5),
+                pw.SizedBox(height: 15),
+
+                // جدول الطلاب
+                pw.Directionality(
+                  textDirection: pw.TextDirection.rtl,
+                  child: pw.Table.fromTextArray(
+                    headers: ['الحضور%', 'المراجعة', 'التسميع', 'الحلقة', 'اسم الطالب', '#'],
+                    data: studentsData.asMap().entries.map((entry) {
+                      final index = entry.key + 1;
+                      final student = entry.value;
+                      
                       final presentCount = int.tryParse(student['present_count']?.toString() ?? '0') ?? 0;
                       final absentCount = int.tryParse(student['absent_count']?.toString() ?? '0') ?? 0;
                       final totalDays = presentCount + absentCount;
-                      final attendanceRate = totalDays > 0 ? (presentCount / totalDays * 100) : 0.0;
-                      final avgRecitation = double.tryParse(student['avg_recitation_mark']?.toString() ?? '0') ?? 0;
-                      final avgReview = double.tryParse(student['avg_review_mark']?.toString() ?? '0') ?? 0;
-
-                      return pw.TableRow(
-                        children: [
-                          _buildCompactCell(student['name_student'] ?? '-'),
-                          _buildCompactCell(student['total_recitations']?.toString() ?? '0'),
-                          _buildCompactCell(avgRecitation.toStringAsFixed(1)),
-                          _buildCompactCell(student['total_reviews']?.toString() ?? '0'),
-                          _buildCompactCell(avgReview.toStringAsFixed(1)),
-                          _buildCompactCell('${attendanceRate.toStringAsFixed(0)}%'),
-                        ],
-                      );
+                      final attendanceRate = totalDays > 0 ? (presentCount / totalDays * 100).toStringAsFixed(0) : '0';
+                      
+                      return [
+                        '$attendanceRate%',
+                        '${double.tryParse(student['avg_review_mark']?.toString() ?? '0')?.toStringAsFixed(1) ?? '0.0'}',
+                        '${double.tryParse(student['avg_recitation_mark']?.toString() ?? '0')?.toStringAsFixed(1) ?? '0.0'}',
+                        student['name_circle'] ?? circleName,
+                        student['name_student'] ?? '-',
+                        index.toString(),
+                      ];
                     }).toList(),
-                  ],
+                    border: pw.TableBorder.all(width: 0.5, color: PdfColors.indigo300),
+                    headerStyle: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.white,
+                    ),
+                    headerDecoration: const pw.BoxDecoration(
+                      color: PdfColors.indigo,
+                    ),
+                    cellStyle: const pw.TextStyle(fontSize: 9),
+                    cellAlignment: pw.Alignment.center,
+                    cellHeight: 22,
+                    headerHeight: 28,
+                    cellDecoration: (index, data, rowNum) {
+                      return pw.BoxDecoration(
+                        color: rowNum % 2 == 0 
+                            ? PdfColors.white 
+                            : PdfColors.grey100,
+                      );
+                    },
+                  ),
+                ),
+                
+                pw.Spacer(),
+                
+                // تذييل الصفحة
+                pw.SizedBox(height: 10),
+                pw.Divider(),
+                pw.Directionality(
+                  textDirection: pw.TextDirection.rtl,
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(
+                        "تاريخ الطباعة: ${DateTime.now().toLocal().toString().split(' ')[0]}",
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                      pw.Text(
+                        "مؤسسة مسارات للتنمية الإنسانية",
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                    ],
+                  ),
                 ),
               ];
             },
@@ -777,36 +993,11 @@ class ComprehensiveStudentPerformanceController extends GetxController {
 
       await Printing.layoutPdf(
         onLayout: (format) async => pdf.save(),
-        name: 'تقرير_أداء_الطالب_الشامل.pdf',
+        name: 'تقرير_أداء_الطالب_الشامل_$dateStr.pdf',
       );
-
-      mySnackbar("نجح", "تم إنشاء التقرير بنجاح", type: "g");
     } catch (e) {
-      print("PDF Error: $e");
-      mySnackbar("خطأ", "حدث خطأ أثناء إنشاء التقرير: $e");
+      print("Error generating PDF: $e");
+      mySnackbar("خطأ", "حدث خطأ أثناء إنشاء التقرير");
     }
-  }
-
-  // دالة واحدة مضغوطة للخلايا
-  pw.Widget _buildCompactCell(String text, {bool isHeader = false}) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(4),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 9 : 8,
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: isHeader ? PdfColor.fromHex('#3F51B5') : PdfColors.black,
-        ),
-        textAlign: pw.TextAlign.center,
-      ),
-    );
-  }
-
-  String _calculateAttendanceRateForPdf(Map<String, dynamic> stats) {
-    final present = int.tryParse(stats['present_count']?.toString() ?? '0') ?? 0;
-    final total = int.tryParse(stats['total_days']?.toString() ?? '0') ?? 0;
-    if (total == 0) return '0%';
-    return '${(present / total * 100).toStringAsFixed(0)}%';
   }
 }

@@ -41,7 +41,7 @@ class NotesController extends GetxController {
 
     if (response["stat"] == "ok") {
       notes.assignAll(List<Map<String, dynamic>>.from(response["data"]));
-    } else {
+    } else if(response["stat"]=="erorr"){
       String errorMsg = response["msg"] ?? "تعذّر تحميل الملاحظات";
       mySnackbar("خطأ", errorMsg);
     }

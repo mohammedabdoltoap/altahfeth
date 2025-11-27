@@ -2,6 +2,8 @@ import 'package:althfeth/constants/function.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
 
 import '../../../api/LinkApi.dart';
 import '../../../api/apiFunction.dart';
@@ -136,7 +138,7 @@ class ParentsContactsPage extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
-        onTap: hasPhone ? () => _openWhatsApp(parentPhone) : null,
+        onTap: hasPhone ? () => _showMessageOptions(parentPhone, studentName) : null,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -220,42 +222,11 @@ class ParentsContactsPage extends StatelessWidget {
                 ),
               ),
 
-              // زر الواتساب
+              // أيقونة الواتساب (للإشارة فقط)
               if (hasPhone)
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.green.shade400, Colors.green.shade600],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: IconButton(
-                    icon: const Icon(Icons.chat_rounded, color: Colors.white, size: 24),
-                    onPressed: () => _openWhatsApp(parentPhone),
-                    tooltip: "فتح واتساب",
-                  ),
-                )
+                Icon(Icons.chat_rounded, color: Colors.green.shade700, size: 24)
               else
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.phone_disabled, color: Colors.grey.shade400, size: 24),
-                ),
+                Icon(Icons.phone_disabled, color: Colors.grey.shade400, size: 24),
             ],
           ),
         ),
@@ -301,7 +272,171 @@ class ParentsContactsPage extends StatelessWidget {
   //     );
   //   }
   // }
-  void _openWhatsApp(String phoneNumber) async {
+
+  // ✅ دالة عرض خيارات الرسائل
+  void _showMessageOptions(String phoneNumber, String studentName) {
+    Get.bottomSheet(
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'اختر رسالة',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+
+            // الخيار 1
+            _buildMessageOption(
+              icon: Icons.info_rounded,
+              title: 'طلب مراجعة الحساب',
+              message: 'السلام عليكم ورحمة الله وبركاته\nيرجى مراجعة حساب الطالب: $studentName',
+              phoneNumber: phoneNumber,
+            ),
+
+            // الخيار 2
+            _buildMessageOption(
+              icon: Icons.close_rounded,
+              title: 'الطالب غائب اليوم',
+              message: 'السلام عليكم ورحمة الله وبركاته\nالطالب $studentName غائب اليوم',
+              phoneNumber: phoneNumber,
+            ),
+
+            // الخيار 3
+            _buildMessageOption(
+              icon: Icons.edit_rounded,
+              title: 'رسالة مخصصة',
+              message: null, // سيتم طلب رسالة من المستخدم
+              phoneNumber: phoneNumber,
+              isCustom: true,
+              studentName: studentName,
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  // ✅ بناء زر الخيار
+  Widget _buildMessageOption({
+    required IconData icon,
+    required String title,
+    required String? message,
+    required String phoneNumber,
+    bool isCustom = false,
+    String? studentName,
+  }) {
+    return InkWell(
+      onTap: () {
+        Get.back();
+        if (isCustom) {
+          _showCustomMessageDialog(phoneNumber, studentName ?? '');
+        } else {
+          _openWhatsApp(phoneNumber, message ?? '');
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.green.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Colors.green.shade700, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ✅ دالة إدخال رسالة مخصصة
+  void _showCustomMessageDialog(String phoneNumber, String studentName) {
+    final messageController = TextEditingController();
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('رسالة مخصصة'),
+        content: TextField(
+          controller: messageController,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: 'اكتب رسالتك هنا...',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (messageController.text.isNotEmpty) {
+                Get.back();
+                _openWhatsApp(phoneNumber, messageController.text);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade700,
+            ),
+            child: const Text('إرسال', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openWhatsApp(String phoneNumber, String message) async {
     // تنظيف الرقم
     String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
 
@@ -316,27 +451,60 @@ class ParentsContactsPage extends StatelessWidget {
       }
     }
 
-    // 🔗 رابط تطبيق واتساب المباشر
-    final whatsappUri = Uri.parse('whatsapp://send?phone=$cleanPhone');
-
     try {
-      if (await canLaunchUrl(whatsappUri)) {
-        await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
-      } else {
-        // fallback إلى wa.me لو فشل البروتوكول (احتمال نادر)
-        final fallbackUri = Uri.parse('https://wa.me/$cleanPhone');
-        if (await canLaunchUrl(fallbackUri)) {
-          await launchUrl(fallbackUri, mode: LaunchMode.externalApplication);
-        } else {
-          Get.snackbar(
-            "خطأ",
-            "لا يمكن فتح واتساب. تأكد من تثبيت التطبيق",
-            backgroundColor: Colors.red.shade100,
-            colorText: Colors.red.shade900,
-          );
+      // ✅ استخدام MethodChannel على Android (الأفضل)
+      if (Platform.isAndroid) {
+        const platform = MethodChannel('com.example.app/whatsapp');
+        
+        try {
+          await platform.invokeMethod('openWhatsApp', {
+            'phone': cleanPhone,
+            'message': message,
+          });
+          return;
+        } catch (e) {
+          print('⚠️ MethodChannel failed: $e');
+          // استمر للـ fallback
         }
       }
+
+      // 🔗 Fallback 1: whatsapp:// protocol مع رسالة
+      final whatsappUri1 = Uri.parse('whatsapp://send?phone=$cleanPhone&text=${Uri.encodeComponent(message)}');
+      if (await canLaunchUrl(whatsappUri1)) {
+        await launchUrl(whatsappUri1, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // 🔗 Fallback 2: whatsapp:// protocol بدون رسالة
+      final whatsappUri2 = Uri.parse('whatsapp://send?phone=$cleanPhone');
+      if (await canLaunchUrl(whatsappUri2)) {
+        await launchUrl(whatsappUri2, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // 🔗 Fallback 3: wa.me مع رسالة
+      final wameUri1 = Uri.parse('https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}');
+      if (await canLaunchUrl(wameUri1)) {
+        await launchUrl(wameUri1, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // 🔗 Fallback 4: wa.me بدون رسالة
+      final wameUri2 = Uri.parse('https://wa.me/$cleanPhone');
+      if (await canLaunchUrl(wameUri2)) {
+        await launchUrl(wameUri2, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // ❌ فشل الجميع
+      Get.snackbar(
+        "خطأ",
+        "لا يمكن فتح واتساب. تأكد من تثبيت التطبيق",
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
     } catch (e) {
+      print('❌ Error: $e');
       Get.snackbar(
         "خطأ",
         "حدث خطأ: $e",

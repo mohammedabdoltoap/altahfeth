@@ -1,4 +1,5 @@
 import 'package:althfeth/constants/appButton.dart';
+import 'package:althfeth/constants/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:althfeth/api/LinkApi.dart';
@@ -19,27 +20,46 @@ class StudentsListUpdate extends StatelessWidget {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: AppTheme.backgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.teal[700],
-          title: const Text(
-            "بيانات الزيارة",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          backgroundColor: AppTheme.primaryColor,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryColor,
+                  AppTheme.primaryColor.withOpacity(0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
           ),
-          centerTitle: false, // نترك العنوان من اليسار قليلاً
+          title: Text(
+            "بيانات الزيارة",
+            style: AppTheme.headingMedium.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          centerTitle: false,
           actions: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: Colors.teal[300],
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacingSmall),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppTheme.primaryColor,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacingMedium, 
+                    vertical: AppTheme.spacingSmall
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                  ),
+                  elevation: 3,
+                  shadowColor: Colors.black.withOpacity(0.2),
                 ),
                 onPressed: () {
                   Map data={
@@ -49,29 +69,52 @@ class StudentsListUpdate extends StatelessWidget {
                   };
                   Get.to(()=>Notes_For_Teacher(),arguments: data);
                 },
-                child: const Text(
-                  "توجيهات لمعلم الحلقة",
+                icon: const Icon(Icons.assignment_outlined, size: 18),
+                label: const Text(
+                  "توجيهات المعلم",
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
           ],
-          bottom: const TabBar(
-            isScrollable: true,
-            indicatorColor: Colors.white,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            labelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-            tabs: [
-              Tab(text: "لم يختبر"),
-              Tab(text: "اختبر الحفظ"),
-              Tab(text: "اختبر المراجعة"),
-              Tab(text: "اختبر الاثنين"),
-            ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(50),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor.withOpacity(0.9),
+                    AppTheme.primaryColor,
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const TabBar(
+                isScrollable: true,
+                indicatorColor: Colors.white,
+                indicatorWeight: 3,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                labelStyle: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                tabs: [
+                  Tab(text: "لم يختبر"),
+                  Tab(text: "اختبر الحفظ"),
+                  Tab(text: "اختبر المراجعة"),
+                  Tab(text: "الكل"),
+                ],
+              ),
+            ),
           ),
         ),
         body: Obx(() {
@@ -92,56 +135,167 @@ class StudentsListUpdate extends StatelessWidget {
     var filtered = controller.students.where((e) => e["test_status"] == status).toList();
 
     if (filtered.isEmpty) {
-      return const Center(
-        child: Text(
-          "لا يوجد طلاب",
-          style: TextStyle(fontSize: 17, color: Colors.grey),
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(AppTheme.spacingXXLarge),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppTheme.spacingXLarge),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.group_outlined,
+                  size: 48,
+                  color: Colors.grey.shade400,
+                ),
+              ),
+              const SizedBox(height: AppTheme.spacingLarge),
+              Text(
+                "لا يوجد طلاب",
+                style: AppTheme.headingSmall.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        var student = filtered[index];
-        return Card(
-          color: Colors.white,
-          elevation: 2,
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-            side: BorderSide(color: Colors.grey.shade300),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-            title: Text(
-              student["name_student"] ?? "",
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.backgroundColor,
+            Colors.white,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppTheme.spacingLarge),
+        itemCount: filtered.length,
+        itemBuilder: (context, index) {
+          var student = filtered[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: AppTheme.spacingMedium),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white,
+                  Colors.grey.shade50,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              softWrap: true,
-              overflow: TextOverflow.visible,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
+              border: Border.all(
+                color: AppTheme.primaryColor.withOpacity(0.1),
+                width: 1,
+              ),
             ),
-            trailing: Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.grey.shade600,
-              size: 18,
-            ),
-            onTap: () {
-              Get.to(
-                    () => UpdateExamScreen(),
-                arguments: {
-                  "student": student,
-                  "id_visit": controller.dataArd["id_visit"],
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                onTap: () {
+                  Get.to(
+                        () => UpdateExamScreen(),
+                    arguments: {
+                      "student": student,
+                      "id_visit": controller.dataArd["id_visit"],
+                    },
+                  );
                 },
-              );
-            },
-          ),
-        );
-      },
+                child: Padding(
+                  padding: const EdgeInsets.all(AppTheme.spacingLarge),
+                  child: Row(
+                    children: [
+                      // رقم الطالب
+                      Container(
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.primaryColor.withOpacity(0.1),
+                              AppTheme.primaryColor.withOpacity(0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                          border: Border.all(
+                            color: AppTheme.primaryColor.withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "${index + 1}",
+                            style: AppTheme.bodyLarge.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(width: AppTheme.spacingLarge),
+                      
+                      // اسم الطالب
+                      Expanded(
+                        child: Text(
+                          student["name_student"] ?? "",
+                          style: AppTheme.headingSmall.copyWith(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          softWrap: true,
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                      
+                      // أيقونة السهم
+                      Container(
+                        padding: const EdgeInsets.all(AppTheme.spacingSmall),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                        ),
+                        child: Icon(
+                          Icons.arrow_forward_ios,
+                          color: AppTheme.primaryColor,
+                          size: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }

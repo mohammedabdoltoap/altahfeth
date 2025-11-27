@@ -26,7 +26,7 @@ class User_AttendanceController extends GetxController {
   void setTodayArabic() {
     final now = DateTime.now();
     final dayName = DateFormat('EEEE', 'ar').format(now);
-    final date = DateFormat('yyyy-MM-dd').format(now);
+    final date = DateFormat('yyyy-MM-dd',"en").format(now);
     todayArabic = "$dayName - $date";
   }
 
@@ -107,7 +107,7 @@ class User_AttendanceController extends GetxController {
   RxBool add_check_out=false.obs;
   /// 🔹 تسجيل الانصراف
   Future add_check_out_time_usersAttendance() async {
-    String currentTime = DateFormat('HH:mm:ss').format(DateTime.now());
+    String currentTime = DateFormat('HH:mm:ss',"en").format(DateTime.now());
 
     var res = await handleRequest(
       isLoading: add_check_out,

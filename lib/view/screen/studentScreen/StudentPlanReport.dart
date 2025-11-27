@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
 
 import '../../../api/LinkApi.dart';
 import '../../../api/apiFunction.dart';
@@ -106,13 +107,29 @@ class StudentPlanReport extends StatelessWidget {
               _buildStudentInfoCard(theme),
               const SizedBox(height: 16),
               
-              // عنوان القائمة
-              Text(
-                "الخطط الدراسية (${controller.planList.length})",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.list_alt_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "الخطط الدراسية (${controller.planList.length})",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -131,52 +148,88 @@ class StudentPlanReport extends StatelessWidget {
   }
 
   Widget _buildStudentInfoCard(ThemeData theme) {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [
-              theme.colorScheme.primary,
-              theme.colorScheme.primary.withOpacity(0.8),
-            ],
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-          ),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withOpacity(0.7),
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white,
-              child: Icon(
-                Icons.person,
-                size: 35,
-                color: theme.colorScheme.primary,
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.person_rounded,
+                  size: 32,
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    controller.studentName.value,
+                    controller.studentName.value.isNotEmpty 
+                        ? controller.studentName.value 
+                        : 'الطالب',
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    "عدد الخطط: ${controller.planList.length}",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.assignment_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${controller.planList.length} خطة",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -189,84 +242,102 @@ class StudentPlanReport extends StatelessWidget {
   }
 
   Widget _buildPlanCard(Map<String, dynamic> plan, int index, ThemeData theme) {
-    final startDate = plan['start_date'] != null 
-        ? _formatDate(plan['start_date']) 
-        : 'غير محدد';
-    final endDate = plan['end_date'] != null 
-        ? _formatDate(plan['end_date']) 
-        : 'غير محدد';
-    final days = plan['days']?.toString() ?? '0';
-    
-    // حساب الحالة (منتهية، جارية، قادمة)
-    final status = _getPlanStatus(plan['start_date'], plan['end_date']);
-    final statusColor = _getStatusColor(status);
-    final statusIcon = _getStatusIcon(status);
+    try {
+      final startDate = plan['start_date'] != null 
+          ? _formatDate(plan['start_date']?.toString()) 
+          : 'غير محدد';
+      final endDate = plan['end_date'] != null 
+          ? _formatDate(plan['end_date']?.toString()) 
+          : 'غير محدد';
+      final days = (plan['days']?.toString() ?? plan['level_detail_days']?.toString() ?? '0');
+      
+      final status = _getPlanStatus(plan['start_date']?.toString(), plan['end_date']?.toString());
+      final statusColor = _getStatusColor(status);
+      final statusIcon = _getStatusIcon(status);
 
-    return Card(
-      elevation: 2,
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _showPlanDetails(plan, theme),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border(
-              right: BorderSide(
-                color: statusColor,
-                width: 4,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _showPlanDetails(plan, theme),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: statusColor.withOpacity(0.3),
+                width: 2,
               ),
             ),
-          ),
-          padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // رأس البطاقة
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(statusIcon, color: statusColor, size: 22),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
                           "خطة #$index",
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(statusIcon, color: statusColor, size: 20),
-                      const SizedBox(width: 4),
-                      Text(
-                        status,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: statusColor,
+                        const SizedBox(height: 2),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            status,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   Icon(
                     Icons.chevron_left_rounded,
                     color: Colors.grey.shade400,
+                    size: 20,
                   ),
                 ],
               ),
-              const Divider(height: 24),
+              const SizedBox(height: 12),
               
               // المعلومات الأساسية
               _buildInfoRow(
@@ -314,37 +385,255 @@ class StudentPlanReport extends StatelessWidget {
                   ],
                 ),
               ],
+              
+              if (plan['from_soura_name'] != null && plan['to_soura_name'] != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.orange.shade50,
+                        Colors.orange.shade100.withOpacity(0.3),
+                      ],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.orange.shade300, width: 2),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.menu_book_rounded,
+                            color: Colors.orange.shade700,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            "نطاق الحفظ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.orange.shade900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.shade200,
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    "من",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    plan['from_soura_name']?.toString() ?? '',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: Colors.orange.shade900,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      "آية ${plan['from_aya_id']?.toString() ?? '0'}",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.orange.shade700,
+                              size: 18,
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(10),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.shade200,
+                                    blurRadius: 3,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    "إلى",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    plan['to_soura_name']?.toString() ?? '',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: Colors.orange.shade900,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.shade100,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      "آية ${plan['to_aya_id']?.toString() ?? '0'}",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
+    )
     );
+    } catch (e) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.red.shade200),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red.shade700),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'خطأ في عرض الخطة #$index',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value, ThemeData theme) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: theme.colorScheme.primary.withOpacity(0.7)),
-        const SizedBox(width: 8),
-        Text(
-          "$label:",
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-            fontWeight: FontWeight.w500,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: theme.colorScheme.primary),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -373,9 +662,16 @@ class StudentPlanReport extends StatelessWidget {
     if (date == null || date.isEmpty) return 'غير محدد';
     try {
       final parsedDate = DateTime.parse(date);
-      return DateFormat('yyyy/MM/dd', 'ar').format(parsedDate);
+      return DateFormat('yyyy/MM/dd', 'en').format(parsedDate);
     } catch (e) {
-      return date;
+      // إذا فشل التحويل، نحاول استخراج التاريخ من النص
+      try {
+        final parts = date.split(' ')[0].split('-');
+        if (parts.length == 3) {
+          return '${parts[0]}/${parts[1]}/${parts[2]}';
+        }
+      } catch (_) {}
+      return 'غير محدد';
     }
   }
 
@@ -461,10 +757,41 @@ class StudentPlanReport extends StatelessWidget {
               const Divider(height: 24),
               _buildDetailRow("المرحلة", plan['stage_name'] ?? 'غير محدد'),
               _buildDetailRow("المستوى", plan['level_name'] ?? 'غير محدد'),
-              _buildDetailRow("تفاصيل المستوى", plan['level_detail_name'] ?? 'غير محدد'),
+              if (plan['from_soura_name'] != null && plan['to_soura_name'] != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.book_rounded, color: Colors.orange.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "نطاق الحفظ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDetailRow("من سورة", "${plan['from_soura_name']} - آية ${plan['from_aya_id']}"),
+                      _buildDetailRow("إلى سورة", "${plan['to_soura_name']} - آية ${plan['to_aya_id']}"),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               _buildDetailRow("تاريخ البدء", _formatDate(plan['start_date'])),
               _buildDetailRow("تاريخ الانتهاء", _formatDate(plan['end_date'])),
-              _buildDetailRow("عدد الأيام", "${plan['days'] ?? '0'} يوم"),
+              _buildDetailRow("عدد الأيام", "${plan['days'] ?? plan['level_detail_days'] ?? '0'} يوم"),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -545,13 +872,10 @@ class StudentPlanController extends GetxController {
   Future<void> loadStudentPlan() async {
 
     try {
-      print("========== DEBUG loadStudentPlan ==========");
-      print("API URL: ${Linkapi.select_student_plan}");
-      print("Sending data: {id_student: $studentId}");
-      
+
       final res = await handleRequest(isLoading: isLoading,
         useDialog: false,
-
+        immediateLoading:true,
         action: ()async {
         return await postData(
           Linkapi.select_student_plan,
@@ -573,31 +897,36 @@ class StudentPlanController extends GetxController {
         hasData.value = true;
         hasNetworkError.value = false;
 
-        // ترتيب الخطط بناءً على المستوى الحالي والتطور
+        // ترتيب الخطط: الجارية أولاً، ثم القادمة، ثم المنتهية
         List<Map<String, dynamic>> allPlans = List<Map<String, dynamic>>.from(res['data'] ?? []);
         allPlans.sort((a, b) {
           try {
-            int levelIdA = int.tryParse(a['id_level']?.toString() ?? '0') ?? 0;
-            int levelIdB = int.tryParse(b['id_level']?.toString() ?? '0') ?? 0;
-            int stageIdA = int.tryParse(a['id_stages']?.toString() ?? '0') ?? 0;
-            int stageIdB = int.tryParse(b['id_stages']?.toString() ?? '0') ?? 0;
+            String statusA = _getPlanStatusForSort(a['start_date'], a['end_date']);
+            String statusB = _getPlanStatusForSort(b['start_date'], b['end_date']);
             
-            // أولاً: ترتيب حسب المرحلة
-            if (stageIdA != stageIdB) {
-              // المرحلة الحالية أولاً
-              if (stageIdA == currentStageId) return -1;
-              if (stageIdB == currentStageId) return 1;
-              // ثم المراحل بالترتيب التصاعدي
-              return stageIdA.compareTo(stageIdB);
+            // ترتيب الأولوية: جارية (1) > قادمة (2) > منتهية (3)
+            int priorityA = statusA == 'جارية' ? 1 : (statusA == 'قادمة' ? 2 : 3);
+            int priorityB = statusB == 'جارية' ? 1 : (statusB == 'قادمة' ? 2 : 3);
+            
+            if (priorityA != priorityB) {
+              return priorityA.compareTo(priorityB);
             }
             
-            // ثانياً: إذا كانت نفس المرحلة، رتب حسب المستوى
-            // المستوى الحالي أولاً
-            if (levelIdA == currentLevelId) return -1;
-            if (levelIdB == currentLevelId) return 1;
+            // إذا كانت نفس الحالة، رتب حسب تاريخ البدء
+            DateTime? dateA = DateTime.tryParse(a['start_date'] ?? '');
+            DateTime? dateB = DateTime.tryParse(b['start_date'] ?? '');
             
-            // ثم المستويات بالترتيب التصاعدي
-            return levelIdA.compareTo(levelIdB);
+            if (dateA != null && dateB != null) {
+              // الجارية والقادمة: الأقرب أولاً (تصاعدي)
+              // المنتهية: الأحدث أولاً (تنازلي)
+              if (statusA == 'منتهية') {
+                return dateB.compareTo(dateA);
+              } else {
+                return dateA.compareTo(dateB);
+              }
+            }
+            
+            return 0;
           } catch (e) {
             return 0;
           }
@@ -636,22 +965,34 @@ class StudentPlanController extends GetxController {
     }
 
     final headers = [
-      'المرحلة',
-      'المستوى',
-      'تفاصيل المستوى',
-      'تاريخ البدء',
+      'الأيام',
       'تاريخ الانتهاء',
-      'عدد الأيام',
+      'تاريخ البدء',
+      'إلى سورة',
+      'من سورة',
+      'المستوى',
+      'المرحلة',
     ];
 
-    final rows = planList.map((plan) => [
-      (plan['stage_name'] ?? 'غير محدد').toString(),
-      (plan['level_name'] ?? 'غير محدد').toString(),
-      (plan['level_detail_name'] ?? 'غير محدد').toString(),
-      _formatDateForPdf(plan['start_date']),
-      _formatDateForPdf(plan['end_date']),
-      (plan['days']?.toString() ?? '0'),
-    ]).toList();
+    final rows = planList.map((plan) {
+      try {
+        return [
+          (plan['days']?.toString() ?? plan['level_detail_days']?.toString() ?? '0'),
+          _formatDateForPdf(plan['end_date']?.toString()),
+          _formatDateForPdf(plan['start_date']?.toString()),
+          plan['to_soura_name'] != null 
+              ? '${plan['to_soura_name']} (${plan['to_aya_id']?.toString() ?? '0'})'
+              : 'غير محدد',
+          plan['from_soura_name'] != null 
+              ? '${plan['from_soura_name']} (${plan['from_aya_id']?.toString() ?? '0'})'
+              : 'غير محدد',
+          (plan['level_name']?.toString() ?? 'غير محدد'),
+          (plan['stage_name']?.toString() ?? 'غير محدد'),
+        ];
+      } catch (e) {
+        return ['0', 'خطأ', 'خطأ', 'خطأ', 'خطأ', 'خطأ', 'خطأ'];
+      }
+    }).toList();
 
     await generateStandardPdfReport(
       title: "خطة الطالب",
@@ -665,20 +1006,26 @@ class StudentPlanController extends GetxController {
     if (date == null || date.isEmpty) return 'غير محدد';
     try {
       final parsedDate = DateTime.parse(date);
-      return DateFormat('yyyy/MM/dd').format(parsedDate);
+      return DateFormat('yyyy/MM/dd', 'en').format(parsedDate);
     } catch (e) {
-      return date;
+      try {
+        final parts = date.split(' ')[0].split('-');
+        if (parts.length == 3) {
+          return '${parts[0]}/${parts[1]}/${parts[2]}';
+        }
+      } catch (_) {}
+      return 'غير محدد';
     }
   }
 
   String _getPlanStatusForSort(String? startDate, String? endDate) {
     if (startDate == null || endDate == null) return 'غير محدد';
-    
+
     try {
       final now = DateTime.now();
       final start = DateTime.parse(startDate);
       final end = DateTime.parse(endDate);
-      
+
       if (now.isBefore(start)) {
         return 'قادمة';
       } else if (now.isAfter(end)) {

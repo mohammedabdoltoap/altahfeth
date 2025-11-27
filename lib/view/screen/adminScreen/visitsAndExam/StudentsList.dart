@@ -8,7 +8,9 @@ import 'package:get/get.dart';
 import '../../../../constants/SmolleStudentCard.dart';
 import '../../../../constants/inline_loading.dart';
 import '../../../../controller/visitAndExamController/Add_VisitController.dart';
+import '../../../../globals.dart';
 import 'ExamScreen.dart';
+import 'Notes_For_Teacher.dart';
 
 class StudentsList extends StatelessWidget {
   final StudentsListController controller = Get.put(StudentsListController());
@@ -16,9 +18,45 @@ class StudentsList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("قائمة الطلاب"),
-        centerTitle: true,
+        title:  Text("قائمة الطلاب"),
+        // centerTitle: true,
         backgroundColor: primaryGreen, // primaryTeal
+
+        centerTitle: false, // نترك العنوان من اليسار قليلاً
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.teal[300],
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Map data={
+                  "id_user":data_user_globle["id_user"] ?? 4 ,
+                  "id_visit":controller.dataVisits["id_visit"],
+                  "id_circle":controller.dataVisits["id_circle"],
+
+                };
+                Get.to(()=>Notes_For_Teacher(),arguments: data);
+
+              },
+              child: const Text(
+                "توجيهات لمعلم الحلقة",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+
+
       ),
       body: Obx(() {
         if (controller.loadingStudents.value && controller.students.isEmpty) {

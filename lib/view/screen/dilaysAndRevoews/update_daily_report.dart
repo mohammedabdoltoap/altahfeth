@@ -65,7 +65,13 @@ class Update_Daily_Report extends StatelessWidget {
 
               // ويدجيت اختيار السورة
               SouraSelectorUpDate(),
-              CustomTextField(controller: controller.markController, label: "الدرجة", hint: "الدرجة",keyboardType: TextInputType.number,),
+              CustomTextField(
+                controller: controller.markController, 
+                label: "الدرجة", 
+                hint: "أدخل الدرجة (الحد الأقصى 100)",
+                keyboardType: TextInputType.number,
+                maxValue: 100, // ✅ لا يقبل أكثر من 100
+              ),
            Obx(() {
              final items = controller.dataEvaluations.toList();
              return CustomDropdownField(

@@ -125,12 +125,7 @@ class CirclesListScreen extends StatelessWidget {
                           ),
                         ),
                         SizedBox(height: 4),
-                        Text(
-                          "رقم الحلقة: ${circle["id_circle"] ?? "غير محدد"}",
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[600],
-                          ),
-                        ),
+
                       ],
                     ),
                   ),

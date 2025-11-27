@@ -1,4 +1,6 @@
 import 'package:althfeth/constants/color.dart';
+import 'package:althfeth/constants/app_theme.dart';
+import 'package:althfeth/widgets/custom_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../constants/function.dart';
@@ -24,332 +26,247 @@ class AdminReportsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("التقارير الشاملة"),
-        backgroundColor: Colors.orange[400],
-        centerTitle: true,
-        elevation: 0,
+      appBar: const CustomAppBar(
+        title: "التقارير الشاملة",
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.orange.shade50, Colors.white],
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: CustomPageContainer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
               // قسم تقارير الأساتذة
-              _buildSectionHeader(
-                "تقارير الأساتذة",
-                Icons.person,
-                Colors.blue,
+              CustomSectionHeader(
+                title: "تقارير الأساتذة",
+                icon: Icons.person_outline,
+                color: AppTheme.teacherSectionColor,
+                subtitle: "إدارة وتتبع بيانات الأساتذة",
               ),
-              const SizedBox(height: 12),
-              _buildReportGrid([
-                ReportItem(
-                  title: "حضور وانصراف الأساتذة",
-                  icon: Icons.access_time,
-                  color: Colors.blue,
-                  onTap: () => controller.showTeacherAttendanceReport(),
-                ),
-                ReportItem(
-                  title: "طلبات الإجازات",
-                  icon: Icons.event_busy,
-                  color: Colors.purple,
-                  onTap: () => controller.showLeaveRequestsReport(),
-                ),
-                ReportItem(
-                  title: "طلبات الاستقالة",
-                  icon: Icons.exit_to_app,
-                  color: Colors.red,
-                  onTap: () => controller.showResignationReport(),
-                ),
-                ReportItem(
-                  title: "أداء الأساتذة",
-                  icon: Icons.trending_up,
-                  color: Colors.green,
-                  onTap: () => controller.showTeacherPerformanceReport(),
-                ),
-              ]),
+              const SizedBox(height: AppTheme.spacingLarge),
+              CustomReportGrid(
+                cards: [
+                  CustomReportCard(
+                    title: "حضور وانصراف الأساتذة",
+                    icon: Icons.access_time_outlined,
+                    color: AppTheme.reportColors[0],
+                    onTap: () => controller.showTeacherAttendanceReport(),
+                    subtitle: "تتبع يومي",
+                  ),
+                  CustomReportCard(
+                    title: "طلبات الإجازات",
+                    icon: Icons.event_busy_outlined,
+                    color: AppTheme.reportColors[1],
+                    onTap: () => controller.showLeaveRequestsReport(),
+                    subtitle: "إدارة الإجازات",
+                  ),
+                  CustomReportCard(
+                    title: "طلبات الاستقالة",
+                    icon: Icons.exit_to_app_outlined,
+                    color: AppTheme.reportColors[2],
+                    onTap: () => controller.showResignationReport(),
+                    subtitle: "معالجة الطلبات",
+                  ),
+                  CustomReportCard(
+                    title: "أداء الأساتذة",
+                    icon: Icons.trending_up_outlined,
+                    color: AppTheme.reportColors[3],
+                    onTap: () => controller.showTeacherPerformanceReport(),
+                    subtitle: "تقييم شامل",
+                  ),
+                ],
+              ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppTheme.spacingXXLarge),
 
               // قسم تقارير الطلاب
-              _buildSectionHeader(
-                "تقارير الطلاب",
-                Icons.school,
-                Colors.teal,
+              CustomSectionHeader(
+                title: "تقارير الطلاب",
+                icon: Icons.school_outlined,
+                color: AppTheme.studentSectionColor,
+                subtitle: "متابعة تقدم وأداء الطلاب",
               ),
-              const SizedBox(height: 12),
-              _buildReportGrid([
-                ReportItem(
-                  title: "حضور وغياب الطلاب",
-                  icon: Icons.how_to_reg,
-                  color: Colors.teal,
-                  onTap: () => controller.showStudentAttendanceReport(),
-                ),
-                ReportItem(
-                  title: "تقرير التسميع اليومي",
-                  icon: Icons.book,
-                  color: Colors.indigo,
-                  onTap: () => controller.showDailyRecitationReport(),
-                ),
-                ReportItem(
-                  title: "تقرير المراجعة",
-                  icon: Icons.refresh,
-                  color: Colors.orange,
-                  onTap: () => controller.showReviewReport(),
-                ),
-                ReportItem(
-                  title: "تقرير الغياب",
-                  icon: Icons.event_busy,
-                  color: Colors.red,
-                  onTap: () => controller.showAbsenceReport(),
-                ),
-                ReportItem(
-                  title: "مهارات الطلاب",
-                  icon: Icons.star,
-                  color: Colors.amber,
-                  onTap: () => controller.showStudentSkillsReport(),
-                ),
-                ReportItem(
-                  title: "أداء الطلاب الشامل",
-                  icon: Icons.assessment,
-                  color: Colors.deepPurple,
-                  onTap: () => controller.showStudentPerformanceReport(),
-                ),
-              ]),
+              const SizedBox(height: AppTheme.spacingLarge),
+              CustomReportGrid(
+                cards: [
+                  CustomReportCard(
+                    title: "حضور وغياب الطلاب",
+                    icon: Icons.how_to_reg_outlined,
+                    color: AppTheme.reportColors[4],
+                    onTap: () => controller.showStudentAttendanceReport(),
+                    subtitle: "متابعة يومية",
+                  ),
+                  CustomReportCard(
+                    title: "تقرير التسميع اليومي",
+                    icon: Icons.book_outlined,
+                    color: AppTheme.reportColors[5],
+                    onTap: () => controller.showDailyRecitationReport(),
+                    subtitle: "تسميع القرآن",
+                  ),
+                  CustomReportCard(
+                    title: "تقرير المراجعة",
+                    icon: Icons.refresh_outlined,
+                    color: AppTheme.reportColors[0],
+                    onTap: () => controller.showReviewReport(),
+                    subtitle: "مراجعة المحفوظ",
+                  ),
+                  CustomReportCard(
+                    title: "تقرير الغياب",
+                    icon: Icons.event_busy_outlined,
+                    color: AppTheme.reportColors[1],
+                    onTap: () => controller.showAbsenceReport(),
+                    subtitle: "تحليل الغياب",
+                  ),
+                  CustomReportCard(
+                    title: "أداء الطلاب الشامل",
+                    icon: Icons.assessment_outlined,
+                    color: AppTheme.reportColors[2],
+                    onTap: () => controller.showStudentPerformanceReport(),
+                    subtitle: "تقييم متكامل",
+                  ),
+                ],
+              ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: AppTheme.spacingXXLarge),
 
               // قسم تقارير الزيارات
-              _buildSectionHeader(
-                "تقارير الزيارات الفنية",
-                Icons.assignment,
-                Colors.deepOrange,
-              ),
-              const SizedBox(height: 12),
-              _buildReportGrid([
-                ReportItem(
-                  title: "نتائج الزيارات الفنية",
-                  icon: Icons.grading,
-                  color: Colors.deepOrange,
-                  onTap: () => controller.showVisitResultsReport(),
-                ),
-                ReportItem(
-                  title: "ملاحظات الزيارات",
-                  icon: Icons.note_alt,
-                  color: Colors.brown,
-                  onTap: () => controller.showVisitNotesReport(),
-                ),
-                ReportItem(
-                  title: "إحصائيات الزيارات",
-                  icon: Icons.bar_chart,
-                  color: Colors.cyan,
-                  onTap: () => controller.showVisitStatisticsReport(),
-                ),
-              ]),
+              // CustomSectionHeader(
+              //   title: "تقارير الزيارات الفنية",
+              //   icon: Icons.assignment_outlined,
+              //   color: AppTheme.visitSectionColor,
+              //   subtitle: "متابعة وتقييم الزيارات الفنية",
+              // ),
+              // const SizedBox(height: AppTheme.spacingLarge),
+              // CustomReportGrid(
+              //   cards: [
+              //     CustomReportCard(
+              //       title: "نتائج الزيارات الفنية",
+              //       icon: Icons.grading_outlined,
+              //       color: AppTheme.reportColors[3],
+              //       onTap: () => mySnackbar("قريبا..", "قيد التطوير", type: "g"),
+              //       subtitle: "تقييم الأداء",
+              //       isEnabled: false,
+              //       badge: const CustomBadge(
+              //         text: "قريباً",
+              //         color: Colors.orange,
+              //       ),
+              //     ),
+              //     CustomReportCard(
+              //       title: "ملاحظات الزيارات",
+              //       icon: Icons.note_alt_outlined,
+              //       color: AppTheme.reportColors[4],
+              //       onTap: () => mySnackbar("قريبا..", "قيد التطوير", type: "g"),
+              //       subtitle: "توثيق الملاحظات",
+              //       isEnabled: false,
+              //       badge: const CustomBadge(
+              //         text: "قريباً",
+              //         color: Colors.orange,
+              //       ),
+              //     ),
+              //     CustomReportCard(
+              //       title: "إحصائيات الزيارات",
+              //       icon: Icons.bar_chart_outlined,
+              //       color: AppTheme.reportColors[5],
+              //       onTap: () => mySnackbar("قريبا..", "قيد التطوير", type: "g"),
+              //       subtitle: "تحليل البيانات",
+              //       isEnabled: false,
+              //       badge: const CustomBadge(
+              //         text: "قريباً",
+              //         color: Colors.orange,
+              //       ),
+              //     ),
+              //   ],
+              // ),
 
-              const SizedBox(height: 24),
+              // const SizedBox(height: AppTheme.spacingXXLarge),
 
               // قسم تقارير الحلقات
-              _buildSectionHeader(
-                "تقارير الحلقات",
-                Icons.groups,
-                Colors.pink,
-              ),
-              const SizedBox(height: 12),
-              _buildReportGrid([
-                ReportItem(
-                  title: "إحصائيات الحلقات",
-                  icon: Icons.pie_chart,
-                  color: Colors.pink,
-                  onTap: () => controller.showCircleStatisticsReport(),
-                ),
-                ReportItem(
-                  title: "تقرير شامل للحلقة",
-                  icon: Icons.summarize,
-                  color: Colors.lightBlue,
-                  onTap: () => controller.showCircleComprehensiveReport(),
-                ),
-                ReportItem(
-                  title: "مقارنة بين الحلقات",
-                  icon: Icons.compare_arrows,
-                  color: Colors.deepPurple,
-                  onTap: () => controller.showCircleComparisonReport(),
-                ),
-              ]),
+              // CustomSectionHeader(
+              //   title: "تقارير الحلقات",
+              //   icon: Icons.groups_outlined,
+              //   color: AppTheme.circleSectionColor,
+              //   subtitle: "إدارة ومتابعة أداء الحلقات",
+              // ),
+              // const SizedBox(height: AppTheme.spacingLarge),
+              // CustomReportGrid(
+              //   cards: [
+              //     CustomReportCard(
+              //       title: "إحصائيات الحلقات",
+              //       icon: Icons.pie_chart,
+              //       color: AppTheme.reportColors[0],
+              //       onTap: () => mySnackbar("قريبا..", "قيد التطوير", type: "g"),
+              //       subtitle: "تحليل شامل",
+              //       isEnabled: false,
+              //       badge: const CustomBadge(
+              //         text: "قريباً",
+              //         color: Colors.orange,
+              //       ),
+              //     ),
+              //     CustomReportCard(
+              //       title: "تقرير شامل للحلقة",
+              //       icon: Icons.summarize_outlined,
+              //       color: AppTheme.reportColors[1],
+              //       onTap: () => mySnackbar("قريبا..", "قيد التطوير", type: "g"),
+              //       subtitle: "تقرير مفصل",
+              //       isEnabled: false,
+              //       badge: const CustomBadge(
+              //         text: "قريباً",
+              //         color: Colors.orange,
+              //       ),
+              //     ),
+              //     CustomReportCard(
+              //       title: "مقارنة بين الحلقات",
+              //       icon: Icons.compare_arrows_outlined,
+              //       color: AppTheme.reportColors[2],
+              //       onTap: () => mySnackbar("قريبا..", "قيد التطوير", type: "g"),
+              //       subtitle: "تحليل مقارن",
+              //       isEnabled: false,
+              //       badge: const CustomBadge(
+              //         text: "قريباً",
+              //         color: Colors.orange,
+              //       ),
+              //     ),
+              //   ],
+              // ),
 
-              const SizedBox(height: 24),
 
               // قسم تقارير عامة
-              _buildSectionHeader(
-                "تقارير عامة",
-                Icons.dashboard,
-                Colors.blueGrey,
-              ),
-              const SizedBox(height: 12),
-              _buildReportGrid([
-                ReportItem(
-                  title: "التقرير الشهري الشامل",
-                  icon: Icons.calendar_month,
-                  color: Colors.blueGrey,
-                  onTap: () => controller.showMonthlyComprehensiveReport(),
-                ),
-                ReportItem(
-                  title: "التقرير السنوي",
-                  icon: Icons.calendar_today,
-                  color: Colors.green,
-                  onTap: () => controller.showYearlyReport(),
-                ),
-                ReportItem(
-                  title: "تقرير مخصص",
-                  icon: Icons.tune,
-                  color: Colors.purple,
-                  onTap: () => controller.showCustomReport(),
-                ),
-                ReportItem(
-                  title: "تصدير جميع البيانات",
-                  icon: Icons.download,
-                  color: Colors.teal,
-                  onTap: () => controller.exportAllData(),
-                ),
-              ]),
+              // _buildSectionHeader(
+              //   "تقارير عامة",
+              //   Icons.dashboard,
+              //   Colors.blueGrey,
+              // ),
+              // const SizedBox(height: 12),
+              // _buildReportGrid([
+              //   ReportItem(
+              //     title: "التقرير الشهري الشامل",
+              //     icon: Icons.calendar_month,
+              //     color: Colors.blueGrey,
+              //     onTap: () => controller.showMonthlyComprehensiveReport(),
+              //   ),
+              //   ReportItem(
+              //     title: "التقرير السنوي",
+              //     icon: Icons.calendar_today,
+              //     color: Colors.green,
+              //     onTap: () => controller.showYearlyReport(),
+              //   ),
+              //   ReportItem(
+              //     title: "تقرير مخصص",
+              //     icon: Icons.tune,
+              //     color: Colors.purple,
+              //     onTap: () => controller.showCustomReport(),
+              //   ),
+              //   ReportItem(
+              //     title: "تصدير جميع البيانات",
+              //     icon: Icons.download,
+              //     color: Colors.teal,
+              //     onTap: () => controller.exportAllData(),
+              //   ),
+              // ]
+              // ),
             ],
           ),
         ),
-      ),
+
     );
   }
-
-  Widget _buildSectionHeader(String title, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color, color.withOpacity(0.7)],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white, size: 28),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReportGrid(List<ReportItem> items) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.1,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return _buildReportCard(item);
-      },
-    );
-  }
-
-  Widget _buildReportCard(ReportItem item) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [item.color.withOpacity(0.1), Colors.white],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: item.color.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: item.onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: item.color.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    item.icon,
-                    size: 36,
-                    color: item.color,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  item.title,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: item.color.withOpacity(0.9),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class ReportItem {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  ReportItem({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
 }
 
 class AdminReportsController extends GetxController {

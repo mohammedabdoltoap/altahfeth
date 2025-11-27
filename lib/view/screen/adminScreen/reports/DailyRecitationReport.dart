@@ -192,16 +192,180 @@ class DailyRecitationReport extends StatelessWidget {
                 itemCount: controller.recitationList.length,
                 itemBuilder: (context, index) {
                   final item = controller.recitationList[index];
-                  final isSummary = item.containsKey('total_recitations');
-                  
-                  if (isSummary) {
-                    return _buildSummaryCard(item);
-                  } else {
-                    return _buildDetailCard(item);
-                  }
+                  return _buildStudentCard(item);
                 },
               );
             }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudentCard(Map<String, dynamic> item) {
+    final totalRecitations = int.tryParse(item['total_recitations'].toString()) ?? 0;
+    final avgMark = double.tryParse(item['avg_mark'].toString()) ?? 0.0;
+    final markColor = avgMark >= 80 ? Colors.green : avgMark >= 60 ? Colors.orange : Colors.red;
+    final recitations = item['recitations'] as List<Map<String, dynamic>>? ?? [];
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: markColor,
+          child: Text(
+            avgMark.toStringAsFixed(0),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(
+          item['name_student'] ?? '',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'الحلقة: ${item['name_circle'] ?? '-'}',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                _buildStatChip('تسميعات', totalRecitations.toString(), Colors.purple),
+                const SizedBox(width: 8),
+                _buildStatChip('المتوسط', avgMark.toStringAsFixed(1), markColor),
+              ],
+            ),
+          ],
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'تفاصيل التسميعات:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...recitations.map((recitation) => _buildRecitationItem(recitation)).toList(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecitationItem(Map<String, dynamic> recitation) {
+    final mark = double.tryParse(recitation['mark']?.toString() ?? '0') ?? 0.0;
+    final markColor = mark >= 80 ? Colors.green : mark >= 60 ? Colors.orange : Colors.red;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  recitation['recitation'] ?? 'غير محدد',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: markColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  mark.toStringAsFixed(0),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'التقييم: ${recitation['evaluation_name'] ?? '-'}',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+          ),
+          Text(
+            'التاريخ: ${recitation['date'] ?? '-'}',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -378,16 +542,33 @@ class DailyRecitationReportController extends GetxController {
   }
   
   Future<void> loadCircles() async {
-    try {
-      final response = await postData(Linkapi.select_circle_for_center, {
-        "responsible_user_id": dataArg?['id_user']?.toString(),
-      });
-      
-      if (response['stat'] == 'ok') {
-        circlesList.assignAll(List<Map<String, dynamic>>.from(response['data']));
+    var res = await handleRequest(
+      isLoading: RxBool(false),
+      useDialog: true,
+      immediateLoading: true,
+      loadingMessage: "تحميل الحلقات...",
+      action: () async {
+        return await postData(Linkapi.select_circle_for_center, {
+          "responsible_user_id": dataArg?['id_user']?.toString(),
+        });
       }
-    } catch (e) {
-      print("Error loading circles: $e");
+    );
+
+    if (res == null) {
+      return;
+    }
+
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      return;
+    }
+    
+    if (res["stat"] == "ok") {
+      circlesList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+    } else if (res["stat"] == "no") {
+      mySnackbar("تنبيه", "لا يوجد لديك حلقات");
+    } else {
+      mySnackbar("خطأ", res["msg"] ?? "حصل خطأ أثناء جلب البيانات");
     }
   }
 
@@ -405,24 +586,50 @@ class DailyRecitationReportController extends GetxController {
   }
   
   Future<void> selectStartDate(BuildContext context) async {
+    final now = DateTime.now();
+    final initial = startDate.value ?? now;
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: startDate.value ?? DateTime.now(),
+      initialDate: initial.isAfter(now) ? now : initial,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null) {
       startDate.value = picked;
       useDateRange.value = true;
+      
+      // إذا كان تاريخ النهاية موجود وأصبح أصغر من تاريخ البداية، امسحه
+      if (endDate.value != null && endDate.value!.isBefore(picked)) {
+        endDate.value = null;
+      }
     }
   }
   
   Future<void> selectEndDate(BuildContext context) async {
+    if (startDate.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار تاريخ البداية أولاً");
+      return;
+    }
+    
+    final now = DateTime.now();
+    final firstDate = startDate.value!;
+    
+    // التأكد من أن initialDate ضمن النطاق المسموح
+    DateTime initialDate;
+    if (endDate.value != null && !endDate.value!.isBefore(firstDate) && !endDate.value!.isAfter(now)) {
+      initialDate = endDate.value!;
+    } else if (firstDate.isAfter(now)) {
+      initialDate = now;
+    } else {
+      initialDate = firstDate;
+    }
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: endDate.value ?? DateTime.now(),
-      firstDate: startDate.value ?? DateTime(2020),
-      lastDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: now,
     );
     if (picked != null) {
       endDate.value = picked;
@@ -441,61 +648,104 @@ class DailyRecitationReportController extends GetxController {
       return;
     }
     
+    // التحقق من أن تاريخ البداية أصغر من تاريخ النهاية
+    if (useDateRange.value && startDate.value != null && endDate.value != null) {
+      if (startDate.value!.isAfter(endDate.value!)) {
+        mySnackbar("خطأ", "تاريخ البداية يجب أن يكون أصغر من تاريخ النهاية");
+        return;
+      }
+    }
+    
     if (selectedCircle.value == null) {
       mySnackbar("تنبيه", "الرجاء اختيار الحلقة");
       return;
     }
 
-    loading.value = true;
-    try {
-      Map<String, dynamic> requestData = {
-        "id_circle": selectedCircle.value,
-      };
-      
-      if (useDateRange.value) {
-        requestData["start_date"] = DateFormat('yyyy-MM-dd').format(startDate.value!);
-        requestData["end_date"] = DateFormat('yyyy-MM-dd').format(endDate.value!);
-      } else {
-        requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
-      }
-      
-      final response = await postData(Linkapi.select_daily_recitation_report, requestData);
+    Map<String, dynamic> requestData = {
+      "id_circle": selectedCircle.value,
+    };
+    
+    if (useDateRange.value) {
+      requestData["start_date"] = DateFormat('yyyy-MM-dd').format(startDate.value!);
+      requestData["end_date"] = DateFormat('yyyy-MM-dd').format(endDate.value!);
+    } else {
+      requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
+    }
 
-      print("Daily Recitation Response: $response");
-
-      if (response == null) {
-        mySnackbar("خطأ", "فشل الاتصال بالخادم");
-        recitationList.clear();
-        return;
+    var res = await handleRequest(
+      isLoading: loading,
+      useDialog: true,
+      immediateLoading: true,
+      loadingMessage: "جاري تحميل بيانات التسميع...",
+      action: () async {
+        return await postData(Linkapi.getCircleDailyReports, requestData);
       }
-
-      if (response is! Map) {
-        mySnackbar("خطأ", "استجابة غير صحيحة من الخادم");
-        recitationList.clear();
-        return;
-      }
-      
-      if (response['stat'] == 'ok') {
-        if (response['data'] != null && response['data'] is List) {
-          recitationList.assignAll(List<Map<String, dynamic>>.from(response['data']));
-          mySnackbar("نجح", "تم تحميل ${recitationList.length} سجل", type: "g");
-        } else {
-          recitationList.clear();
-          mySnackbar("تنبيه", "لا توجد بيانات");
-        }
-      } else if (response['stat'] == 'no') {
-        recitationList.clear();
-        mySnackbar("تنبيه", "لا توجد بيانات تسميع لهذه الفترة");
-      } else {
-        recitationList.clear();
-        mySnackbar("خطأ", response['msg'] ?? "حدث خطأ");
-      }
-    } catch (e) {
-      print("Error: $e");
-      mySnackbar("خطأ", "حدث خطأ: $e");
+    );
+    
+    if (res == null) {
       recitationList.clear();
-    } finally {
-      loading.value = false;
+      return;
+    }
+    
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      recitationList.clear();
+      return;
+    }
+    
+    if (res["stat"] == "ok") {
+      if (res['data'] != null && res['data'] is List) {
+        final rawData = List<Map<String, dynamic>>.from(res['data']);
+        
+        // تجميع البيانات حسب الطالب
+        final Map<String, List<Map<String, dynamic>>> groupedByStudent = {};
+        
+        for (var item in rawData) {
+          final studentId = item['id_student'].toString();
+          if (!groupedByStudent.containsKey(studentId)) {
+            groupedByStudent[studentId] = [];
+          }
+          groupedByStudent[studentId]!.add(item);
+        }
+        
+        // إنشاء قائمة جديدة مع ملخص لكل طالب
+        final List<Map<String, dynamic>> processedData = [];
+        
+        groupedByStudent.forEach((studentId, studentRecitations) {
+          if (studentRecitations.isNotEmpty) {
+            final firstItem = studentRecitations.first;
+            
+            // حساب المتوسط والإجمالي
+            final totalRecitations = studentRecitations.length;
+            final totalMarks = studentRecitations.fold<double>(0.0, (sum, item) {
+              return sum + (double.tryParse(item['mark']?.toString() ?? '0') ?? 0.0);
+            });
+            final avgMark = totalRecitations > 0 ? totalMarks / totalRecitations : 0.0;
+            
+            // إضافة كارت الملخص
+            processedData.add({
+              'id_student': firstItem['id_student'],
+              'name_student': firstItem['name_student'],
+              'name_circle': firstItem['name_circle'],
+              'total_recitations': totalRecitations,
+              'avg_mark': avgMark,
+              'recitations': studentRecitations, // جميع التسميعات
+            });
+          }
+        });
+        
+        recitationList.assignAll(processedData);
+        mySnackbar("نجح", "تم تحميل ${processedData.length} طالب", type: "g");
+      } else {
+        recitationList.clear();
+        mySnackbar("تنبيه", "لا توجد بيانات");
+      }
+    } else if (res["stat"] == "no") {
+      recitationList.clear();
+      mySnackbar("تنبيه", "لا توجد بيانات تسميع لهذه الفترة");
+    } else {
+      recitationList.clear();
+      mySnackbar("خطأ", res["msg"] ?? "حدث خطأ أثناء جلب البيانات");
     }
   }
   
@@ -509,65 +759,170 @@ class DailyRecitationReportController extends GetxController {
       final pdf = pw.Document();
       final fontData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
       final arabicFont = pw.Font.ttf(fontData);
+      
+      // تحميل الشعار
+      final logoData = await rootBundle.load('assets/icon/app_icon.png');
+      final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+
+      final dateStr = selectedDate.value != null 
+          ? DateFormat('yyyy-MM-dd').format(selectedDate.value!)
+          : useDateRange.value && startDate.value != null && endDate.value != null
+              ? 'من ${DateFormat('yyyy-MM-dd').format(startDate.value!)} إلى ${DateFormat('yyyy-MM-dd').format(endDate.value!)}'
+              : '';
+
+      final circleName = circlesList.firstWhere(
+        (circle) => circle['id_circle'].toString() == selectedCircle.value.toString(), 
+        orElse: () => {'name_circle': 'غير محدد'}
+      )['name_circle'];
 
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(20),
           textDirection: pw.TextDirection.rtl,
           theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
           build: (context) {
             return [
+              // رأس الصفحة الاحترافي
               pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  color: PdfColor.fromHex('#9C27B0'),
-                  borderRadius: pw.BorderRadius.circular(10),
-                ),
-                child: pw.Column(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      'تقرير التسميع اليومي',
-                      style: pw.TextStyle(
-                        fontSize: 24,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white,
-                      ),
+                    // الجانب الأيسر: الشعار + المؤسسة
+                    pw.Row(
+                      children: [
+                        pw.Container(
+                          width: 45,
+                          height: 45,
+                          child: pw.Image(logoImage),
+                        ),
+                        pw.SizedBox(width: 8),
+                        pw.Directionality(
+                          textDirection: pw.TextDirection.rtl,
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'مؤسسة مسارات',
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                              ),
+                              pw.Text(
+                                'للتنمية الإنسانية',
+                                style: const pw.TextStyle(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    pw.SizedBox(height: 10),
-                    pw.Text(
-                      'عدد السجلات: ${recitationList.length}',
-                      style: const pw.TextStyle(fontSize: 14, color: PdfColors.white),
+                    // الجانب الأيمن: اسم التقرير + التفاصيل
+                    pw.Directionality(
+                      textDirection: pw.TextDirection.rtl,
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [
+                          pw.Text(
+                            'تقرير التسميع اليومي',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            'التاريخ: $dateStr',
+                            style: const pw.TextStyle(fontSize: 11),
+                          ),
+                          pw.SizedBox(height: 2),
+                          pw.Text(
+                            'الحلقة: $circleName | طلاب: ${recitationList.length} | تسميعات: ${recitationList.fold<int>(0, (sum, student) => sum + ((student['recitations'] as List?)?.length ?? 0))}',
+                            style: const pw.TextStyle(fontSize: 9),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              pw.SizedBox(height: 20),
-              pw.Table(
-                border: pw.TableBorder.all(color: PdfColors.grey300),
-                children: [
-                  pw.TableRow(
-                    decoration: pw.BoxDecoration(
-                      color: PdfColor.fromHex('#E1BEE7'),
-                    ),
-                    children: [
-                      _buildTableCell('الطالب', isHeader: true),
-                      _buildTableCell('من', isHeader: true),
-                      _buildTableCell('إلى', isHeader: true),
-                      _buildTableCell('الدرجة', isHeader: true),
-                    ],
+              pw.SizedBox(height: 8),
+              pw.Divider(thickness: 1.5),
+              pw.SizedBox(height: 15),
+
+              // Table - عرض تفاصيل كل تسميع
+              pw.Directionality(
+                textDirection: pw.TextDirection.rtl,
+                child: pw.Table.fromTextArray(
+                  headers: ['#', 'اسم الطالب', 'الحلقة', 'النطاق', 'التقييم', 'الدرجة'],
+                  data: () {
+                    List<List<String>> allRecitations = [];
+                    int counter = 1;
+                    
+                    for (var student in recitationList) {
+                      final recitations = student['recitations'] as List<Map<String, dynamic>>? ?? [];
+                      
+                      for (var recitation in recitations) {
+                        allRecitations.add([
+                          counter.toString(),
+                          student['name_student'] ?? '-',
+                          student['name_circle'] ?? '-',
+                          recitation['recitation'] ?? 'غير محدد',
+                          recitation['evaluation_name'] ?? '-',
+                          recitation['mark']?.toString() ?? '0',
+                        ]);
+                        counter++;
+                      }
+                    }
+                    
+                    return allRecitations;
+                  }(),
+                  border: pw.TableBorder.all(width: 0.5, color: PdfColors.purple300),
+                  headerStyle: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.white,
                   ),
-                  ...recitationList.map((item) {
-                    return pw.TableRow(
-                      children: [
-                        _buildTableCell(item['name_student'] ?? '-'),
-                        _buildTableCell('${item['from_soura_name'] ?? ''} (${item['from_id_aya'] ?? ''})'),
-                        _buildTableCell('${item['to_soura_name'] ?? ''} (${item['to_id_aya'] ?? ''})'),
-                        _buildTableCell(item['mark']?.toString() ?? '-'),
-                      ],
+                  headerDecoration: const pw.BoxDecoration(
+                    color: PdfColors.purple,
+                  ),
+                  cellStyle: const pw.TextStyle(fontSize: 9),
+                  cellAlignment: pw.Alignment.center,
+                  cellHeight: 22,
+                  headerHeight: 28,
+                  cellDecoration: (index, data, rowNum) {
+                    return pw.BoxDecoration(
+                      color: rowNum % 2 == 0 
+                          ? PdfColors.white 
+                          : PdfColors.grey100,
                     );
-                  }).toList(),
-                ],
+                  },
+                ),
+              ),
+              
+              pw.Spacer(),
+              
+              // تذييل الصفحة
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.Directionality(
+                textDirection: pw.TextDirection.rtl,
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      "تاريخ الطباعة: ${DateTime.now().toLocal().toString().split(' ')[0]}",
+                      style: const pw.TextStyle(fontSize: 8),
+                    ),
+                    pw.Text(
+                      "مؤسسة مسارات للتنمية الإنسانية",
+                      style: const pw.TextStyle(fontSize: 8),
+                    ),
+                  ],
+                ),
               ),
             ];
           },
@@ -576,28 +931,11 @@ class DailyRecitationReportController extends GetxController {
 
       await Printing.layoutPdf(
         onLayout: (format) async => pdf.save(),
-        name: 'تقرير_التسميع_اليومي.pdf',
+        name: 'تقرير_التسميع_اليومي_$dateStr.pdf',
       );
-
-      mySnackbar("نجح", "تم إنشاء التقرير بنجاح", type: "g");
     } catch (e) {
-      print("PDF Error: $e");
-      mySnackbar("خطأ", "حدث خطأ أثناء إنشاء التقرير: $e");
+      print("Error generating PDF: $e");
+      mySnackbar("خطأ", "حدث خطأ أثناء إنشاء التقرير");
     }
-  }
-
-  pw.Widget _buildTableCell(String text, {bool isHeader = false}) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 11 : 9,
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: isHeader ? PdfColor.fromHex('#6A1B9A') : PdfColors.black,
-        ),
-        textAlign: pw.TextAlign.center,
-      ),
-    );
   }
 }

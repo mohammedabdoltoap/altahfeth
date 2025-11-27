@@ -100,7 +100,9 @@ class Notes_For_TeacherController extends GetxController{
   void onInit() {
     dataVisitCircle=Get.arguments;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      // if(dataVisitCircle["NamePage"]=="update")
       select_notes_for_teacher();
+
     },);
   }
   TextEditingController notesController = TextEditingController();
@@ -108,7 +110,7 @@ class Notes_For_TeacherController extends GetxController{
   RxBool isLoading = false.obs;
 
   Future insert_notes_for_teacher() async {
-    try {
+
       if (data_notes.isNotEmpty) {
         final res = await handleRequest<dynamic>(
           isLoading: isLoading,
@@ -136,6 +138,7 @@ class Notes_For_TeacherController extends GetxController{
           mySnackbar("تنبيه", "${res["msg"]}");
         }
       } else {
+      print("dataVisitCircle=====${dataVisitCircle}");
         final res = await handleRequest<dynamic>(
           isLoading: isLoading,
           loadingMessage: "جاري إضافة الملاحظات...",
@@ -163,32 +166,38 @@ class Notes_For_TeacherController extends GetxController{
         } else {
           mySnackbar("تنبيه", "حصل خطأ لم تتم الإضافة");
         }
+        //
       }
-    } catch (e, stackTrace) {
-      print("Error in insert_notes_for_teacher: $e");
-      print(stackTrace);
-      mySnackbar("خطأ", "حدث خطأ غير متوقع، حاول مرة أخرى");
-    }
+
   }
 
-  Map<String, dynamic> data_notes={};
+  Map data_notes={};
+  RxBool isSelect=false.obs;
   Future select_notes_for_teacher() async {
-    try {
-      var res = await postData(Linkapi.select_notes_for_teacher_by_circle, {
-        "id_visit": dataVisitCircle["id_visit"],
-      });
-      
+
+      var res = await handleRequest(isLoading: isSelect, action:()async {
+        return await postData(Linkapi.select_notes_for_teacher_forVisit, {
+          "id_visit": dataVisitCircle["id_visit"],
+        });
+      },
+      immediateLoading: true,
+        useDialog: true,
+        loadingMessage: "جاري التحقق من وجود ملاحظة سابقة .."
+
+      );
+
       if (res != null && res is Map) {
         if (res["stat"] == "ok") {
-          data_notes = res["data"];
+          data_notes =res["data"];
           notesController.text = data_notes["notes"] ?? "";
-          print("data_notes.runtimeType====${data_notes.runtimeType}");
+          print("data_notes====${data_notes}");
         }
+        else if(res["stat"]=="error"){
+          mySnackbar("تنبية", res["msg"]?? "حصل خطا اثناء جلب الملاحظه السابقة");
+        }
+
       }
-    } catch (e, stackTrace) {
-      print("Error in select_notes_for_teacher: $e");
-      print(stackTrace);
-    }
+
   }
 
 

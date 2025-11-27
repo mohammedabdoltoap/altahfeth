@@ -104,8 +104,9 @@ class Daily_Report extends StatelessWidget {
                 child: CustomTextField(
                   controller: controller.markController,
                   label: "الدرجة",
-                  hint: "أدخل الدرجة",
+                  hint: "أدخل الدرجة (الحد الأقصى 100)",
                   keyboardType: TextInputType.number,
+                  maxValue: 100, // ✅ لا يقبل أكثر من 100
                 ),
               ),
               Obx(() {

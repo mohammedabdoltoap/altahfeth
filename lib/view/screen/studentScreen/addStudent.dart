@@ -29,7 +29,7 @@ class Addstudent extends StatelessWidget {
             }
 
             // إذا لم تكن البيانات متوفرة (لا مراحل أو لا قراء)
-            if(!addStudentController.hasLevelData.value || !addStudentController.hasReaderData.value) {
+            if(!addStudentController.hasLevelData.value || !addStudentController.hasReaderData.value || !addStudentController.hasQualificationData.value) {
               return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -61,6 +61,8 @@ class Addstudent extends StatelessWidget {
                           onPressed: () {
                             addStudentController.select_level();
                             addStudentController.select_reders();
+                            addStudentController.select_qualification();
+
                           },
                           icon: Icon(Icons.refresh),
                           label: const Text("إعادة المحاولة"),

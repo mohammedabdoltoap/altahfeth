@@ -32,21 +32,41 @@ class PromotionController extends GetxController {
   final Map<int, TextEditingController> gradeControllers = {}; // keyed by SubjectID
 
   RxBool isLoading = false.obs;
+  
+  // ✅ متغيرات للتعديل
+  RxBool isEditMode = false.obs;
+  RxnInt currentPromotionId = RxnInt(null);
 
   @override
   void onInit() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      fetchCenters();
-      fetchCommitteeMembers();
-        fetchSubjects();
-    });
     currentUserName = data_user_globle["username"]?.toString();
     super.onInit();
+    // ✅ تحميل البيانات بشكل تسلسلي لتجنب التعليق
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadInitialData();
+    });
+  }
+
+  // ✅ دالة لتحميل البيانات الأولية بشكل منظم
+  Future<void> _loadInitialData() async {
+    isLoading.value = true;
+    try {
+      // تحميل المراكز أولاً
+      await fetchCenters();
+      // تحميل اللجنة والمواد بالتوازي
+      await Future.wait([
+        fetchCommitteeMembers(),
+        fetchSubjects(),
+      ]);
+    } finally {
+      isLoading.value = false;
+    }
   }
   Future<void> fetchSubjects() async {
     final res = await handleRequest<dynamic>(
       isLoading: RxBool(false),
       useDialog: false,
+      immediateLoading: false,
       action: () async {
         return await postData(Linkapi.select_promotion_subjects, {});
       },
@@ -78,8 +98,9 @@ class PromotionController extends GetxController {
   // API methods
   Future<void> fetchCenters() async {
     final res = await handleRequest<dynamic>(
-      isLoading: isLoading,
+      isLoading: RxBool(false),
       useDialog: false,
+      immediateLoading: false,
       action: () async {
         return await postData(Linkapi.select_centers, {});
       },
@@ -106,8 +127,10 @@ class PromotionController extends GetxController {
     circles.clear();
     students.clear();
     final res = await handleRequest<dynamic>(
-      isLoading: RxBool(false),
+      isLoading: isLoading,
       useDialog: false,
+      immediateLoading: true,
+      loadingMessage: 'جاري تحميل الحلقات...',
       action: () async {
         return await postData(Linkapi.select_circles_by_center, {"id_center": idCenter});
       },
@@ -135,8 +158,10 @@ class PromotionController extends GetxController {
 
   Future<void> fetchStudentsForCircle(int idCircle) async {
     final res = await handleRequest<dynamic>(
-      isLoading: RxBool(false),
+      isLoading: isLoading,
       useDialog: false,
+      immediateLoading: true,
+      loadingMessage: 'جاري تحميل الطلاب...',
       action: () async {
         return await postData(Linkapi.getstudents, {"id_circle": idCircle});
       },
@@ -157,6 +182,7 @@ class PromotionController extends GetxController {
     final res = await handleRequest<dynamic>(
       isLoading: RxBool(false),
       useDialog: false,
+      immediateLoading: false,
       action: () async {
         return await postData(Linkapi.select_promotion_committee, {});
       },
@@ -279,13 +305,24 @@ class PromotionController extends GetxController {
       "average": calculateAverage(),
     };
 
-    final res = await handleRequest<dynamic>(
+    // ✅ إضافة id_promotion في حالة التعديل
+    if (isEditMode.value && currentPromotionId.value != null) {
+      payload['id_promotion'] = currentPromotionId.value;
+    }
+    print("payload=====${payload}");
+    // ✅ اختيار API المناسب (تعديل أو إضافة)
+    final apiUrl = isEditMode.value ? Linkapi.update_promotion : Linkapi.insert_promotion;
+    final loadingMsg = isEditMode.value ? 'جاري تحديث الترفيع...' : 'جاري حفظ الترفيع...';
+    final successMsg = isEditMode.value ? 'تم تحديث الترفيع بنجاح' : 'تمت عملية الترفيع بنجاح';
+
+    final res =  await handleRequest<dynamic>(
       isLoading: isLoading,
-      loadingMessage: 'جاري حفظ الترفيع...',
+      loadingMessage: loadingMsg,
       useDialog: true,
       immediateLoading: true,
+
       action: () async {
-        return await postData(Linkapi.insert_promotion, payload);
+        return await postData(apiUrl, payload);
       },
     );
 
@@ -295,7 +332,7 @@ class PromotionController extends GetxController {
       return;
     }
     if (res['stat'] == 'ok') {
-      mySnackbar('تم', 'تمت عملية الترفيع بنجاح', type: "g");
+      mySnackbar('تم', successMsg, type: "g");
       resetForm();
     } else {
       mySnackbar('خطأ', res['msg'] ?? 'تعذر حفظ الترفيع');
@@ -317,6 +354,9 @@ class PromotionController extends GetxController {
     selectedCommitteeIds.clear();
     committeeQuery.value = '';
     currentStep.value = 0;
+    // ✅ إعادة تعيين وضع التعديل
+    isEditMode.value = false;
+    currentPromotionId.value = null;
   }
 
   // Helpers for UI binding
@@ -357,6 +397,10 @@ class PromotionController extends GetxController {
     final p = Map<String, dynamic>.from(data['promotion']);
     final grades = List<Map<String, dynamic>>.from(data['grades'] ?? []);
     final committee = List<Map<String, dynamic>>.from(data['committee'] ?? []);
+
+    // ✅ تفعيل وضع التعديل
+    isEditMode.value = true;
+    currentPromotionId.value = idPromotion;
 
     // Select center → circles → students sequentially
     final centerId = p['center_id'] as int;

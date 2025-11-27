@@ -11,22 +11,139 @@ import '../../../constants/loadingWidget.dart';
 class Student_Skills extends StatelessWidget {
   final Student_SkillsController controller = Get.put(Student_SkillsController());
 
+  Widget _buildStudentInfoCard(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withOpacity(0.7),
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+              child: CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.person_rounded,
+                  size: 32,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    controller.studentName.value.isNotEmpty
+                        ? controller.studentName.value
+                        : 'الطالب',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.stars_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Obx(() => Text(
+                          "${controller.skills_Sudent.length} مهارة",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("مهارات الطالب"),
-        centerTitle: true,
-        toolbarHeight: 88,
-      ),
-      resizeToAvoidBottomInset: true,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Obx(() => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text(
+            "مهارات الطالب",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          backgroundColor: theme.colorScheme.primary,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: () {
+                controller.select_student_skill();
+                controller.select_skill();
+              },
+              tooltip: "تحديث",
+            ),
+          ],
+        ),
+        resizeToAvoidBottomInset: true,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              // بطاقة معلومات الطالب
+              Obx(() => _buildStudentInfoCard(theme)),
+              
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Obx(() => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 // قسم إضافة المهارة داخل Card
                 Card(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -199,7 +316,9 @@ class Student_Skills extends StatelessWidget {
                         ),
               ],
             )),
-        ),
+          ),
+        ]),
+      ),
       ),
     );
   }
@@ -207,6 +326,7 @@ class Student_Skills extends StatelessWidget {
 
 class Student_SkillsController extends GetxController {
   var data;
+  RxString studentName = ''.obs;
   RxList<Map<String, dynamic>> skills_Sudent = <Map<String, dynamic>>[].obs;
   RxList<Map<String, dynamic>> skills = <Map<String, dynamic>>[].obs;
   RxnInt selectedIdSkile = RxnInt(null);
@@ -223,10 +343,15 @@ class Student_SkillsController extends GetxController {
   void onInit() {
     super.onInit();
     data = Get.arguments;
+    
+    // استخراج اسم الطالب
+    if (data != null && data is Map) {
+      studentName.value = data["name_student"] ?? '';
+    }
+    
     WidgetsBinding.instance.addPostFrameCallback((_) async {
        select_student_skill();
         select_skill();
-
     });
   }
 

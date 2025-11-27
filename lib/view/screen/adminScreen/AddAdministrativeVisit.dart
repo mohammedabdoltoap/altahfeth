@@ -382,10 +382,11 @@ class AddAdministrativeVisitController extends GetxController {
 
   Future<void> loadCircleName() async {
     try {
+      print("dataArg=====${dataArg}");
       final response = await postData(Linkapi.select_circle_for_center, {
-        "responsible_user_id": dataArg?['id_user']?.toString(),
+        "responsible_user_id": dataArg['id_user'],
       });
-      
+      print("response===${response}");
       if (response['stat'] == 'ok') {
         circlesList.assignAll(List<Map<String, dynamic>>.from(response['data']));
         // البحث عن اسم الحلقة المختارة

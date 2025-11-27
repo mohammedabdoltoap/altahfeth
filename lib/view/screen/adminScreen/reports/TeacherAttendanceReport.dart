@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -15,6 +16,8 @@ class TeacherAttendanceReport extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // تهيئة بيانات التاريخ للغة العربية
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("تقرير حضور وانصراف الأساتذة"),
@@ -26,10 +29,11 @@ class TeacherAttendanceReport extends StatelessWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Date Selection
-          Container(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Date Selection
+            Container(
             padding: const EdgeInsets.all(16),
             color: Colors.blue.shade50,
             child: Column(
@@ -113,11 +117,11 @@ class TeacherAttendanceReport extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Filters
           Obx(() {
             if (controller.attendanceList.isEmpty) return const SizedBox.shrink();
-            
+
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               color: Colors.grey.shade100,
@@ -169,128 +173,181 @@ class TeacherAttendanceReport extends StatelessWidget {
               ),
             );
           }),
-          
+
           // Data List
-          Expanded(
+          Container(
+            height: 400, // تحديد ارتفاع ثابت للقائمة
             child: Obx(() {
               if (controller.loading.value) {
                 return const Center(child: CircularProgressIndicator());
               }
-              
-              if (controller.filteredAttendanceList.isEmpty) {
+
+              if (controller.groupedAttendanceList.isEmpty) {
                 return const Center(
                   child: Text("لا توجد بيانات"),
                 );
               }
-              
+
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: controller.filteredAttendanceList.length,
+                itemCount: controller.groupedAttendanceList.length,
                 itemBuilder: (context, index) {
-                  final item = controller.filteredAttendanceList[index];
-                  final hasCheckOut = item['check_out_time'] != null;
-                  
+                  final teacherGroup = controller.groupedAttendanceList[index];
+                  final attendanceRecords = List<Map<String, dynamic>>.from(teacherGroup['attendance_records'] ?? []);
+                  final completedDays = teacherGroup['completed_days'] ?? 0;
+                  final incompleteDays = teacherGroup['incomplete_days'] ?? 0;
+                  final totalDays = teacherGroup['total_days'] ?? 0;
+                  final completionRate = totalDays > 0 ? (completedDays / totalDays * 100) : 0.0;
+
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 3,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    elevation: 4,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(12),
+                    child: ExpansionTile(
                       leading: CircleAvatar(
-                        backgroundColor: hasCheckOut ? Colors.green : Colors.orange,
-                        child: Icon(
-                          hasCheckOut ? Icons.check_circle : Icons.pending,
-                          color: Colors.white,
+                        backgroundColor: completionRate >= 80 ? Colors.green : 
+                                        completionRate >= 60 ? Colors.orange : Colors.red,
+                        child: Text(
+                          '${completionRate.toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
-                      title: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            item['username'] ?? '',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-
-                          Text(
-                            item['attendance_date'] ?? '',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-
-                            ),
-                          ),
-                        ],
+                      title: Text(
+                        teacherGroup['teacher_name'] ?? 'غير محدد',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          // اسم الحلقة
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.group, size: 14, color: Colors.blue),
-                                const SizedBox(width: 4),
-                                Text(
-                                  item['name_circle'] ?? 'غير محدد',
-                                  style: TextStyle(
-                                    color: Colors.blue.shade700,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13,
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            _buildStatChip('مكتمل', completedDays.toString(), Colors.green),
+                            const SizedBox(width: 8),
+                            _buildStatChip('غير مكتمل', incompleteDays.toString(), Colors.orange),
+                            const SizedBox(width: 8),
+                            _buildStatChip('الإجمالي', totalDays.toString(), Colors.blue),
+                          ],
+                        ),
+                      ),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: attendanceRecords.map((record) {
+                              final hasCheckOut = record['check_out_time'] != null;
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: hasCheckOut ? Colors.green.shade50 : Colors.orange.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: hasCheckOut ? Colors.green.shade200 : Colors.orange.shade200,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // وقت الدخول
-                          Row(
-                            children: [
-                              const Icon(Icons.login, size: 16, color: Colors.green),
-                              const SizedBox(width: 4),
-                              Text(
-                                'دخول: ${item['check_in_time'] ?? '-'}',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          // وقت الخروج
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.logout,
-                                size: 16,
-                                color: hasCheckOut ? Colors.red : Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'خروج: ${item['check_out_time'] ?? 'لم يسجل خروج'}',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: hasCheckOut ? Colors.black : Colors.grey,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      hasCheckOut ? Icons.check_circle : Icons.pending,
+                                      color: hasCheckOut ? Colors.green : Colors.orange,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            record['attendance_date'] ?? '',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'دخول: ${record['check_in_time'] ?? '-'}',
+                                                style: const TextStyle(fontSize: 12),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Text(
+                                                'خروج: ${record['check_out_time'] ?? 'لم يسجل'}',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: hasCheckOut ? Colors.black : Colors.grey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (record['name_circle'] != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                'الحلقة: ${record['name_circle']}',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.blue.shade700,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              );
+                            }).toList(),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },
               );
             }),
+          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatChip(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+            ),
           ),
         ],
       ),
@@ -304,6 +361,7 @@ class TeacherAttendanceReportController extends GetxController {
   var endDate = Rxn<DateTime>();
   var attendanceList = <Map<String, dynamic>>[].obs;
   var filteredAttendanceList = <Map<String, dynamic>>[].obs;
+  var groupedAttendanceList = <Map<String, dynamic>>[].obs; // قائمة مجمعة حسب المعلم
   var loading = false.obs;
   var dataArg;
   
@@ -324,32 +382,40 @@ class TeacherAttendanceReportController extends GetxController {
   }
   
   Future<void> loadTeachersAndCircles() async {
-    try {
-      // جلب قائمة الأساتذة
-      // final teachersResponse = await postData(Linkapi.select_users, {
-      //   "id_user": dataArg?['id_user']?.toString(),
-      // });
-      //
-      // if (teachersResponse['stat'] == 'ok') {
-      //   teachersList.assignAll(List<Map<String, dynamic>>.from(teachersResponse['data']));
-      // }
+
       
       // جلب قائمة الحلقات
-      final circlesResponse = await postData(Linkapi.select_circle_for_center, {
-        "responsible_user_id": dataArg?['id_user']?.toString(),
-      });
+      final circlesResponse = await handleRequest(isLoading: RxBool(false), action: ()async {
+
+        return postData(Linkapi.select_circle_for_center, {
+          "responsible_user_id": dataArg?['id_user']?.toString(),
+        }
+        );
+
+      },
+      loadingMessage: "جلب قائمة الحلقات",
+      immediateLoading: true
+      );
+
+      if (circlesResponse == null) {
+        return;
+      }
+
+      if (circlesResponse is! Map) {
+        mySnackbar("خطأ", "فشل الاتصال بالخادم");
+        return;
+      }
       
       if (circlesResponse['stat'] == 'ok') {
         circlesList.assignAll(List<Map<String, dynamic>>.from(circlesResponse['data']));
       }
-    } catch (e) {
-      print("Error loading filters: $e");
-    }
+
   }
   
   void applyFilters() {
     if (attendanceList.isEmpty) {
       filteredAttendanceList.clear();
+      groupedAttendanceList.clear();
       return;
     }
     
@@ -372,12 +438,44 @@ class TeacherAttendanceReportController extends GetxController {
     }).toList();
     
     filteredAttendanceList.assignAll(filtered);
+    _groupAttendanceByTeacher();
+  }
+  
+  // دالة لتجميع البيانات حسب المعلم
+  void _groupAttendanceByTeacher() {
+    Map<String, Map<String, dynamic>> grouped = {};
+    
+    for (var item in filteredAttendanceList) {
+      String teacherKey = item['username'] ?? 'غير محدد';
+      
+      if (!grouped.containsKey(teacherKey)) {
+        grouped[teacherKey] = {
+          'teacher_name': teacherKey,
+          'teacher_id': item['id_user'],
+          'attendance_records': <Map<String, dynamic>>[],
+          'total_days': 0,
+          'completed_days': 0,
+          'incomplete_days': 0,
+        };
+      }
+      
+      grouped[teacherKey]!['attendance_records'].add(item);
+      grouped[teacherKey]!['total_days']++;
+      
+      if (item['check_out_time'] != null) {
+        grouped[teacherKey]!['completed_days']++;
+      } else {
+        grouped[teacherKey]!['incomplete_days']++;
+      }
+    }
+    
+    groupedAttendanceList.assignAll(grouped.values.toList());
   }
   
   void clearFilters() {
-    // selectedTeacher.value = null;
     selectedCircle.value = null;
     filteredAttendanceList.assignAll(attendanceList);
+    _groupAttendanceByTeacher();
   }
 
   Future<void> selectDate(BuildContext context) async {
@@ -394,24 +492,50 @@ class TeacherAttendanceReportController extends GetxController {
   }
   
   Future<void> selectStartDate(BuildContext context) async {
+    final now = DateTime.now();
+    final initial = startDate.value ?? now;
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: startDate.value ?? DateTime.now(),
+      initialDate: initial.isAfter(now) ? now : initial,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
     if (picked != null) {
       startDate.value = picked;
       useDateRange.value = true;
+      
+      // إذا كان تاريخ النهاية موجود وأصبح أصغر من تاريخ البداية، امسحه
+      if (endDate.value != null && endDate.value!.isBefore(picked)) {
+        endDate.value = null;
+      }
     }
   }
   
   Future<void> selectEndDate(BuildContext context) async {
+    if (startDate.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار تاريخ البداية أولاً");
+      return;
+    }
+    
+    final now = DateTime.now();
+    final firstDate = startDate.value!;
+    
+    // التأكد من أن initialDate ضمن النطاق المسموح
+    DateTime initialDate;
+    if (endDate.value != null && !endDate.value!.isBefore(firstDate) && !endDate.value!.isAfter(now)) {
+      initialDate = endDate.value!;
+    } else if (firstDate.isAfter(now)) {
+      initialDate = now;
+    } else {
+      initialDate = firstDate;
+    }
+    
     final picked = await showDatePicker(
       context: context,
-      initialDate: endDate.value ?? DateTime.now(),
-      firstDate: startDate.value ?? DateTime(2020),
-      lastDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: now,
     );
     if (picked != null) {
       endDate.value = picked;
@@ -429,61 +553,73 @@ class TeacherAttendanceReportController extends GetxController {
       mySnackbar("تنبيه", "الرجاء اختيار تاريخ البداية والنهاية");
       return;
     }
-
-    loading.value = true;
-    try {
-      print("Sending id_user: ${dataArg?['id_user']}");
-      
-      Map<String, dynamic> requestData = {
-        "id_user": dataArg?['id_user']?.toString(),
-      };
-      
-      if (useDateRange.value) {
-        requestData["start_date"] = DateFormat('yyyy-MM-dd').format(startDate.value!);
-        requestData["end_date"] = DateFormat('yyyy-MM-dd').format(endDate.value!);
-      } else {
-        requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
-      }
-      
-      final response = await postData(Linkapi.select_all_users_attendance_by_date, requestData);
-
-      print("Response: $response"); // للتأكد من الاستجابة
-
-      if (response == null) {
-        mySnackbar("خطأ", "فشل الاتصال بالخادم");
-        attendanceList.clear();
+    
+    // التحقق من أن تاريخ البداية أصغر من تاريخ النهاية
+    if (useDateRange.value && startDate.value != null && endDate.value != null) {
+      if (startDate.value!.isAfter(endDate.value!)) {
+        mySnackbar("خطأ", "تاريخ البداية يجب أن يكون أصغر من تاريخ النهاية");
         return;
       }
+    }
 
-      if (response is! Map) {
-        mySnackbar("خطأ", "استجابة غير صحيحة من الخادم");
-        attendanceList.clear();
-        return;
-      }
+    Map<String, dynamic> requestData = {
+      "id_user": dataArg?['id_user']?.toString(),
+    };
+    
+    if (useDateRange.value) {
+      requestData["start_date"] = DateFormat('yyyy-MM-dd').format(startDate.value!);
+      requestData["end_date"] = DateFormat('yyyy-MM-dd').format(endDate.value!);
+    } else {
+      requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
+    }
 
-      if (response['stat'] == 'ok') {
-        if (response['data'] != null && response['data'] is List) {
-          attendanceList.assignAll(List<Map<String, dynamic>>.from(response['data']));
-          
-          filteredAttendanceList.assignAll(attendanceList);
-          mySnackbar("نجح", "تم تحميل ${attendanceList.length} سجل", type: "g");
-        } else {
-          attendanceList.clear();
-          mySnackbar("تنبيه", "لا توجد بيانات");
-        }
-      } else if (response['stat'] == 'no' || response['stat'] == 'No_record_today') {
-        attendanceList.clear();
-        mySnackbar("تنبيه", "لا توجد سجلات حضور لهذا التاريخ");
-      } else {
-        attendanceList.clear();
-        mySnackbar("خطأ", response['msg'] ?? "حدث خطأ");
+    var res = await handleRequest(
+      isLoading: RxBool(false),
+      useDialog: true,
+      
+      loadingMessage: "تحميل البيانات ..",
+      immediateLoading: true,
+      action: () async {
+        return await postData(Linkapi.select_all_users_attendance_by_date, requestData);
       }
-    } catch (e) {
-      print("Error: $e");
-      mySnackbar("خطأ", "حدث خطأ: $e");
+    );
+    
+    if (res == null) {
       attendanceList.clear();
-    } finally {
-      loading.value = false;
+      filteredAttendanceList.clear();
+      groupedAttendanceList.clear();
+      return;
+    }
+    
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      attendanceList.clear();
+      filteredAttendanceList.clear();
+      groupedAttendanceList.clear();
+      return;
+    }
+    
+    if (res["stat"] == "ok") {
+      if (res['data'] != null && res['data'] is List) {
+        attendanceList.assignAll(List<Map<String, dynamic>>.from(res['data']));
+        applyFilters();
+        _groupAttendanceByTeacher();
+      } else {
+        attendanceList.clear();
+        filteredAttendanceList.clear();
+        groupedAttendanceList.clear();
+        mySnackbar("تنبيه", "لا توجد بيانات حضور لهذا التاريخ");
+      }
+    } else if (res["stat"] != "no") {
+      mySnackbar("خطأ", res["msg"] ?? "حدث خطأ أثناء جلب البيانات");
+      attendanceList.clear();
+      filteredAttendanceList.clear();
+      groupedAttendanceList.clear();
+    } else {
+      attendanceList.clear();
+      filteredAttendanceList.clear();
+      groupedAttendanceList.clear();
+      mySnackbar("تنبيه", "لا توجد بيانات حضور لهذا التاريخ");
     }
     selectedCircle.value="all";
   }
@@ -499,53 +635,159 @@ class TeacherAttendanceReportController extends GetxController {
       final fontData = await rootBundle.load('assets/fonts/Amiri-Bold.ttf');
       final arabicFont = pw.Font.ttf(fontData);
 
+      // تحميل شعار المؤسسة
+      final ByteData logoData = await rootBundle.load('assets/icon/app_icon.png');
+      final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+
       final dateStr = selectedDate.value != null 
           ? DateFormat('yyyy-MM-dd').format(selectedDate.value!)
-          : '';
+          : useDateRange.value && startDate.value != null && endDate.value != null
+              ? 'من ${DateFormat('yyyy-MM-dd').format(startDate.value!)} إلى ${DateFormat('yyyy-MM-dd').format(endDate.value!)}'
+              : '';
+
+      // حساب الإحصائيات
+      final completedAttendance = attendanceList.where((item) => item['check_out_time'] != null).length;
+      final incompleteAttendance = attendanceList.length - completedAttendance;
 
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(20),
           textDirection: pw.TextDirection.rtl,
           theme: pw.ThemeData.withFont(base: arabicFont, bold: arabicFont),
           build: (context) {
             return [
-              // Header
-
-              // Table
-              pw.Table(
-                border: pw.TableBorder.all(color: PdfColors.grey300),
-                children: [
-                  // Header Row
-                  pw.TableRow(
-                    decoration: pw.BoxDecoration(
-                      color: PdfColor.fromHex('#E3F2FD'),
-                    ),
-                    children: [
-                      _buildTableCell('الاسم', isHeader: true),
-                      _buildTableCell('الحلقة', isHeader: true),
-                      _buildTableCell('وقت الدخول', isHeader: true),
-                      _buildTableCell('وقت الخروج', isHeader: true),
-                      _buildTableCell('الحالة', isHeader: true),
-                    ],
-                  ),
-                  // Data Rows
-                  ...attendanceList.map((item) {
-                    final hasCheckOut = item['check_out_time'] != null;
-                    return pw.TableRow(
+              // رأس الصفحة مثل myreport.dart
+              pw.Container(
+                padding: const pw.EdgeInsets.symmetric(horizontal: 10),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    // الجانب الأيسر: الشعار + المؤسسة
+                    pw.Row(
                       children: [
-                        _buildTableCell(item['username'] ?? '-'),
-                        _buildTableCell(item['name_circle'] ?? '-'),
-                        _buildTableCell(item['check_in_time'] ?? '-'),
-                        _buildTableCell(item['check_out_time'] ?? 'لم يسجل'),
-                        _buildTableCell(
-                          hasCheckOut ? 'مكتمل' : 'غير مكتمل',
-                          color: hasCheckOut ? PdfColors.green : PdfColors.orange,
+                        pw.Container(
+                          width: 45,
+                          height: 45,
+                          child: pw.Image(logoImage),
+                        ),
+                        pw.SizedBox(width: 8),
+                        pw.Directionality(
+                          textDirection: pw.TextDirection.rtl,
+                          child: pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'مؤسسة مسارات',
+                                style: pw.TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: pw.FontWeight.bold,
+                                ),
+                              ),
+                              pw.Text(
+                                'للتنمية الإنسانية',
+                                style: const pw.TextStyle(fontSize: 10),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
-                    );
+                    ),
+                    // الجانب الأيمن: اسم التقرير + التفاصيل
+                    pw.Directionality(
+                      textDirection: pw.TextDirection.rtl,
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [
+                          pw.Text(
+                            'تقرير حضور وانصراف الأساتذة',
+                            style: pw.TextStyle(
+                              fontSize: 16,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            'التاريخ: $dateStr',
+                            style: const pw.TextStyle(fontSize: 11),
+                          ),
+                          pw.SizedBox(height: 2),
+                          pw.Text(
+                            'مكتمل: $completedAttendance | غير مكتمل: $incompleteAttendance | الإجمالي: ${attendanceList.length}',
+                            style: const pw.TextStyle(fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Divider(thickness: 1.5),
+              pw.SizedBox(height: 15),
+
+              // Table
+              pw.Directionality(
+                textDirection: pw.TextDirection.rtl,
+                child: pw.Table.fromTextArray(
+                  headers: ['الحالة', 'وقت الخروج', 'وقت الدخول', 'الحلقة', 'الاسم'],
+                  data: attendanceList.map((item) {
+                    final hasCheckOut = item['check_out_time'] != null;
+                    return [
+                      hasCheckOut ? 'مكتمل' : 'غير مكتمل',
+                      item['check_out_time'] ?? 'لم يسجل',
+                      item['check_in_time'] ?? '-',
+                      item['name_circle'] ?? '-',
+                      item['username'] ?? '-',
+                    ];
                   }).toList(),
-                ],
+                  border: pw.TableBorder.all(width: 0.5, color: PdfColors.blue300),
+                  headerStyle: pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.white,
+                  ),
+                  headerDecoration: const pw.BoxDecoration(
+                    color: PdfColors.blue,
+                  ),
+                  cellStyle: const pw.TextStyle(
+                    fontSize: 9,
+                    color: PdfColors.grey900,
+                  ),
+                  cellAlignment: pw.Alignment.center,
+                  cellHeight: 25,
+                  headerHeight: 30,
+                  cellDecoration: (index, data, rowNum) {
+                    return pw.BoxDecoration(
+                      color: rowNum % 2 == 0 
+                          ? PdfColors.white 
+                          : PdfColors.grey100,
+                    );
+                  },
+                ),
+              ),
+              
+              pw.Spacer(),
+              
+              // تذييل الصفحة
+              pw.SizedBox(height: 10),
+              pw.Divider(),
+              pw.Directionality(
+                textDirection: pw.TextDirection.rtl,
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Text(
+                      "تاريخ الطباعة: ${DateTime.now().toLocal().toString().split(' ')[0]}",
+                      style: const pw.TextStyle(fontSize: 8),
+                    ),
+                    pw.Text(
+                      "مؤسسة مسارات للتنمية الإنسانية",
+                      style: const pw.TextStyle(fontSize: 8),
+                    ),
+                  ],
+                ),
               ),
             ];
           },
@@ -564,18 +806,4 @@ class TeacherAttendanceReportController extends GetxController {
     }
   }
 
-  pw.Widget _buildTableCell(String text, {bool isHeader = false, PdfColor? color}) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(8),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: isHeader ? 12 : 10,
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: color ?? (isHeader ? PdfColor.fromHex('#1976D2') : PdfColors.black),
-        ),
-        textAlign: pw.TextAlign.center,
-      ),
-    );
-  }
 }

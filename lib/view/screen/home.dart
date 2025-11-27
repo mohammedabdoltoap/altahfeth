@@ -2,22 +2,18 @@ import 'package:althfeth/constants/function.dart';
 import 'package:althfeth/controller/home_cont.dart';
 import 'package:althfeth/view/screen/dilaysAndRevoews/review.dart';
 import 'package:althfeth/view/screen/studentScreen/update_Student.dart';
+import 'package:althfeth/view/screen/user_attendance.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../globals.dart';
 import '../widget/home/appDrawer.dart';
 import '../widget/home/cardStudent.dart';
 import '../widget/home/searchAndButtonAddStudent.dart';
-import 'attendance.dart';
 import 'dilaysAndRevoews/daily_report.dart';
 import 'dilaysAndRevoews/update_daily_report.dart';
 import 'dilaysAndRevoews/update_review.dart';
 import 'package:althfeth/constants/inline_loading.dart';
-import 'adminScreen/ResignationRequestPage.dart';
-import 'login.dart';
-import '../widget/common/promotional_footer.dart';
 import 'studentScreen/StudentPlanReport.dart';
-
 
 
 class Home extends StatelessWidget {
@@ -25,9 +21,37 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: AppDrawer(),
-      appBar: AppBar(
+    return PopScope(
+      canPop: false, // منع الخروج المباشر
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+        
+        // عرض تنبيه التأكيد
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('تأكيد الخروج'),
+            content: const Text('هل أنت متأكد من الخروج من التطبيق؟'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('إلغاء'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('خروج', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldExit == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        drawer: AppDrawer(),
+        appBar: AppBar(
         centerTitle: true,
         toolbarHeight: 88,
         title: Column(
@@ -134,10 +158,9 @@ class Home extends StatelessWidget {
 
                 // بقية العناصر = الطلاب
                 final student = controller.filteredStudents[index - 1];
-                return CardStudent(
+                  return CardStudent(
                   student: student,
                   absence: (){
-                    print(student);
                     controller.select_absence_report(student["id_student"],student["name_student"]);
 
                   },
@@ -150,7 +173,46 @@ class Home extends StatelessWidget {
                   },
                   add_rep: () async {
                     if(!holidayData["is_holiday"]) {
+
+                      // التحقق من تسجيل حضور الأستاذ نفسه أولاً
+                      await controller.check_teacher_attendance();
+                      
+                      if (controller.statTeacherAttendance.value == null) {
+                        Navigator.pop(context); // إغلاق dialog
+                        mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
+                        return;
+                      }
+                      
+                      if (controller.statTeacherAttendance.value == 0) {
+
+                        // عرض dialog للانتقال لصفحة الحضور
+                        bool? goToAttendance = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("تسجيل الحضور مطلوب"),
+                            content: const Text("يجب عليك تسجيل حضورك أولاً قبل تسجيل التسميع.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("إلغاء"),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text("الانتقال"),
+                              ),
+                            ],
+                          ),
+                        );
+                        
+                        if (goToAttendance == true) {
+                          Get.to(() => User_Attendance(), arguments: controller.dataArg);
+                        }
+                        return;
+                      }
+                      
+                      // إذا تم تسجيل الحضور، تابع العملية
                       await controller.getLastDailyReport(student["id_student"], student["id_level"]);
+
                       final studentArgs = {
                         ...student,
                         "id_user": controller.dataArg["id_user"],
@@ -181,7 +243,45 @@ class Home extends StatelessWidget {
                   },
                   review: () async {
                     if(!holidayData["is_holiday"]) {
+                      // التحقق من تسجيل حضور الأستاذ نفسه أولاً
+                      await controller.check_teacher_attendance();
+                      
+                      if (controller.statTeacherAttendance.value == null) {
+                        Navigator.pop(context); // إغلاق dialog
+                        mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
+                        return;
+                      }
+                      
+                      if (controller.statTeacherAttendance.value == 0) {
+
+                        // عرض dialog للانتقال لصفحة الحضور
+                        bool? goToAttendance = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("تسجيل الحضور مطلوب"),
+                            content: const Text("يجب عليك تسجيل حضورك أولاً قبل تسجيل المراجعة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("إلغاء"),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text("الانتقال"),
+                              ),
+                            ],
+                          ),
+                        );
+                        
+                        if (goToAttendance == true) {
+                          Get.to(() => User_Attendance(), arguments: controller.dataArg);
+                        }
+                        return;
+                      }
+                      
+                      // إذا تم تسجيل الحضور، تابع العملية
                       await controller.getLastReview(student["id_student"],student["id_level"]);
+                      
                       if (controller.stat_getLastReview == 1) {
                         bool? confirm = await showConfirmDialog(
                           context: context,
@@ -232,14 +332,10 @@ class Home extends StatelessWidget {
         ),
       ),
             ),
-            // البصمة الترويجية
-            const PromotionalFooter(
-              backgroundColor: Colors.white,
-            ),
           ],
         ),
       )
-    );
+    ));
   }
 
   Widget _buildQuickStats() {
@@ -316,17 +412,10 @@ class Home extends StatelessWidget {
           ),
         ],
       ),
-    );
+        // ✅ إغلاق PopScope
+    ); // ✅ إغلاق build
   }
-
-
-
-
 }
-
-
-
-
 
 
 

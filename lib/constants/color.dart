@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 
-// أسماء موحّدة وواضحة للألوان الأساسية
+
 const Color kPrimaryColor   = Color(0xFF006B6B); // أخضر مزرّق (أساسي)
 const Color kSecondaryColor = Color(0xFF00897B); // أخضر متوسط (مساعد)
 const Color kAccentYellow   = Color(0xFFFFB703); // أصفر ذهبي (تمييز)
 const Color kBackground     = Color(0xFFF5F5F5); // رمادي فاتح (خلفية)
 const Color kSurfaceWhite   = Colors.white;      // أبيض للبطاقات والسطوح
+
+
+
+
+
+
+
+
+
+
 
 // إبقاء الأسماء القديمة كعليّات لتجنب كسر الشيفرة الحالية (سنستبدلها تدريجياً)
 // old -> new

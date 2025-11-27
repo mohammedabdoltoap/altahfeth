@@ -112,8 +112,6 @@ class Show_Circle extends StatelessWidget {
               }),
             ),
 
-            // البصمة الترويجية
-            const PromotionalFooter(),
           ],
         ),
       ),

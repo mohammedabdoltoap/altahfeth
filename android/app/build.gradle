@@ -32,6 +32,12 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled true
+        
+        // ✅ تكوين url_launcher و applicationName
+        manifestPlaceholders = [
+            'appAuthRedirectScheme': 'io.masart.althfeth',
+            'applicationName': 'io.flutter.app.FlutterApplication'
+        ]
     }
 
     signingConfigs {

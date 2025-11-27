@@ -30,7 +30,7 @@ class Show_CircleController extends GetxController {
       useDialog: false,
       immediateLoading: true,
       action: () async {
-        await del();
+
         return await postData(Linkapi.get_circle, {"id_user": dataArg["id_user"]});
       },
     );

@@ -61,7 +61,7 @@ class Add_VisitController extends GetxController{
       circles.assignAll(List<Map<String, dynamic>>.from(res["circles"]));
       visits.assignAll(List<Map<String, dynamic>>.from(res["visits"]));
 
-      print("visits======${visits}");
+      print("circles======${circles}");
     } else if(res["stat"]=="erorr"){
       String errorMsg = res["msg"] ?? "تعذر تحميل بيانات الزيارات";
       mySnackbar("تنبيه", errorMsg);
@@ -164,8 +164,10 @@ class Add_VisitController extends GetxController{
            "id_circle":selectedIdCirle?.value,
            "id_visit":id_visit,
            "id_user":dataArg["id_user"],
+
          };
          Get.to(()=>StudentsList(),arguments: data_arg);
+
        }
      }
 

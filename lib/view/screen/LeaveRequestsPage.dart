@@ -49,7 +49,7 @@ class LeaveRequestsPage extends StatelessWidget {
                 // 📚 ملاحظة تعليمية للطلاب المبتدئين:
                 // ════════════════════════════════════════════════════════════════
                 // هنا نستخدم ListView.builder لعرض قائمة من طلبات الإجازات
-                // 
+                //
                 // 🔄 ListView.builder يعمل مثل حلقة for تكرارية (loop)
                 // بدلاً من كتابة:
                 //   for(int i = 0; i < leaveRequests.length; i++) {
@@ -77,7 +77,7 @@ class LeaveRequestsPage extends StatelessWidget {
               final isPending = leave["status"] == 0;
               final isRejected = leave["status"] == 2;
               final isPeriod = leave["leave_type"] == "period";
-              
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
@@ -202,8 +202,7 @@ class LeaveRequestsPage extends StatelessWidget {
             },
           ),
               ),
-              // البصمة الترويجية
-              const PromotionalFooter(),
+
             ],
           );
         })
@@ -240,13 +239,15 @@ class LeaveRequestsPage extends StatelessWidget {
 
 
 }
+
+
 class LeaveRequestsPageController extends GetxController {
   var dataArg_user;
   RxList<Map<String, dynamic>> leaveRequests = <Map<String, dynamic>>[].obs;
 
   final TextEditingController reasonController = TextEditingController();
-  DateTime? selectedDate;
-  DateTime? selectedEndDate;
+  Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
+  Rx<DateTime?> selectedEndDate = Rx<DateTime?>(null);
   RxString leaveType = 'single'.obs; // single or period
 
   @override
@@ -368,7 +369,7 @@ class LeaveRequestsPageController extends GetxController {
                         activeColor: Color(0xFF008080),
                         onChanged: (value) {
                           leaveType.value = value!;
-                          selectedEndDate = null;
+                          selectedEndDate.value = null;
                         },
                       ),
                       RadioListTile<String>(
@@ -442,9 +443,9 @@ class LeaveRequestsPageController extends GetxController {
                     ),
                     icon: const Icon(Icons.calendar_today, color: Colors.white),
                   label: Obx(() => Text(
-                    selectedDate == null
+                    selectedDate.value == null
                         ? (leaveType.value == 'single' ? "اختر تاريخ الإجازة" : "اختر تاريخ البداية")
-                        : DateFormat("yyyy-MM-dd").format(selectedDate!),
+                        : DateFormat("yyyy-MM-dd","en").format(selectedDate.value!),
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                   )),
                   onPressed: () async {
@@ -468,9 +469,9 @@ class LeaveRequestsPageController extends GetxController {
                       },
                     );
                     if (picked != null) {
-                      selectedDate = picked;
+                      selectedDate.value = picked;
                       if (leaveType.value == 'single') {
-                        selectedEndDate = null;
+                        selectedEndDate.value = null;
                       }
                     }
                   },
@@ -506,21 +507,21 @@ class LeaveRequestsPageController extends GetxController {
                                 ),
                               ),
                               icon: const Icon(Icons.calendar_month, color: Colors.white),
-                            label: Text(
-                              selectedEndDate == null
+                            label: Obx(() => Text(
+                              selectedEndDate.value == null
                                   ? "اختر تاريخ النهاية"
-                                  : DateFormat("yyyy-MM-dd").format(selectedEndDate!),
+                                  : DateFormat("yyyy-MM-dd","en").format(selectedEndDate.value!),
                               style: const TextStyle(color: Colors.white, fontSize: 16),
-                            ),
+                            )),
                             onPressed: () async {
-                              if (selectedDate == null) {
+                              if (selectedDate.value == null) {
                                 mySnackbar("تنبيه", "يرجى اختيار تاريخ البداية أولاً");
                                 return;
                               }
                               final picked = await showDatePicker(
                                 context: context,
-                                initialDate: selectedDate!.add(const Duration(days: 1)),
-                                firstDate: selectedDate!.add(const Duration(days: 1)),
+                                initialDate: selectedDate.value!.add(const Duration(days: 1)),
+                                firstDate: selectedDate.value!.add(const Duration(days: 1)),
                                 lastDate: DateTime.now().add(const Duration(days: 365)),
                                 builder: (context, child) {
                                   return Theme(
@@ -535,7 +536,7 @@ class LeaveRequestsPageController extends GetxController {
                                   );
                                 },
                               );
-                              if (picked != null) selectedEndDate = picked;
+                              if (picked != null) selectedEndDate.value = picked;
                             },
                           ),
                           ),
@@ -548,11 +549,11 @@ class LeaveRequestsPageController extends GetxController {
                 // زر الإرسال
 
                 Obx(() => AppButton(text: "إرسال الطلب", onPressed: ()async {
-                  if (selectedDate == null || reasonController.text.isEmpty) {
+                  if (selectedDate.value == null || reasonController.text.isEmpty) {
                     mySnackbar("تنبية", "يرجى تحديد التاريخ وكتابة السبب");
                     return;
                   }
-                  if (leaveType.value == 'period' && selectedEndDate == null) {
+                  if (leaveType.value == 'period' && selectedEndDate.value == null) {
                     mySnackbar("تنبية", "يرجى تحديد تاريخ النهاية للفترة");
                     return;
                   }
@@ -575,13 +576,13 @@ class LeaveRequestsPageController extends GetxController {
 
     Map<String, dynamic> requestData = {
       "id_user": dataArg_user["id_user"],
-      "date_leave": DateFormat("yyyy-MM-dd").format(selectedDate!),
+      "date_leave": DateFormat("yyyy-MM-dd","en").format(selectedDate.value!),
       "reason_leave": reasonController.text,
       "leave_type": leaveType.value,
     };
 
-    if (leaveType.value == 'period' && selectedEndDate != null) {
-      requestData["end_date"] = DateFormat("yyyy-MM-dd").format(selectedEndDate!);
+    if (leaveType.value == 'period' && selectedEndDate.value != null) {
+      requestData["end_date"] = DateFormat("yyyy-MM-dd","en").format(selectedEndDate.value!);
     }
 
     var res = await handleRequest(
@@ -600,21 +601,21 @@ class LeaveRequestsPageController extends GetxController {
 
     if (res["stat"] == "ok") {
       Map<String, dynamic> newLeave = {
-        "date_leave": DateFormat("yyyy-MM-dd").format(selectedDate!),
+        "date_leave": DateFormat("yyyy-MM-dd","en").format(selectedDate.value!),
         "reason_leave": reasonController.text,
         "status": 0,
         "leave_type": leaveType.value,
       };
       
-      if (leaveType.value == 'period' && selectedEndDate != null) {
-        newLeave["end_date"] = DateFormat("yyyy-MM-dd").format(selectedEndDate!);
+      if (leaveType.value == 'period' && selectedEndDate.value != null) {
+        newLeave["end_date"] = DateFormat("yyyy-MM-dd","en").format(selectedEndDate.value!);
       }
       
       leaveRequests.add(newLeave);
 
       reasonController.clear();
-      selectedDate = null;
-      selectedEndDate = null;
+      selectedDate.value = null;
+      selectedEndDate.value = null;
       leaveType.value = 'single';
 
       Get.back();

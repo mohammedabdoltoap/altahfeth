@@ -10,6 +10,71 @@ import '../controller/NewWork/NetworkController.dart';
 import '../utils/ErrorHandler.dart';
 import 'loadingWidget.dart';
 
+// ========== دوال مساعدة لحماية التطبيق من الأخطاء ==========
+
+/// دالة لحماية دوال PDF من الأخطاء
+Future<void> safePdfExecution(
+  Future<void> Function() pdfFunction, {
+  String? customMessage,
+}) async {
+  await ErrorHandler.safePdfGeneration(
+    pdfFunction,
+    customMessage: customMessage,
+  );
+}
+
+/// دالة لحماية دوال API من الأخطاء
+Future<T?> safeApiExecution<T>(
+  Future<T> Function() apiFunction, {
+  String? customMessage,
+}) async {
+  return await ErrorHandler.safeApiCall<T>(
+    apiFunction,
+    customMessage: customMessage,
+  );
+}
+
+/// دالة عامة لحماية أي دالة غير متزامنة
+Future<T?> safeExecution<T>(
+  Future<T> Function() function, {
+  String? errorMessage,
+  bool showSnackbar = true,
+  VoidCallback? onError,
+}) async {
+  return await ErrorHandler.safeExecute<T>(
+    function,
+    errorMessage: errorMessage,
+    showSnackbar: showSnackbar,
+    onError: onError,
+  );
+}
+
+/// دالة لحماية أي دالة متزامنة
+T? safeSyncExecution<T>(
+  T Function() function, {
+  String? errorMessage,
+  bool showSnackbar = true,
+  VoidCallback? onError,
+}) {
+  return ErrorHandler.safeExecuteSync<T>(
+    function,
+    errorMessage: errorMessage,
+    showSnackbar: showSnackbar,
+    onError: onError,
+  );
+}
+
+/// دالة لحماية عمليات واجهة المستخدم
+void safeUIExecution(
+  VoidCallback uiFunction, {
+  String? errorMessage,
+}) {
+  ErrorHandler.safeUIOperation(
+    uiFunction,
+    errorMessage: errorMessage,
+  );
+}
+
 mySnackbar( titile, messige,{type="r"}){
   final Color bg = type=="r" ? Colors.red : type=="y" ? Colors.amberAccent : Colors.green;
   Get.snackbar(
@@ -121,16 +186,18 @@ Future<T?> handleRequest<T>({
       return await Get.showOverlay<T?>(
         asyncFunction: () async {
           final start = DateTime.now();
-          try {
-            final result = await action().timeout(const Duration(seconds: 15));
-            return result;
-          } finally {
-            final elapsed = DateTime.now().difference(start);
-            const minDuration = Duration(milliseconds: 100);
-            if (elapsed < minDuration) {
-              await Future.delayed(minDuration - elapsed);
-            }
+          
+          // ✅ زيادة المهلة للنت الضعيف
+          final result = await action().timeout(const Duration(seconds: 25));
+          
+          // ✅ منع الوميض: إذا كان النت سريع جداً، انتظر قليلاً
+          final elapsed = DateTime.now().difference(start);
+          const minDisplayDuration = Duration(milliseconds: 500);
+          if (elapsed < minDisplayDuration) {
+            await Future.delayed(minDisplayDuration - elapsed);
           }
+          
+          return result;
         },
         loadingWidget: overlay,
         opacityColor: theme.colorScheme.scrim.withOpacity(0.25),
@@ -138,43 +205,49 @@ Future<T?> handleRequest<T>({
 
       );
     } else {
-      final result = await action().timeout(const Duration(seconds: 15));
+      // ✅ زيادة المهلة للنت الضعيف
+      final result = await action().timeout(const Duration(seconds: 25));
       return result;
     }
   } on TimeoutException {
-    _message = "انتهت مهلة الاتصال. تحقق من الإنترنت وحاول مرة أخرى";
+    // ✅ رسالة واضحة
+    _message = "انتهت مهلة الاتصال (25 ثانية).\nتحقق من سرعة الإنترنت وحاول مرة أخرى";
     mySnackbar("انتهت المهلة", _message, type: "r");
     return null;
-  } on SocketException {
-    // خطأ في الاتصال بالشبكة (لا يوجد إنترنت، الخادم غير متاح، إلخ)
-    _message = "فشل الاتصال بالخادم. تحقق من الإنترنت";
+  } on SocketException catch (e) {
+    // ✅ رسالة واضحة - ErrorHandler سيعرضها
+    if (e.osError?.errorCode == 7) {
+      _message = "لا يمكن الوصول للخادم. تحقق من اتصالك بالإنترنت";
+    } else if (e.osError?.errorCode == 111) {
+      _message = "الخادم غير متاح حالياً. حاول مرة أخرى بعد قليل";
+    } else {
+      _message = "فشل الاتصال بالخادم. تحقق من الإنترنت";
+    }
     ErrorHandler.handleNetworkError();
     return null;
   } on HandshakeException {
-    // خطأ في SSL/TLS (شهادة غير صالحة، مشاكل في الاتصال الآمن)
-    _message = "خطأ في الاتصال الآمن بالخادم";
+    // ✅ رسالة واضحة - ErrorHandler سيعرضها
+    _message = "خطأ في الاتصال الآمن. تحقق من إعدادات الشبكة";
     ErrorHandler.handleNetworkError();
     return null;
-  } on FormatException {
-    // خطأ في تحويل البيانات (JSON غير صالح، بيانات تالفة)
-    _message = "خطأ في تنسيق البيانات المستلمة";
+  } on FormatException catch (e) {
+    // ✅ رسالة واضحة - ErrorHandler سيعرضها
+    _message = "البيانات المستلمة تالفة. حاول مرة أخرى";
     ErrorHandler.handleApiError("$_message: ${e.toString()}");
     return null;
   } on HttpException catch (e) {
-    // أخطاء HTTP (404, 500, إلخ)
-    _message = "خطأ في الخادم: ${e.message}";
+    // ✅ رسالة واضحة - ErrorHandler سيعرضها
+    _message = "خطأ في الخادم: ${e.message}. حاول مرة أخرى";
     ErrorHandler.handleApiError(_message);
     return null;
   } catch (e) {
-    // التحقق إذا كان الخطأ من API (يحتوي على "خطأ API:")
+    // ✅ رسالة واضحة - ErrorHandler سيعرضها
     String errorString = e.toString();
     if (errorString.contains('خطأ API:')) {
-      // خطأ من API (قاعدة بيانات، validation، إلخ)
       _message = errorString.replaceAll('Exception: ', '').replaceAll('خطأ API: ', '');
       ErrorHandler.handleApiError(_message);
     } else {
-      // أي خطأ آخر غير متوقع (أخطاء في الكود، null pointer، إلخ)
-      _message = "حدث خطأ غير متوقع أثناء العملية";
+      _message = "حدث خطأ غير متوقع. حاول مرة أخرى";
       ErrorHandler.handleError(e, customMessage: _message, showSnackbar: true);
     }
     return null;

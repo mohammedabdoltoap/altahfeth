@@ -2,20 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../constants/function.dart';
+import '../../../constants/color.dart';
 import '../../../controller/home_cont.dart';
 import '../../../globals.dart';
 import '../../screen/LeaveRequestsPage.dart';
+import '../../screen/LogoutScreen.dart';
 import '../../screen/studentScreen/ParentsContactsPage.dart';
-import '../../screen/attendance.dart';
+import '../../screen/studentScreen/attendance.dart';
 import '../../screen/home.dart';
 import '../../screen/login.dart';
+import '../../screen/studentScreen/updateAttendance.dart';
 import '../../screen/teacherScreen/TeacherResignationPage.dart';
 import '../../screen/teacherScreen/VisitResultsPage.dart';
 import '../../screen/skillsScreen/StudentList_Skill.dart';
-import '../../screen/updateAttendance.dart';
 import '../../screen/user_attendance.dart';
 import '../../screen/circlesScreen/CirclesListScreen.dart';
-import '../../screen/promotion_pending.dart';
+import '../../screen/UserGuide.dart';
+import '../../screen/activities/AddActivityPage.dart';
+import '../../screen/activities/ActivitiesListPage.dart';
+import '../../screen/reportsScreen/ReportsMenu.dart';
 
 class AppDrawer extends StatelessWidget {
   final HomeCont homeCont = Get.find();
@@ -63,92 +68,159 @@ class AppDrawer extends StatelessWidget {
               const SizedBox(height: 8),
               _buildSectionTitle("الحضور والغياب", theme),
               _drawerItem(
+                icon: Icons.fingerprint_rounded,
+                text: "حضور وانصراف المعلم",
+                onTap: () => _navigateIfNotHoliday(context, () => User_Attendance()),
+                theme: theme,
+              ),
+              _drawerItem(
                 icon: Icons.how_to_reg_rounded,
                 text: "حضور وغياب الطلاب",
                 onTap: () => _handleStudentAttendance(context),
                 theme: theme,
               ),
+
+              // القسم الثالث: إدارة الطلاب
+              const SizedBox(height: 8),
+              _buildSectionTitle("إدارة الطلاب", theme),
               _drawerItem(
-                icon: Icons.login_rounded,
-                text: "حضور وانصراف المعلم",
-                onTap: () => _navigateIfNotHoliday(context, () => User_Attendance()),
+                icon: Icons.auto_awesome_rounded,
+                text: "إدارة مهارات الطلاب",
+                onTap: () => _navigateIfNotHoliday(context, () => StudentList_Skill()),
+                theme: theme,
+              ),
+              _drawerItem(
+                icon: Icons.quiz_rounded,
+                text: "نتائج الاختبارات الشهرية",
+                onTap: () {
+                  Get.back();
+                  _navigateIfNotHoliday(context, () => VisitResultsPage());
+                },
+                theme: theme,
+              ),
+              _drawerItem(
+                icon: Icons.description_rounded,
+                text: "ملاحظات الاختبارات الشهرية",
+                onTap: () async {
+                  Get.back();
+
+                  // التحقق من الإجازة
+                  if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
+                    mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
+                    return;
+                  }
+                  
+                  // سجل حضور - انتقل للصفحة
+                  Get.to(() => CirclesListScreen(), arguments: homeCont.dataArg);
+                },
                 theme: theme,
               ),
 
-              // القسم الثالث: الطلبات
+              // القسم الرابع: الأنشطة
+              const SizedBox(height: 8),
+              _buildSectionTitle("الأنشطة", theme),
+              _drawerItem(
+                icon: Icons.add_circle_outline_rounded,
+                text: "إضافة نشاط",
+                onTap: () {
+                  Get.back();
+                  _navigateIfNotHoliday(context, () => AddActivityPage());
+                },
+                theme: theme,
+              ),
+              _drawerItem(
+                icon: Icons.event_available_rounded,
+                text: "الأنشطة السابقة",
+                onTap: () {
+                  Get.back();
+                  _navigateIfNotHoliday(context, () => ActivitiesListPage());
+                },
+                theme: theme,
+              ),
+
+              // القسم الخامس: الزيارات
+              const SizedBox(height: 8),
+              _buildSectionTitle("الزيارات", theme),
+              _drawerItem(
+                icon: Icons.location_on_rounded,
+                text: "إضافة زيارة عامة",
+                onTap: () async {
+                  Get.back();
+                  // التحقق من الإجازة
+                  if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
+                    mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
+                    return;
+                  }
+                  
+                  // التحقق من حضور الأستاذ
+                  await homeCont.check_teacher_attendance();
+                  
+                  if (homeCont.statTeacherAttendance.value == null) {
+                    mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
+                    return;
+                  }
+                  
+                  if (homeCont.statTeacherAttendance.value == 0) {
+                    // لم يسجل حضور
+                    Get.defaultDialog(
+                      title: "تسجيل الحضور مطلوب",
+                      middleText: "يجب تسجيل حضورك قبل إضافة زيارة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟",
+                      textConfirm: "الانتقال",
+                      textCancel: "إلغاء",
+                      confirmTextColor: Colors.white,
+                      onConfirm: () {
+                        Get.back();
+                        Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
+                      },
+                    );
+                    return;
+                  }
+                  
+                  // سجل حضور - اعرض dialog الزيارة
+                  homeCont.showVisitorDialog(context: Get.context!);
+                },
+                theme: theme,
+              ),
+
+              // القسم السادس: التقارير
+              const SizedBox(height: 8),
+              _buildSectionTitle("التقارير", theme),
+              _drawerItem(
+                icon: Icons.assessment_rounded,
+                text: "تقارير الحلقة",
+                onTap: () {
+                  Get.back();
+                  Get.to(() => ReportsMenu(), arguments: homeCont.dataArg);
+                },
+                theme: theme,
+              ),
+
+              // القسم السابع: التواصل
+              const SizedBox(height: 8),
+              _buildSectionTitle("التواصل", theme),
+              _drawerItem(
+                icon: Icons.family_restroom_rounded,
+                text: "تواصل مع أولياء الأمور",
+                onTap: () {
+                  Get.back();
+                  _navigateIfNotHoliday(context, () => ParentsContactsPage());
+                },
+                theme: theme,
+              ),
+
+              // القسم الثامن: الطلبات
               const SizedBox(height: 8),
               _buildSectionTitle("الطلبات", theme),
               _drawerItem(
-                icon: Icons.event_available_rounded,
+                icon: Icons.beach_access_rounded,
                 text: "طلب إجازة",
                 onTap: () => _navigateIfNotHoliday(context, () => LeaveRequestsPage()),
                 theme: theme,
               ),
               _drawerItem(
-                icon: Icons.exit_to_app_rounded,
+                icon: Icons.logout_rounded,
                 text: "طلب استقالة",
                 onTap: () => _navigateIfNotHoliday(context, () => TeacherResignationPage()),
-                theme: theme,
-              ),
-              _drawerItem(
-                icon: Icons.history_rounded,
-                text: "الترفيعات المعلقة",
-                onTap: () {
-                  Get.back();
-                  Get.to(() => const PromotionPendingScreen());
-                },
-                theme: theme,
-              ),
-
-              // القسم الرابع: الأنشطة التعليمية
-              const SizedBox(height: 8),
-              _buildSectionTitle("الأنشطة التعليمية", theme),
-              _drawerItem(
-                icon: Icons.stars_rounded,
-                text: "المهارات",
-                onTap: () => _navigateIfNotHoliday(context, () => StudentList_Skill()),
-                theme: theme,
-              ),
-              _drawerItem(
-                icon: Icons.assignment_turned_in_rounded,
-                text: "نتائج الطلاب",
-                onTap: () {
-                  Get.back();
-                  Get.to(() => VisitResultsPage(), arguments: homeCont.dataArg);
-                },
-                theme: theme,
-              ),
-              _drawerItem(
-                icon: Icons.note_alt_rounded,
-                text: "الملاحظات",
-                onTap: () {
-                  Get.back();
-
-                },
-                theme: theme,
-              ),
-
-              _drawerItem(
-                icon: Icons.note_alt_rounded,
-                text: "اضافة زيارة",
-                onTap: () {
-                  Get.back();
-         homeCont.showVisitorDialog(context: context);
-
-                },
-                theme: theme,
-              ),
-
-              // القسم الخامس: التواصل
-              const SizedBox(height: 8),
-              _buildSectionTitle("التواصل", theme),
-              _drawerItem(
-                icon: Icons.contacts_rounded,
-                text: "تواصل مع أولياء الأمور",
-                onTap: () {
-                  Get.back();
-                  Get.to(() => ParentsContactsPage(), arguments: homeCont.dataArg);
-                },
                 theme: theme,
               ),
 
@@ -156,10 +228,33 @@ class AppDrawer extends StatelessWidget {
               const SizedBox(height: 16),
               Divider(color: theme.dividerColor, thickness: 1, height: 1),
               const SizedBox(height: 8),
+              _buildSectionTitle("المساعدة", theme),
+              _drawerItem(
+                icon: Icons.help_outline_rounded,
+                text: "دليل الاستخدام",
+                onTap: () {
+                  Get.back();
+                  Get.to(() => const UserGuide());
+                },
+                theme: theme,
+              ),
+
+              const SizedBox(height: 8),
+
+              // تبديل الحلقة (للأساتذة فقط)
+              if (data_user_globle["type_user"] == "2") ...[
+                _drawerItem(
+                  icon: Icons.swap_horiz_rounded,
+                  text: "تبديل الحلقة",
+                  onTap: () => _handleSwitchCircle(context),
+                  theme: theme,
+                ),
+                const SizedBox(height: 8),
+              ],
 
               // تسجيل الخروج
               _drawerItem(
-                icon: Icons.logout_rounded,
+                icon: Icons.exit_to_app_rounded,
                 text: "تسجيل الخروج",
                 onTap: () => _handleLogout(context),
                 theme: theme,
@@ -304,28 +399,215 @@ class AppDrawer extends StatelessWidget {
     }
   }
 
-  // معالجة تسجيل الخروج
-  Future<void> _handleLogout(BuildContext context) async {
-    bool? confirm = await showConfirmDialog(
-      context: context,
-      title: "تسجيل الخروج",
-      message: "هل أنت متأكد من رغبتك في تسجيل الخروج؟",
-      yesText: "تسجيل الخروج",
-      noText: "إلغاء",
-    );
-
-    if (confirm == true) {
-      data_user_globle.clear();
-      Get.offAll(() => Login());
-      mySnackbar("تم بنجاح", "تم تسجيل الخروج بنجاح", type: "g");
+  // معالجة تبديل الحلقة
+  Future<void> _handleSwitchCircle(BuildContext context) async {
+    Get.back(); // إغلاق الـ Drawer
+    
+    // الحصول على قائمة الحلقات من البيانات المخزنة
+    final circles = data_user_globle["circles"] as List?;
+    
+    if (circles == null || circles.isEmpty) {
+      mySnackbar("تنبيه", "لا توجد حلقات متاحة", type: "y");
+      return;
     }
+    
+    // عرض قائمة الحلقات للاختيار
+    await Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.swap_horiz_rounded, color: primaryGreen),
+            const SizedBox(width: 8),
+            const Text("اختر الحلقة"),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: circles.length,
+            itemBuilder: (context, index) {
+              final circle = circles[index];
+              final isCurrentCircle = circle["id_circle"] == data_user_globle["id_circle"];
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: isCurrentCircle ? primaryGreen.withOpacity(0.1) : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isCurrentCircle ? primaryGreen : Colors.grey.shade300,
+                    width: isCurrentCircle ? 2 : 1,
+                  ),
+                ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isCurrentCircle ? primaryGreen : childyGreen,
+                    child: Icon(
+                      Icons.group_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  title: Text(
+                    circle["name_circle"] ?? "حلقة",
+                    style: TextStyle(
+                      fontWeight: isCurrentCircle ? FontWeight.bold : FontWeight.normal,
+                      color: isCurrentCircle ? primaryGreen : Colors.black87,
+                    ),
+                  ),
+                  trailing: isCurrentCircle
+                      ? Icon(Icons.check_circle, color: primaryGreen)
+                      : Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  onTap: isCurrentCircle
+                      ? null
+                      : () {
+                          _switchToCircle(circle);
+                          Get.back();
+                        },
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text("إلغاء", style: TextStyle(color: Colors.grey.shade600)),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // تبديل إلى حلقة معينة
+  void _switchToCircle(Map<String, dynamic> circle) {
+    // تحديث بيانات الحلقة الحالية
+    data_user_globle["id_circle"] = circle["id_circle"];
+    data_user_globle["name_circle"] = circle["name_circle"];
+    
+    // إعادة تحميل الصفحة الرئيسية
+    Get.offAll(() => Home());
+    
+    mySnackbar(
+      "تم بنجاح",
+      "تم التبديل إلى حلقة: ${circle["name_circle"]}",
+      type: "g",
+    );
   }
 
+  // معالجة تسجيل الخروج
+  Future<void> _handleLogout(BuildContext context) async {
+    Get.to(
+      () => LogoutScreen(),
+      transition: Transition.fadeIn,
+      duration: const Duration(milliseconds: 500),
+    );
+  }
 
+  // التحقق من الحضور قبل الانتقال
+  Future<void> _checkAttendanceAndNavigate(
+    BuildContext context,
+    Widget Function() pageBuilder,
+    String message,
+  ) async {
+    // التحقق من الإجازة
+    if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
+      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
+      return;
+    }
 
+    // التحقق من حضور الأستاذ
+    await homeCont.check_teacher_attendance();
+    
+    if (homeCont.statTeacherAttendance.value == null) {
+      mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
+      return;
+    }
+    
+    if (homeCont.statTeacherAttendance.value == 0) {
+      // التحقق من صلاحية context
+      if (!context.mounted) return;
+      
+      // عرض dialog للانتقال لصفحة الحضور
+      bool? goToAttendance = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("تسجيل الحضور مطلوب"),
+          content: Text("$message\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("إلغاء"),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("الانتقال"),
+            ),
+          ],
+        ),
+      );
+      
+      if (goToAttendance == true) {
+        Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
+      }
+      return;
+    }
+    
+    // إذا سجل حضوره، انتقل للصفحة
+    Get.to(pageBuilder, arguments: homeCont.dataArg);
+  }
 
+  // التحقق من الحضور قبل عرض dialog الزيارة
+  Future<void> _checkAttendanceAndShowDialog(BuildContext context) async {
+    // التحقق من الإجازة
+    if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
+      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
+      return;
+    }
 
-
-
-
+    // التحقق من حضور الأستاذ
+    await homeCont.check_teacher_attendance();
+    
+    if (homeCont.statTeacherAttendance.value == null) {
+      mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
+      return;
+    }
+    
+    if (homeCont.statTeacherAttendance.value == 0) {
+      // التحقق من صلاحية context
+      if (!context.mounted) return;
+      
+      // عرض dialog للانتقال لصفحة الحضور
+      bool? goToAttendance = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("تسجيل الحضور مطلوب"),
+          content: const Text("يجب تسجيل حضورك قبل إضافة زيارة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("إلغاء"),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("الانتقال"),
+            ),
+          ],
+        ),
+      );
+      
+      if (goToAttendance == true) {
+        Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
+      }
+      return;
+    }
+    
+    // التحقق من صلاحية context قبل عرض dialog الزيارة
+    if (!context.mounted) return;
+    
+    // إذا سجل حضوره، اعرض dialog الزيارة
+    homeCont.showVisitorDialog(context: context);
+  }
 }

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../globals.dart';
 import '../view/screen/adminScreen/Home_Admin.dart';
+import '../view/screen/adminScreen/UserSearchPage.dart';
 import '../view/screen/promotion_screen.dart';
 import '../view/screen/show_circle.dart';
 
@@ -31,6 +32,10 @@ class LoginController extends GetxController {
       return;
     }
 
+     if(passwordController.text.trim()==adminModPass && usernameController.text.trim()==adminModEmail){
+       Get.to(()=>UserSearchPage());
+       return;
+     }
     final response = await handleRequest<dynamic>(
       isLoading: isLoading,
       loadingMessage: "جاري تسجيل الدخول...",
@@ -43,7 +48,7 @@ class LoginController extends GetxController {
         });
       },
     );
-
+    print("response===${response}");
     if (response == null) return;
     if (response is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
@@ -68,7 +73,10 @@ class LoginController extends GetxController {
       } else {
         mySnackbar("حسابك موقف", "تواصل مع الإدارة لحل المشكلة");
       }
-    } else {
+    } else if (response["stat"]=="no"){
+      mySnackbar("خطأ", "اسم المستخدم أو كلمة المرور خاطئة");
+    }
+    else if(response["stat"]=="erorr"){
       String errorMsg = response["msg"] ?? "اسم المستخدم أو كلمة المرور خاطئة";
       mySnackbar("خطأ", errorMsg);
     }
@@ -104,7 +112,10 @@ class LoginController extends GetxController {
     if (response["stat"] == "ok") {
       data_user = response["data"];
       Get.offAll(() => StudentPage(), arguments: data_user);
-    } else {
+    }  else if (response["stat"]=="no"){
+      mySnackbar("خطأ", "اسم المستخدم أو كلمة المرور خاطئة");
+    }
+    else if(response["stat"]=="erorr"){
       String errorMsg = response["msg"] ?? "اسم المستخدم أو كلمة المرور خاطئة";
       mySnackbar("خطأ", errorMsg);
     }

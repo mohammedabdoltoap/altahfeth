@@ -12,6 +12,7 @@ class CustomTextField extends StatefulWidget {
   final void Function(String)? onChanged;
   final bool readOnly;
   final VoidCallback? onTap;
+  final double? maxValue; // ✅ الحد الأقصى للقيمة
 
   const CustomTextField({
     super.key,
@@ -26,6 +27,7 @@ class CustomTextField extends StatefulWidget {
     this.onChanged,
     this.readOnly = false,
     this.onTap,
+    this.maxValue, // ✅ اختياري
   });
 
   @override
@@ -51,7 +53,23 @@ class _CustomTextFieldState extends State<CustomTextField> {
         controller: widget.controller,
         obscureText: _obscureText,
         keyboardType: widget.keyboardType,
-        onChanged: widget.onChanged,
+        onChanged: (value) {
+          // ✅ التحقق من maxValue
+          if (widget.maxValue != null && value.isNotEmpty) {
+            final numValue = double.tryParse(value);
+            if (numValue != null && numValue > widget.maxValue!) {
+              // إعادة القيمة إلى الحد الأقصى
+              widget.controller.text = widget.maxValue!.toInt().toString();
+              widget.controller.selection = TextSelection.fromPosition(
+                TextPosition(offset: widget.controller.text.length),
+              );
+            }
+          }
+          // استدعاء onChanged الأصلي
+          if (widget.onChanged != null) {
+            widget.onChanged!(value);
+          }
+        },
         validator: widget.validator,
         style: theme.textTheme.bodyMedium,
         onTapOutside: (_) => FocusScope.of(context).unfocus(),

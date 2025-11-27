@@ -144,6 +144,7 @@ class HomeCont extends GetxController {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
       return;
     }
+    print("res===${res}");
     if (res["stat"] == "ok") {
       statCheck_Attendance.value = 1;
     } else if (res["stat"] == "no") {
@@ -154,36 +155,53 @@ class HomeCont extends GetxController {
     }
   }
 
+  // التحقق من حضور الأستاذ نفسه
+  RxnInt statTeacherAttendance = RxnInt(null);
+  
+  Future check_teacher_attendance() async {
+    DateTime today = DateTime.now();
+    String formattedDate = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+
+    final res = await handleRequest<dynamic>(
+      isLoading: RxBool(false),
+      loadingMessage: "التحقق من حضورك...",
+      useDialog: true,
+      immediateLoading: true,
+      action: () async {
+        await del();
+        return await postData(Linkapi.select_users_attendance_today, {
+          "id_user": dataArg["id_user"],
+          "attendance_date": formattedDate,
+          "id_circle": dataArg["id_circle"],
+        });
+      },
+    );
+
+    if (res == null) {
+      statTeacherAttendance.value = null;
+      return;
+    }
+    
+    if (res is! Map) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم");
+      statTeacherAttendance.value = null;
+      return;
+    }
+
+    // No_record_today = لم يسجل حضور
+    // No_check_out_time = سجل حضور فقط
+    // He_check_all = سجل حضور وانصراف
+    if (res["stat"] == "No_record_today") {
+      statTeacherAttendance.value = 0; // لم يسجل حضور
+    } else if (res["stat"] == "No_check_out_time" || res["stat"] == "He_check_all") {
+      statTeacherAttendance.value = 1; // سجل حضور
+    } else {
+      statTeacherAttendance.value = null;
+    }
+  }
 
 
 
-  // تم تعطيل هذه الدالة واستبدالها بصفحة طلب الاستقالة الجديدة
-  // Future addResignation() async {
-  //   final res = await handleRequest<dynamic>(
-  //     isLoading: RxBool(false),
-  //     loadingMessage: "إرسال طلب الاستقالة...",
-  //     useDialog: true,
-  //     immediateLoading: true,
-  //     action: () async {
-  //       await del();
-  //       return await postData(Linkapi.addResignation, {
-  //         "id_user": dataArg["id_user"],
-  //       });
-  //     },
-  //   );
-
-  //   if (res == null) return;
-  //   if (res is! Map) {
-  //     mySnackbar("خطأ", "فشل الاتصال بالخادم");
-  //     return;
-  //   }
-  //   if (res["stat"] == "ok") {
-  //     mySnackbar("تم تقديم طلب الاستقالة", "سيتم المراجعة قريباً", type: "g");
-  //   } else {
-  //     String errorMsg = res["msg"] ?? res["message"] ?? "حصل خطأ أثناء تقديم الطلب";
-  //     mySnackbar("خطأ", errorMsg);
-  //   }
-  // }
 
 
   var dataLastReview = Rxn<Map<String, dynamic>>();
@@ -245,8 +263,7 @@ class HomeCont extends GetxController {
 
   Future select_Holiday_Days()async {
 
-    await initializeDateFormatting('ar', null);
-    Intl.defaultLocale = 'ar';
+    // ✅ لا نغيّر Intl.defaultLocale - نستخدم اللغة المحددة مباشرة
     DateTime today = DateTime.now();
     String todayDate = DateFormat('yyyy-MM-dd').format(today);
     String todayName = DateFormat.EEEE('ar').format(today);
@@ -415,25 +432,43 @@ class HomeCont extends GetxController {
 
   }
   Future showAbsencesReport(name_student)async{
-    final headers = ["التاريخ", "سبب الغياب"];
-    final  absencesRows = absences.map((a) => [
-            (a["date"].split(' ')[0] ?? "غير متوفر ").toString(),
-            (a["notes"] ?? "غير متوفر").toString(),
-          ]).toList();
+    // ✅ الأعمدة الجديدة: نوع الغياب، سبب الغياب، التاريخ (مقلوبة)
+    final headers = ["نوع الغياب", "سبب الغياب", "التاريخ"];
+    final absencesRows = absences.map((a) {
+      // تحديد نوع الغياب من absence_type أو من status
+      String absenceType = a["absence_type"] ?? 
+                          (a["status"] == 2 || a["status"] == "2" 
+                            ? "غياب بعذر" 
+                            : "غياب بدون عذر");
+      
+      return [
+        absenceType,
+        (a["notes"] ?? "—").toString(),
+        (a["date"]?.toString().split(' ')[0] ?? "—").toString(),
+      ];
+    }).toList();
 
-          // 🔹 نضيف صف إجمالي الغياب بشكل ديناميكي
-          absencesRows.add([
-            absences.length.toString(),
-            "إجمالي الغياب",
-          ]);
+    // 🔹 حساب إجمالي الغياب بنوعيه
+    int totalWithExcuse = absences.where((a) => 
+      a["status"] == 2 || a["status"] == "2" || a["absence_type"] == "غياب بعذر"
+    ).length;
+    int totalWithoutExcuse = absences.where((a) => 
+      a["status"] == 0 || a["status"] == "0" || a["absence_type"] == "غياب بدون عذر"
+    ).length;
+    
+    // إضافة صفوف الإجمالي
+    absencesRows.add([
+      "إجمالي",
+      "غياب بعذر: $totalWithExcuse | بدون عذر: $totalWithoutExcuse",
+      "المجموع: ${absences.length}",
+    ]);
 
-    await  generateStandardPdfReport(
+    await generateStandardPdfReport(
       title: "تقرير الغياب",
-      subTitle: "${name_student}",
-      headers:headers,
-      rows:absencesRows,
+      subTitle: "$name_student",
+      headers: headers,
+      rows: absencesRows,
     );
-
   }
 
 

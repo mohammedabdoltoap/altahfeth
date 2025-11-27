@@ -19,7 +19,7 @@ class AddstudentController extends GetxController{
     // WidgetsBinding.instance.addPostFrameCallback((timeStamp) async{
       select_level();
       select_reders();
-    select_qualification();
+      select_qualification();
     // },);
 
     // TODO: implement onInit
@@ -223,8 +223,8 @@ class AddstudentController extends GetxController{
     final response = await handleRequest<dynamic>(
       isLoading: RxBool(false),
       loadingMessage: "جاري تحميل القرّاء...",
-      useDialog: false,
-      immediateLoading: false,
+      useDialog: true,
+      immediateLoading: true,
       action: () async {
         return await postData(Linkapi.select_reders, {});
       },
@@ -261,10 +261,10 @@ class AddstudentController extends GetxController{
   RxList<Map<String, dynamic>> qualification=<Map<String, dynamic>>[].obs;
   Future select_qualification()async {
     final response = await handleRequest<dynamic>(
-      isLoading: RxBool(false),
+      isLoading: hasQualificationData,
       loadingMessage: "جاري تحميل الموهلات...",
-      useDialog: false,
-      immediateLoading: false,
+      useDialog: true,
+      immediateLoading: true,
       action: () async {
         return await postData(Linkapi.select_qualification, {});
       },
