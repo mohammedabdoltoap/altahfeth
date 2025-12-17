@@ -11,9 +11,12 @@ import '../../screen/studentScreen/ParentsContactsPage.dart';
 import '../../screen/studentScreen/attendance.dart';
 import '../../screen/home.dart';
 import '../../screen/login.dart';
+import '../../screen/studentScreen/pendingStudentsManagement.dart';
 import '../../screen/studentScreen/updateAttendance.dart';
+import '../../screen/teacherScreen/Curriculum.dart';
 import '../../screen/teacherScreen/TeacherResignationPage.dart';
 import '../../screen/teacherScreen/VisitResultsPage.dart';
+import '../../screen/teacherScreen/EditEmployeeProfile.dart';
 import '../../screen/skillsScreen/StudentList_Skill.dart';
 import '../../screen/user_attendance.dart';
 import '../../screen/circlesScreen/CirclesListScreen.dart';
@@ -26,16 +29,20 @@ class AppDrawer extends StatelessWidget {
   final HomeCont homeCont = Get.find();
 
   // دالة مساعدة للتحقق من الإجازة قبل التنقل
-  void _navigateIfNotHoliday(BuildContext context, Widget Function() pageBuilder, {Map<String, dynamic>? arguments,}) {
-    if (holidayData["is_holiday"] != null) {
-      if (!holidayData["is_holiday"]) {
-        // التنقل بشكل آمن بحيث يُنشئ الصفحة ديناميكيًا
-        Get.to(pageBuilder, arguments: arguments ?? homeCont.dataArg);
-      } else {
-        mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
-      }
+  void _navigateIfNotHoliday(
+    BuildContext context,
+    Widget Function() pageBuilder, {
+    Map<String, dynamic>? arguments,
+  }) {
+    // التحقق من إذا كان اليوم إجازة
+    if (holidayData["is_holiday"] == true) {
+      // اليوم إجازة
+      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}",
+          type: "y");
+    } else {
+      // اليوم ليس إجازة - التنقل بشكل آمن
+      Get.to(pageBuilder, arguments: arguments ?? homeCont.dataArg);
     }
-    // لا نعرض رسالة هنا لأن handleRequest يتولى عرض رسالة خطأ الشبكة
   }
 
   @override
@@ -50,10 +57,12 @@ class AppDrawer extends StatelessWidget {
             children: [
               // رأس Drawer محسّن
               _buildDrawerHeader(theme),
-              const SizedBox(height: 8),
+              
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.5), thickness: 1, height: 1),
+              const SizedBox(height: 4),
 
-              // القسم الأول: التنقل الأساسي
-              _buildSectionTitle("التنقل", theme),
+              // القسم الأول: الرئيسية
               _drawerItem(
                 icon: Icons.home_rounded,
                 text: "الرئيسية",
@@ -65,12 +74,16 @@ class AppDrawer extends StatelessWidget {
               ),
 
               // القسم الثاني: الحضور والغياب
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
               _buildSectionTitle("الحضور والغياب", theme),
               _drawerItem(
                 icon: Icons.fingerprint_rounded,
                 text: "حضور وانصراف المعلم",
-                onTap: () => _navigateIfNotHoliday(context, () => User_Attendance()),
+                onTap: () {
+                  Get.back();
+                  Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
+                },
                 theme: theme,
               ),
               _drawerItem(
@@ -81,50 +94,157 @@ class AppDrawer extends StatelessWidget {
               ),
 
               // القسم الثالث: إدارة الطلاب
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
               _buildSectionTitle("إدارة الطلاب", theme),
+              _drawerItem(
+                icon: Icons.person_add_rounded,
+                text: "إدارة الطلاب المعلقين",
+                onTap: () {
+                  if (connectivityHelper.hasConnection)
+                    Get.to(() => PendingStudentsManagement(),
+                        arguments: homeCont.dataArg);
+                  else {
+                    mySnackbar("تنبيه", "تحقق من الاتصال بالإنترنت");
+                  }
+                },
+                theme: theme,
+              ),
               _drawerItem(
                 icon: Icons.auto_awesome_rounded,
                 text: "إدارة مهارات الطلاب",
-                onTap: () => _navigateIfNotHoliday(context, () => StudentList_Skill()),
+                onTap: () {
+                  if (connectivityHelper.hasConnection)
+                    _navigateIfNotHoliday(context, () => StudentList_Skill());
+                  else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
+                },
                 theme: theme,
               ),
+
+              // القسم الرابع: الاختبارات والتقييم
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
+              _buildSectionTitle("الاختبارات والتقييم", theme),
               _drawerItem(
                 icon: Icons.quiz_rounded,
                 text: "نتائج الاختبارات الشهرية",
                 onTap: () {
-                  Get.back();
-                  _navigateIfNotHoliday(context, () => VisitResultsPage());
+                  if (connectivityHelper.hasConnection)
+                    _navigateIfNotHoliday(context, () => VisitResultsPage());
+                  else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
                 },
                 theme: theme,
               ),
               _drawerItem(
                 icon: Icons.description_rounded,
-                text: "ملاحظات الاختبارات الشهرية",
+                text: "ملاحظات الاختبارات",
                 onTap: () async {
-                  Get.back();
-
-                  // التحقق من الإجازة
-                  if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
-                    mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
+                  if (holidayData["is_holiday"] == true) {
+                    mySnackbar("تنبيه",
+                        "إجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}",
+                        type: "y");
                     return;
                   }
-                  
-                  // سجل حضور - انتقل للصفحة
-                  Get.to(() => CirclesListScreen(), arguments: homeCont.dataArg);
+                  if (connectivityHelper.hasConnection)
+                    Get.to(() => CirclesListScreen(),
+                        arguments: homeCont.dataArg);
+                  else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
                 },
                 theme: theme,
               ),
 
-              // القسم الرابع: الأنشطة
-              const SizedBox(height: 8),
+              // القسم الخامس: التقارير
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
+              _buildSectionTitle("التقارير", theme),
+              _drawerItem(
+                icon: Icons.assessment_rounded,
+                text: "تقارير الحلقة",
+                onTap: () {
+                  if (connectivityHelper.hasConnection) {
+                    _navigateIfNotHoliday(context, () => ReportsMenu());
+                  } else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
+                },
+                theme: theme,
+              ),
+
+              // القسم السادس: الزيارات
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
+              _buildSectionTitle("الزيارات", theme),
+              _drawerItem(
+                icon: Icons.location_on_rounded,
+                text: "إضافة زيارة عامة",
+                onTap: () async {
+                  // التحقق من الإجازة
+                  if (holidayData["is_holiday"] == true) {
+                    mySnackbar("تنبيه",
+                        "إجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}",
+                        type: "y");
+                    return;
+                  }
+                  if (connectivityHelper.hasConnection) {
+                    // التحقق من حضور الأستاذ
+                    await homeCont.check_teacher_attendance();
+                    if (homeCont.statTeacherAttendance.value == null) {
+                      mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
+                      return;
+                    }
+
+                    if (homeCont.statTeacherAttendance.value == 0) {
+                      // لم يسجل حضور
+                      Get.defaultDialog(
+                        title: "تسجيل الحضور مطلوب",
+                        middleText:
+                            "يجب تسجيل حضورك قبل إضافة زيارة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟",
+                        textConfirm: "الانتقال",
+                        textCancel: "إلغاء",
+                        confirmTextColor: Colors.white,
+                        onConfirm: () {
+                          Get.back();
+                          Get.to(() => User_Attendance(),
+                              arguments: homeCont.dataArg);
+                        },
+                      );
+                      return;
+                    }
+
+                    // سجل حضور - اعرض dialog الزيارة
+                    homeCont.showVisitorDialog(context: Get.context!);
+                  } else {
+                    mySnackbar("تنبية",
+                        "من الضروري الاتصال الانترنت لاجراء هذه العملية");
+                  }
+                },
+                theme: theme,
+              ),
+
+              // القسم السابع: الأنشطة
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
               _buildSectionTitle("الأنشطة", theme),
               _drawerItem(
                 icon: Icons.add_circle_outline_rounded,
                 text: "إضافة نشاط",
                 onTap: () {
-                  Get.back();
-                  _navigateIfNotHoliday(context, () => AddActivityPage());
+                  if (connectivityHelper.hasConnection)
+                    _navigateIfNotHoliday(context, () => AddActivityPage());
+                  else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
                 },
                 theme: theme,
               ),
@@ -132,103 +252,156 @@ class AppDrawer extends StatelessWidget {
                 icon: Icons.event_available_rounded,
                 text: "الأنشطة السابقة",
                 onTap: () {
-                  Get.back();
-                  _navigateIfNotHoliday(context, () => ActivitiesListPage());
+                  if (connectivityHelper.hasConnection)
+                    _navigateIfNotHoliday(context, () => ActivitiesListPage());
+                  else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
                 },
                 theme: theme,
               ),
 
-              // القسم الخامس: الزيارات
-              const SizedBox(height: 8),
-              _buildSectionTitle("الزيارات", theme),
-              _drawerItem(
-                icon: Icons.location_on_rounded,
-                text: "إضافة زيارة عامة",
-                onTap: () async {
-                  Get.back();
-                  // التحقق من الإجازة
-                  if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
-                    mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
-                    return;
-                  }
-                  
-                  // التحقق من حضور الأستاذ
-                  await homeCont.check_teacher_attendance();
-                  
-                  if (homeCont.statTeacherAttendance.value == null) {
-                    mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
-                    return;
-                  }
-                  
-                  if (homeCont.statTeacherAttendance.value == 0) {
-                    // لم يسجل حضور
-                    Get.defaultDialog(
-                      title: "تسجيل الحضور مطلوب",
-                      middleText: "يجب تسجيل حضورك قبل إضافة زيارة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟",
-                      textConfirm: "الانتقال",
-                      textCancel: "إلغاء",
-                      confirmTextColor: Colors.white,
-                      onConfirm: () {
-                        Get.back();
-                        Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
-                      },
-                    );
-                    return;
-                  }
-                  
-                  // سجل حضور - اعرض dialog الزيارة
-                  homeCont.showVisitorDialog(context: Get.context!);
-                },
-                theme: theme,
-              ),
-
-              // القسم السادس: التقارير
-              const SizedBox(height: 8),
-              _buildSectionTitle("التقارير", theme),
-              _drawerItem(
-                icon: Icons.assessment_rounded,
-                text: "تقارير الحلقة",
-                onTap: () {
-                  Get.back();
-                  Get.to(() => ReportsMenu(), arguments: homeCont.dataArg);
-                },
-                theme: theme,
-              ),
-
-              // القسم السابع: التواصل
-              const SizedBox(height: 8),
+              // القسم الثامن: التواصل
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
               _buildSectionTitle("التواصل", theme),
               _drawerItem(
                 icon: Icons.family_restroom_rounded,
                 text: "تواصل مع أولياء الأمور",
                 onTap: () {
-                  Get.back();
-                  _navigateIfNotHoliday(context, () => ParentsContactsPage());
+                  if (connectivityHelper.hasConnection) {
+                    _navigateIfNotHoliday(context, () => ParentsContactsPage());
+                  } else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
                 },
                 theme: theme,
               ),
 
-              // القسم الثامن: الطلبات
-              const SizedBox(height: 8),
+              // القسم التاسع: الطلبات
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
               _buildSectionTitle("الطلبات", theme),
               _drawerItem(
                 icon: Icons.beach_access_rounded,
                 text: "طلب إجازة",
-                onTap: () => _navigateIfNotHoliday(context, () => LeaveRequestsPage()),
+                onTap: () {
+                  if (connectivityHelper.hasConnection) {
+                    _navigateIfNotHoliday(context, () => LeaveRequestsPage());
+                  } else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
+                },
                 theme: theme,
               ),
               _drawerItem(
                 icon: Icons.logout_rounded,
                 text: "طلب استقالة",
-                onTap: () => _navigateIfNotHoliday(context, () => TeacherResignationPage()),
+                onTap: () {
+                  if (connectivityHelper.hasConnection) {
+                    _navigateIfNotHoliday(
+                        context, () => TeacherResignationPage());
+                  } else {
+                    mySnackbar("تنبيه",
+                        "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                  }
+                },
                 theme: theme,
               ),
 
-              // الفاصل
-              const SizedBox(height: 16),
-              Divider(color: theme.dividerColor, thickness: 1, height: 1),
-              const SizedBox(height: 8),
-              _buildSectionTitle("المساعدة", theme),
+              // القسم العاشر: المزامنة
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
+              _buildSectionTitle("المزامنة", theme),
+              _drawerItem(
+                icon: Icons.sync_rounded,
+                text: "مزامنة البيانات",
+                onTap: ()async {
+                  if (connectivityHelper.hasConnection) {
+                    print('\n✅ يوجد اتصال بالإنترنت - بدء المزامنة الشاملة');
+
+                    // عرض dialog المزامنة
+                    Get.dialog(
+                      WillPopScope(
+                        onWillPop: () async => false,
+                        child: Dialog(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 20),
+                                const Text(
+                                  'جاري التهئية...',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 10),
+                                const Text(
+                                  'يرجى الانتظار حتى اكتمال التحقق من المزامنة',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      barrierDismissible: false,
+                    );
+
+                    try {
+
+                      await homeCont.users_attendancePending();
+                      await homeCont.dailyReportsPending();
+                      await homeCont.reviewsPending();
+                      await homeCont.studentAttendancePending();
+
+                      // 4️⃣ تنظيف السجلات القديمة
+                      await homeCont.cleanupOldRecords();
+
+                      print('\n✅ اكتملت جميع عمليات المزامنة بنجاح\n');
+                    } finally {
+                      // إغلاق dialog المزامنة
+                      if (Get.isDialogOpen ?? false) {
+                        Get.back();
+                      }
+                    }
+                  }
+
+
+                  // if (connectivityHelper.hasConnection) {
+                  //   homeCont.users_attendancePending();
+                  //   homeCont.dailyReportsPending(); // مزامنة التسميع اليومي
+                  //   homeCont.reviewsPending(); // مزامنة المراجعات
+                  //   homeCont.studentAttendancePending(); // مزامنة حضور الطلاب
+                  // }
+                  //
+                  else {
+                    mySnackbar("تنبيه", "تحقق من الاتصال بالإنترنت");
+                  }
+                },
+                theme: theme,
+              ),
+
+              // القسم الحادي عشر: الإعدادات
+              const SizedBox(height: 4),
+              Divider(color: theme.dividerColor.withOpacity(0.3), thickness: 0.5, height: 1),
+              _buildSectionTitle("الإعدادات", theme),
+              _drawerItem(
+                icon: Icons.person_outline_rounded,
+                text: "تعديل البيانات الشخصية",
+                onTap: () {
+                  Get.back();
+                  Get.to(() => EditEmployeeProfile(), arguments: homeCont.dataArg);
+                },
+                theme: theme,
+              ),
               _drawerItem(
                 icon: Icons.help_outline_rounded,
                 text: "دليل الاستخدام",
@@ -239,18 +412,28 @@ class AppDrawer extends StatelessWidget {
                 theme: theme,
               ),
 
+              // الفاصل النهائي
+              const SizedBox(height: 8),
+              Divider(color: theme.dividerColor, thickness: 1, height: 1),
               const SizedBox(height: 8),
 
               // تبديل الحلقة (للأساتذة فقط)
-              if (data_user_globle["type_user"] == "2") ...[
-                _drawerItem(
-                  icon: Icons.swap_horiz_rounded,
-                  text: "تبديل الحلقة",
-                  onTap: () => _handleSwitchCircle(context),
-                  theme: theme,
-                ),
-                const SizedBox(height: 8),
-              ],
+              // if (data_user_globle["role_id"] == 4) ...[
+              //   _drawerItem(
+              //     icon: Icons.swap_horiz_rounded,
+              //     text: "تبديل الحلقة",
+              //     onTap: () {
+              //       if (connectivityHelper.hasConnection) {
+              //         _handleSwitchCircle(context);
+              //       } else {
+              //         mySnackbar("تنبيه",
+              //             "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+              //       }
+              //     },
+              //     theme: theme,
+              //   ),
+              //   const SizedBox(height: 8),
+              // ],
 
               // تسجيل الخروج
               _drawerItem(
@@ -368,14 +551,15 @@ class AppDrawer extends StatelessWidget {
   // معالجة حضور الطلاب
   Future<void> _handleStudentAttendance(BuildContext context) async {
     await homeCont.check_attendance();
-    
+
     // إذا كان null، فقد حدث خطأ في الشبكة (handleRequest عرض الرسالة بالفعل)
     if (homeCont.statCheck_Attendance.value == null) {
       return;
     }
 
-    if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
-      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
+    if (holidayData["is_holiday"] == true) {
+      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}",
+          type: "y");
       return;
     }
 
@@ -387,11 +571,12 @@ class AppDrawer extends StatelessWidget {
       bool? confirm = await showConfirmDialog(
         context: context,
         title: "تحديث الحضور",
-        message: "لقد تم تحضير الطلاب لهذا اليوم. هل تريد إلغاءه وإعادة التحضير؟",
+        message:
+            "لقد تم تحضير الطلاب لهذا اليوم. هل تريد إلغاءه وإعادة التحضير؟",
         yesText: "نعم، إعادة التحضير",
         noText: "إلغاء",
       );
-      
+
       if (confirm == true) {
         Get.back();
         Get.to(() => UpdateAttendance(), arguments: homeCont.dataArg);
@@ -400,102 +585,116 @@ class AppDrawer extends StatelessWidget {
   }
 
   // معالجة تبديل الحلقة
-  Future<void> _handleSwitchCircle(BuildContext context) async {
-    Get.back(); // إغلاق الـ Drawer
-    
-    // الحصول على قائمة الحلقات من البيانات المخزنة
-    final circles = data_user_globle["circles"] as List?;
-    
-    if (circles == null || circles.isEmpty) {
-      mySnackbar("تنبيه", "لا توجد حلقات متاحة", type: "y");
-      return;
-    }
-    
-    // عرض قائمة الحلقات للاختيار
-    await Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Icon(Icons.swap_horiz_rounded, color: primaryGreen),
-            const SizedBox(width: 8),
-            const Text("اختر الحلقة"),
-          ],
-        ),
-        content: Container(
-          width: double.maxFinite,
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: circles.length,
-            itemBuilder: (context, index) {
-              final circle = circles[index];
-              final isCurrentCircle = circle["id_circle"] == data_user_globle["id_circle"];
-              
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: isCurrentCircle ? primaryGreen.withOpacity(0.1) : Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isCurrentCircle ? primaryGreen : Colors.grey.shade300,
-                    width: isCurrentCircle ? 2 : 1,
-                  ),
-                ),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: isCurrentCircle ? primaryGreen : childyGreen,
-                    child: Icon(
-                      Icons.group_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  title: Text(
-                    circle["name_circle"] ?? "حلقة",
-                    style: TextStyle(
-                      fontWeight: isCurrentCircle ? FontWeight.bold : FontWeight.normal,
-                      color: isCurrentCircle ? primaryGreen : Colors.black87,
-                    ),
-                  ),
-                  trailing: isCurrentCircle
-                      ? Icon(Icons.check_circle, color: primaryGreen)
-                      : Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                  onTap: isCurrentCircle
-                      ? null
-                      : () {
-                          _switchToCircle(circle);
-                          Get.back();
-                        },
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text("إلغاء", style: TextStyle(color: Colors.grey.shade600)),
-          ),
-        ],
-      ),
-    );
-  }
-  
+  // Future<void> _handleSwitchCircle(BuildContext context) async {
+  //   Get.back(); // إغلاق الـ Drawer
+  //
+  //   // الحصول على قائمة الحلقات من البيانات المخزنة
+  //   final circles = homeCont.dataArg["circles"] as List?;
+  //
+  //   if (circles == null || circles.isEmpty) {
+  //     mySnackbar("تنبيه", "لا توجد حلقات متاحة", type: "y");
+  //     return;
+  //   }
+  //
+  //   // عرض قائمة الحلقات للاختيار
+  //   await Get.dialog(
+  //     AlertDialog(
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  //       title: Row(
+  //         children: [
+  //           Icon(Icons.swap_horiz_rounded, color: primaryGreen),
+  //           const SizedBox(width: 8),
+  //           const Text("اختر الحلقة"),
+  //         ],
+  //       ),
+  //       content: Container(
+  //         width: double.maxFinite,
+  //         child: ListView.builder(
+  //           shrinkWrap: true,
+  //           itemCount: circles.length,
+  //           itemBuilder: (context, index) {
+  //             final circle = circles[index];
+  //             final isCurrentCircle = circle["id_circle"] == homeCont.dataArg["id_circle"];
+  //
+  //             return Container(
+  //               margin: const EdgeInsets.only(bottom: 8),
+  //               decoration: BoxDecoration(
+  //                 color: isCurrentCircle
+  //                     ? primaryGreen.withOpacity(0.1)
+  //                     : Colors.grey.shade50,
+  //                 borderRadius: BorderRadius.circular(12),
+  //                 border: Border.all(
+  //                   color:
+  //                       isCurrentCircle ? primaryGreen : Colors.grey.shade300,
+  //                   width: isCurrentCircle ? 2 : 1,
+  //                 ),
+  //               ),
+  //               child: ListTile(
+  //                 leading: CircleAvatar(
+  //                   backgroundColor:
+  //                       isCurrentCircle ? primaryGreen : childyGreen,
+  //                   child: Icon(
+  //                     Icons.group_rounded,
+  //                     color: Colors.white,
+  //                     size: 20,
+  //                   ),
+  //                 ),
+  //                 title: Text(
+  //                   circle["name_circle"] ?? "حلقة",
+  //                   style: TextStyle(
+  //                     fontWeight:
+  //                         isCurrentCircle ? FontWeight.bold : FontWeight.normal,
+  //                     color: isCurrentCircle ? primaryGreen : Colors.black87,
+  //                   ),
+  //                 ),
+  //                 trailing: isCurrentCircle
+  //                     ? Icon(Icons.check_circle, color: primaryGreen)
+  //                     : Icon(Icons.arrow_forward_ios,
+  //                         size: 16, color: Colors.grey),
+  //                 onTap: isCurrentCircle
+  //                     ? null
+  //                     : () {
+  //                         _switchToCircle(circle);
+  //                         Get.back();
+  //                       },
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Get.back(),
+  //           child: Text("إلغاء", style: TextStyle(color: Colors.grey.shade600)),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   // تبديل إلى حلقة معينة
-  void _switchToCircle(Map<String, dynamic> circle) {
-    // تحديث بيانات الحلقة الحالية
-    data_user_globle["id_circle"] = circle["id_circle"];
-    data_user_globle["name_circle"] = circle["name_circle"];
-    
-    // إعادة تحميل الصفحة الرئيسية
-    Get.offAll(() => Home());
-    
-    mySnackbar(
-      "تم بنجاح",
-      "تم التبديل إلى حلقة: ${circle["name_circle"]}",
-      type: "g",
-    );
-  }
+  // void _switchToCircle(Map<String, dynamic> circle) {
+  //   // تحديث بيانات الحلقة الحالية
+  //   data_user_globle["id_circle"] = circle["id_circle"];
+  //   data_user_globle["name_circle"] = circle["name_circle"];
+  //
+  //   final args = {
+  //     // data_user_globle,
+  //     // // ...dataCircle,
+  //     "username": homeCont.dataArg["username"],
+  //     "id_user": homeCont.dataArg["id_user"],
+  //     "role": homeCont.dataArg["role"],
+  //
+  //   };
+  //   holidayData.clear();
+  //   Get.to(() => Home(), arguments: args);
+  //
+  //   mySnackbar(
+  //     "تم بنجاح",
+  //     "تم التبديل إلى حلقة: ${circle["name_circle"]}",
+  //     type: "g",
+  //   );
+  // }
 
   // معالجة تسجيل الخروج
   Future<void> _handleLogout(BuildContext context) async {
@@ -506,108 +705,4 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // التحقق من الحضور قبل الانتقال
-  Future<void> _checkAttendanceAndNavigate(
-    BuildContext context,
-    Widget Function() pageBuilder,
-    String message,
-  ) async {
-    // التحقق من الإجازة
-    if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
-      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
-      return;
-    }
-
-    // التحقق من حضور الأستاذ
-    await homeCont.check_teacher_attendance();
-    
-    if (homeCont.statTeacherAttendance.value == null) {
-      mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
-      return;
-    }
-    
-    if (homeCont.statTeacherAttendance.value == 0) {
-      // التحقق من صلاحية context
-      if (!context.mounted) return;
-      
-      // عرض dialog للانتقال لصفحة الحضور
-      bool? goToAttendance = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("تسجيل الحضور مطلوب"),
-          content: Text("$message\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("إلغاء"),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("الانتقال"),
-            ),
-          ],
-        ),
-      );
-      
-      if (goToAttendance == true) {
-        Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
-      }
-      return;
-    }
-    
-    // إذا سجل حضوره، انتقل للصفحة
-    Get.to(pageBuilder, arguments: homeCont.dataArg);
-  }
-
-  // التحقق من الحضور قبل عرض dialog الزيارة
-  Future<void> _checkAttendanceAndShowDialog(BuildContext context) async {
-    // التحقق من الإجازة
-    if (holidayData["is_holiday"] != null && holidayData["is_holiday"]) {
-      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
-      return;
-    }
-
-    // التحقق من حضور الأستاذ
-    await homeCont.check_teacher_attendance();
-    
-    if (homeCont.statTeacherAttendance.value == null) {
-      mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
-      return;
-    }
-    
-    if (homeCont.statTeacherAttendance.value == 0) {
-      // التحقق من صلاحية context
-      if (!context.mounted) return;
-      
-      // عرض dialog للانتقال لصفحة الحضور
-      bool? goToAttendance = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("تسجيل الحضور مطلوب"),
-          content: const Text("يجب تسجيل حضورك قبل إضافة زيارة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("إلغاء"),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("الانتقال"),
-            ),
-          ],
-        ),
-      );
-      
-      if (goToAttendance == true) {
-        Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
-      }
-      return;
-    }
-    
-    // التحقق من صلاحية context قبل عرض dialog الزيارة
-    if (!context.mounted) return;
-    
-    // إذا سجل حضوره، اعرض dialog الزيارة
-    homeCont.showVisitorDialog(context: context);
-  }
 }

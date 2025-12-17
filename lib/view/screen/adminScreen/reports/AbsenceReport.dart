@@ -444,6 +444,7 @@ class AbsenceReportController extends GetxController {
   }
 
   Future<void> loadData() async {
+    if(loading.value)return;
     if (!useDateRange.value && selectedDate.value == null) {
       mySnackbar("تنبيه", "الرجاء اختيار التاريخ");
       return;
@@ -466,7 +467,6 @@ class AbsenceReportController extends GetxController {
       return;
     }
 
-    loading.value = true;
     try {
       Map<String, dynamic> requestData = {
         "id_circle": selectedCircle.value,
@@ -478,9 +478,15 @@ class AbsenceReportController extends GetxController {
       } else {
         requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
       }
-      
-      final response = await postData(Linkapi.select_admin_absence_report, requestData);
 
+      requestData["center_id"]=dataArg["center_id"];
+      final response = await handleRequest(isLoading:loading, action: ()async {
+        return await postData(Linkapi.select_admin_absence_report, requestData);
+      },
+      immediateLoading: true,
+        loadingMessage: "جاري تحميل تقرير الغياب"
+      );
+      print("response====${response}");
       if (response == null) {
         mySnackbar("خطأ", "فشل الاتصال بالخادم");
         absenceList.clear();

@@ -7,6 +7,7 @@ import '../../../constants/color.dart';
 import '../../../constants/loadingWidget.dart';
 import '../../../constants/readOnlyTextField.dart';
 import '../../../controller/dilayAndRevoesController/daily_reportController.dart';
+import '../../widget/offline_indicator.dart';
 
 class Daily_Report extends StatelessWidget {
   final Daily_ReportController controller = Get.put(Daily_ReportController());
@@ -34,6 +35,9 @@ class Daily_Report extends StatelessWidget {
           child: SingleChildScrollView(
           child: Column(
             children: [
+              // 🌐 مؤشر الاتصال بالإنترنت
+              OfflineIndicator(),
+
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(

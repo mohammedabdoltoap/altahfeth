@@ -133,7 +133,6 @@ class ExamScreen extends StatelessWidget {
               keyboardType: TextInputType.number,
               onChanged: (_) => checkGrade(controller: controller.tilawa_revision, label: "درجة التلاوة"),
             ),
-            Divider(height: 30, thickness: 2, color: theme.dividerColor),
 
             CustomTextField(
               controller: controller.notes,
@@ -141,7 +140,26 @@ class ExamScreen extends StatelessWidget {
               hint: "جوانب يجب اصلاحها في الحفظ والتلاوة",
             ),
 
-            const SizedBox(height: 20),
+
+
+
+            Divider(height: 30, thickness: 2, color: theme.dividerColor),
+            Text(
+              "المنهج المصاحب",
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            CustomTextField(
+              controller: controller.markManhage,
+              label: "درجة المنهج المصاحب",
+              hint: "تقييم المنهج المصاحب",
+              keyboardType: TextInputType.number,
+              onChanged: (_) => checkGrade(controller: controller.markManhage, label: "المنهج المصاحب"),
+            ),
 
             AppButton(text: "اعتماد الدرجات", onPressed: controller.insert_visit_exam_result,isLoading: controller.isSave.value,),
 
@@ -333,6 +351,7 @@ class ExamScreenController extends GetxController {
   TextEditingController hifz_revision = TextEditingController();
   TextEditingController tilawa_revision = TextEditingController();
   TextEditingController notes = TextEditingController();
+  TextEditingController markManhage = TextEditingController();
 
 
   RxList<Map<String, dynamic>> datasoura = <Map<String, dynamic>>[].obs;
@@ -448,16 +467,15 @@ class ExamScreenController extends GetxController {
 
         "from_id_aya_revision":  from_id_aya_revision.value,
         "to_id_aya_revision":  to_id_aya_revision.value ,
-        "notes":notes.text
+        "notes":notes.text,
+        "markManhage":markManhage.text
       };
-      print("data======${data}");
       // ===== إرسال البيانات =====
       var res =await handleRequest(
         isLoading: isSave,
         useDialog: false,
 
         action: () async{
-          await del();
            return await postData(Linkapi.insert_visit_exam_result, data);
 
       },);

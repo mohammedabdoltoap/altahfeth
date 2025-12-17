@@ -16,7 +16,7 @@ class Add_VisitController extends GetxController{
   void onInit() {
     dataArg=Get.arguments;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp)async {
-       select_visits_type_months_years();
+    await   select_visits_type_months_years();
       select_previous_visits();
     },);
   }
@@ -189,41 +189,46 @@ class Add_VisitController extends GetxController{
   RxInt selectedFilterMonth = RxInt(0);
   Future select_previous_visits() async {
     if (loadingPreviousVisits.value) return;
-    final res = await handleRequest<dynamic>(
-      isLoading: loadingPreviousVisits,
-      loadingMessage: "جاري تحميل الزيارات السابقة...",
-      useDialog: false,
-      immediateLoading: true,
-      action: () async {
-        return await postData(Linkapi.select_previous_visits, {
-          "id_user":dataArg["id_user"]
-        });
-      },
-    );
-    if (res == null) return;
-    if (res is! Map) {
-      mySnackbar("خطأ", "فشل الاتصال بالخادم");
-      return;
-    }
-    if (res["stat"] == "ok") {
-      all_previous_visits.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-      
-      // تطبيق الفلترة الافتراضية للسنة الحالية
-      int currentYear = DateTime.now().year;
-      var currentYearData = years.firstWhereOrNull((year) => 
-        year["name_year"].toString().contains(currentYear.toString()));
-      
-      if (currentYearData != null) {
-        selectedFilterYear.value = currentYearData["id_year"];
-        filterPreviousVisits();
-      } else {
-        previous_visits.assignAll(all_previous_visits);
+    if(circles.isNotEmpty) {
+      final res = await handleRequest<dynamic>(
+        isLoading: loadingPreviousVisits,
+        loadingMessage: "جاري تحميل الزيارات السابقة...",
+        useDialog: false,
+        immediateLoading: true,
+        action: () async {
+          return await postData(Linkapi.select_previous_visits, {
+            "id_center":circles[0]["id_center"],
+          });
+        },
+      );
+      if (res == null) return;
+      if (res is! Map) {
+        mySnackbar("خطأ", "فشل الاتصال بالخادم");
+        return;
       }
-      
-      print("previous_visits=======${previous_visits}");
-    } else if(res["stat"]=="erorr"){
-      String errorMsg = res["msg"] ?? "تعذر تحميل الزيارات السابقة";
-      mySnackbar("تنبيه", errorMsg);
+      if (res["stat"] == "ok") {
+        all_previous_visits.assignAll(
+            List<Map<String, dynamic>>.from(res["data"]));
+
+        // تطبيق الفلترة الافتراضية للسنة الحالية
+        int currentYear = DateTime
+            .now()
+            .year;
+        var currentYearData = years.firstWhereOrNull((year) =>
+            year["name_year"].toString().contains(currentYear.toString()));
+
+        if (currentYearData != null) {
+          selectedFilterYear.value = currentYearData["id_year"];
+          filterPreviousVisits();
+        } else {
+          previous_visits.assignAll(all_previous_visits);
+        }
+
+        print("previous_visits=======${previous_visits}");
+      } else if (res["stat"] == "erorr") {
+        String errorMsg = res["msg"] ?? "تعذر تحميل الزيارات السابقة";
+        mySnackbar("تنبيه", errorMsg);
+      }
     }
   }
 

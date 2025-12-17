@@ -233,11 +233,18 @@ class CircleComparisonReportController extends GetxController {
 
     loading.value = true;
     try {
-      final response = await postData(Linkapi.select_circle_comparison, {
+      Map<String, dynamic> requestData = {
         "circle_ids": selectedCircles.toList(),
         "start_date": DateFormat('yyyy-MM-dd', 'en').format(startDate.value!),
         "end_date": DateFormat('yyyy-MM-dd', 'en').format(endDate.value!),
-      });
+      };
+      
+      // إضافة center_id إذا كان موجود
+      if (dataArg?['center_id'] != null) {
+        requestData["center_id"] = dataArg['center_id'].toString();
+      }
+      
+      final response = await postData(Linkapi.select_circle_comparison, requestData);
 
       if (response == null || response is! Map) {
         mySnackbar("خطأ", "فشل الاتصال بالخادم");

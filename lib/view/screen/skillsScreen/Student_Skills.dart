@@ -452,51 +452,6 @@ class Student_SkillsController extends GetxController {
     selectedIdSkile.value = null;
   }
 
-  // void updateSkill(Map<String, dynamic> skill) {
-  //   final TextEditingController updateController = TextEditingController(text: skill["avaluation"].toString());
-  //
-  //   Get.defaultDialog(
-  //     title: "تعديل التقييم",
-  //     content: TextField(
-  //       controller: updateController,
-  //       keyboardType: TextInputType.number,
-  //       decoration: const InputDecoration(labelText: "أدخل التقييم الجديد (0-100)"),
-  //     ),
-  //     confirm: ElevatedButton(
-  //       onPressed: ()async {
-  //         final val = int.tryParse(updateController.text.trim());
-  //         if (val == null || val < 0 || val > 100) {
-  //           mySnackbar("تنبيه", "الرجاء إدخال تقييم صحيح بين 0 و 100");
-  //           return;
-  //         }
-  //
-  //       var res=await  postData(Linkapi.update_student_skill, {
-  //           "id":skill["id"],
-  //           "avaluation":skill["avaluation"]
-  //         });
-  //         print("res=====${res}");
-  //        if(res["stat"]=="ok"){
-  //          skills_Sudent.refresh();
-  //          Get.back();
-  //          mySnackbar("تم", "تم تعديل التقييم بنجاح", type: "g");
-  //        }else if(res["stat"]=="no"){
-  //          mySnackbar("تنبية", "لم يتم التعديل بنجاح");
-  //        }
-  //        else if(res["stat"]=="erorr"){
-  //          mySnackbar("تنبية", "${res["msg"]}");
-  //        }
-  //       },
-  //       style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-  //       child: const Text("حفظ"),
-  //     ),
-  //     cancel: ElevatedButton(
-  //       onPressed: () => Get.back(),
-  //       style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
-  //       child: const Text("إلغاء"),
-  //     ),
-  //   );
-  // }
-
   void updateSkill(Map<String, dynamic> skill) {
     final TextEditingController updateController = TextEditingController(
       text: skill["avaluation"]?.toString() ?? "0",
@@ -525,7 +480,9 @@ class Student_SkillsController extends GetxController {
               return await postData(Linkapi.update_student_skill, {"id": skill["id"], "avaluation": val});
             },
           );
-
+          if(res ==null){
+            return;
+          }
             if (res["stat"] == "ok") {
               skill["avaluation"] = val; // تحديث القيمة محليًا
               skills_Sudent.refresh();

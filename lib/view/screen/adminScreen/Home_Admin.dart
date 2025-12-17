@@ -1,20 +1,24 @@
-import 'package:althfeth/constants/color.dart';
 import 'package:althfeth/view/screen/adminScreen/visitsAndExam/add%20_Visit.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import '../../widget/offline_indicator.dart';
+import '../teacherScreen/EditEmployeeProfile.dart';
+import '../user_attendance.dart';
 import 'AdminReportsPage.dart';
 import 'ResignationRequestPage.dart';
 import '../login.dart';
 import '../../../constants/function.dart';
 import '../../../globals.dart';
+import '../../../api/LinkApi.dart';
+import '../../../api/apiFunction.dart';
 
 class Home_Admin extends StatelessWidget {
   Home_AdminController controller = Get.put(Home_AdminController());
   
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    
+
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
@@ -65,6 +69,8 @@ class Home_Admin extends StatelessWidget {
           child: SafeArea(
             child: Column(
               children: [
+                OfflineIndicator(),
+
                 // Header جذاب
                 _buildHeader(),
                 
@@ -197,13 +203,13 @@ class Home_Admin extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                "مدير المركز",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
-              ),
+             Obx(() => Text(
+                   " المركز:${controller.nameCenter.value}",
+                   style: TextStyle(
+                     fontSize: 16,
+                     color: Colors.white70,
+                   ),
+                 ),),
               const SizedBox(height: 20),
               
               // تاريخ اليوم
@@ -254,7 +260,18 @@ class Home_Admin extends StatelessWidget {
                       colors: [Color(0xFF667eea), Color(0xFF764ba2)],
                     ),
                     height: cardHeight,
-                    onTap: () => Get.to(() => Add_Visit(), arguments: controller.data_user),
+                    onTap: ()
+                        {
+                          if(connectivityHelper.hasConnection){
+                          if(controller.data_user["center_id"]!=null)
+                        Get.to(() => Add_Visit(), arguments: controller.data_user);
+                    else{
+                      mySnackbar("تنبية", "لايوجد لديك مركز مسوول عنه حاليا");
+                          }}else{
+                            mySnackbar("تنبية", "تحقق من اتصالك بالانترنت اولا");
+                          }
+                        }
+
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -267,7 +284,16 @@ class Home_Admin extends StatelessWidget {
                       colors: [Color(0xFFf093fb), Color(0xFFf5576c)],
                     ),
                     height: cardHeight,
-                    onTap: () => Get.to(() => AdminReportsPage(), arguments: controller.data_user),
+                    onTap: ()
+                    {
+                      if(controller.data_user["center_id"]!=null)
+                        Get.to(() => AdminReportsPage(), arguments: controller.data_user);
+                      else{
+                        mySnackbar("تنبية", "لايوجد لديك مركز مسوول عنه حاليا");
+                      }
+                    }
+
+                    // => Get.to(() => AdminReportsPage(), arguments: controller.data_user),
                   ),
                 ),
               ],
@@ -378,6 +404,57 @@ class Home_Admin extends StatelessWidget {
           color: Colors.red,
           onTap: _showResignationRequest,
         ),
+        const SizedBox(height: 16),
+        Obx(() {
+          final status = controller.attendanceStatus.value;
+          
+          if (status == "No_record_today") {
+            return _buildToolItem(
+              title: "تسجيل الحضور",
+              subtitle: "سجل حضورك اليوم",
+              icon: Icons.login,
+              color: Colors.green,
+              onTap: () => controller.add_admin_check_in(),
+            );
+          } else if (status == "No_check_out_time") {
+            return _buildToolItem(
+              title: "تسجيل الانصراف",
+              subtitle: "سجل انصرافك",
+              icon: Icons.logout,
+              color: Colors.orange,
+              onTap: () => controller.add_admin_check_out(),
+            );
+          } else {
+            return _buildToolItem(
+              title: "الحضور والانصراف",
+              subtitle: "✅ تم تسجيل الحضور والانصراف",
+              icon: Icons.check_circle,
+              color: Colors.green,
+              onTap: () {
+                mySnackbar("تم", "تم تسجيل الحضور والانصراف بالفعل", type: "g");
+              },
+            );
+          }
+        }),
+        const SizedBox(height: 12),
+        _buildToolItem(
+          title: "المزامنة",
+          subtitle: "المزمنة مع السيرفر",
+          icon: Icons.pending,
+          color: Colors.blue,
+          onTap: () => controller.admin_attendancePending(),
+        ),
+        const SizedBox(height: 12),
+        _buildToolItem(
+          title: "تعديل البيانات ",
+          subtitle: "تعديل البيانات الشخصية",
+          icon: Icons.person,
+          color: Colors.green,
+          onTap: () {
+            Get.to(() => EditEmployeeProfile(), arguments: controller.data_user);
+
+          },
+        ),
         const SizedBox(height: 12),
         _buildToolItem(
           title: "تسجيل الخروج",
@@ -386,6 +463,8 @@ class Home_Admin extends StatelessWidget {
           color: Colors.grey,
           onTap: _showLogoutDialog,
         ),
+
+
       ],
     );
   }
@@ -553,9 +632,622 @@ class Home_Admin extends StatelessWidget {
 class Home_AdminController extends GetxController{
 
   var data_user;
+  
+  // Reactive variables for attendance
+  RxString attendanceStatus = "No_record_today".obs;
+  RxBool isLoading = false.obs;
+  RxMap<String, dynamic> attendanceData = <String, dynamic>{}.obs;
+  
+  late final String formattedDate;
+  
   @override
-  void onInit() {
-    data_user=Get.arguments;
+  void onInit() async{
+    data_user = Get.arguments;
+    
+    // تحضير التاريخ
+    final today = DateTime.now();
+    formattedDate = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async{
+     await selecDataCenter();
+     await  admin_attendancePending();
+     await check_admin_attendance();
+
+    },);
+
+  }
+  RxString nameCenter="".obs;
+  Future selecDataCenter()async{
+
+    if(connectivityHelper.hasConnection) {
+      var res = await handleRequest(isLoading: RxBool(false), action: () async {
+        return await postData(Linkapi.selecDataCenter, {
+          "id_user": data_user["id_user"],
+        });
+      },);
+      if (res == null) return;
+      if (res["stat"] == "ok") {
+        data_user["center_id"] = res["data"]["center_id"];
+        data_user["name"] = res["data"]["name"];
+      }
+      else if (res["stat"] == "no") {
+        data_user["center_id"] = null;
+        data_user["name"] = "لايوجد لديك مركز مسوول عنه نشط ";
+
+        mySnackbar("تنبية", "لايوجد لديك مركز مسوول عنه نشط ");
+      } else {
+        mySnackbar("تنبية", "${res["msg"] ?? "خطا في جلب بيانات المركز"}");
+      }
+    }else{
+      mySnackbar("تنبية", "لايوجد اتصال بالانترنت ولن تتمكن من اي عملية عدا تسجيل الحضور والانصراف");
+    }
+      nameCenter.value = data_user["name"] ?? "لايوجد";
+
+  }
+  Future check_admin_attendance() async {
+    if(connectivityHelper.hasConnection)
+      await check_admin_attendanceOnline();
+    else
+      await check_admin_attendanceOffline();
+  }
+  
+  // ============================================
+  // التحقق من الحضور محلياً
+  // ============================================
+  Future check_admin_attendanceOffline() async {
+    print('\n🔍 ========== التحقق من حضور المدير (أوفلاين) ==========');
+    
+    try {
+      List<Map<String, dynamic>> localRecord = await db.query(
+        "users_attendance",
+        where: "id_user = ? AND attendance_date = ? AND id_circle = 0",
+        whereArgs: [data_user["id_user"], formattedDate],
+      );
+      
+      if (localRecord.isEmpty) {
+        print('ℹ️ لا يوجد حضور مسجل محلياً اليوم');
+        attendanceStatus.value = "No_record_today";
+      } else {
+        var record = localRecord.first;
+        attendanceData.assignAll(record);
+        
+        if (record["check_out_time"] == null) {
+          print('✅ يوجد حضور محلي بدون انصراف');
+          attendanceStatus.value = "No_check_out_time";
+        } else {
+          print('✅ يوجد حضور وانصراف محلي');
+          attendanceStatus.value = "He_check_all";
+        }
+      }
+    } catch (e) {
+      print('❌ خطأ في التحقق من الحضور محلياً: $e');
+      attendanceStatus.value = "No_record_today";
+    }
+    
+    print('✅ ========== انتهى التحقق من حضور المدير (أوفلاين) ==========\n');
+  }
+  
+  // ============================================
+  // التحقق من الحضور أونلاين
+  // ============================================
+  Future check_admin_attendanceOnline() async {
+    try {
+      isLoading.value = true;
+      
+      final today = DateTime.now();
+      final formattedDate = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+
+      final response =await handleRequest(isLoading: RxBool(false), action: ()async {
+       return await postData(
+        Linkapi.select_admin_attendance_today,
+        {
+          "id_user": data_user["id_user"],
+          "attendance_date": formattedDate,
+          "id_circle": 0,
+        },
+        );
+      },
+        loadingMessage: "معالجة التحضير ...",
+        immediateLoading: true,
+        useDialog: true
+      );
+
+      if (response == null) {
+        print('⚠️ لم يتم استلام رد من السيرفر');
+        attendanceStatus.value = "No_record_today";
+        return;
+      }
+
+      if (response is! Map) {
+        print('❌ رد السيرفر غير صحيح');
+        attendanceStatus.value = "No_record_today";
+        return;
+      }
+
+      print('📥 رد السيرفر: stat=${response["stat"]}');
+      
+      String status = response["stat"] ?? "error";
+      
+      if (status == "No_record_today") {
+        print('ℹ️ لا يوجد حضور مسجل اليوم');
+        attendanceStatus.value = "No_record_today";
+      } else if (status == "No_check_out_time" || status == "He_check_all") {
+        print('✅ يوجد حضور مسجل - بدء المزامنة المحلية...');
+        attendanceStatus.value = status == "No_check_out_time" ? "No_check_out_time" : "He_check_all";
+        
+        // ========== مزامنة من السيرفر للمحلي ==========
+        try {
+          if (response["data"] != null && response["data"] is Map) {
+            var serverData = response["data"];
+            attendanceData.assignAll(serverData);
+            print('📊 بيانات الحضور من السيرفر: $serverData');
+            
+            // التحقق من وجود السجل محلياً
+            List<Map<String, dynamic>> localRecord = await db.query(
+              "users_attendance",
+              where: "id_user = ? AND attendance_date = ? AND id_circle = 0",
+              whereArgs: [data_user["id_user"], formattedDate],
+            );
+            
+            if (localRecord.isEmpty) {
+              print('📥 لا يوجد سجل محلي - حفظ البيانات من السيرفر...');
+              
+              int result = await db.insert('users_attendance', {
+                'id_server': serverData['id'],
+                'id_user': data_user["id_user"],
+                'id_circle': 0,
+                'check_in_time': serverData['check_in_time'],
+                'check_out_time': serverData['check_out_time'],
+                'attendance_date': formattedDate,
+                'stat': 'NoPending',
+                'attendance_status': 1,
+              });
+              
+              if (result > 0) {
+                print('✅ تم حفظ حضور المدير محلياً بنجاح - id_local: $result');
+              } else {
+                print('❌ فشل حفظ حضور المدير محلياً');
+              }
+            } else {
+              print('ℹ️ السجل موجود محلياً بالفعل - id_local: ${localRecord.first["id_local"]}');
+              
+              if (localRecord.first['stat'] == 'Pending') {
+                print('🔄 تحديث السجل المحلي المعلق بالبيانات من السيرفر...');
+                await db.update(
+                  'users_attendance',
+                  {
+                    'id_server': serverData['id'],
+                    'check_in_time': serverData['check_in_time'],
+                    'check_out_time': serverData['check_out_time'],
+                    'stat': 'NoPending',
+                  },
+                  where: 'id_local = ?',
+                  whereArgs: [localRecord.first['id_local']],
+                );
+                print('✅ تم تحديث السجل المحلي بنجاح');
+              }
+            }
+          } else {
+            print('⚠️ لا توجد بيانات تفصيلية في رد السيرفر');
+          }
+        } catch (e) {
+          print('❌ خطأ في مزامنة حضور المدير محلياً: $e');
+        }
+      } else {
+        attendanceStatus.value = "No_record_today";
+        print('⚠️ ${response["msg"] ?? "خطأ في جلب البيانات"}');
+      }
+    } catch (e) {
+      print('❌ خطأ في التحقق من حضور المدير: $e');
+      attendanceStatus.value = "No_record_today";
+    } finally {
+      isLoading.value = false;
+    }
+    
+    print('✅ ========== انتهى التحقق من حضور المدير (أونلاين) ==========\n');
+  }
+
+  // ============================================
+  // تسجيل الحضور (أونلاين/أوفلاين)
+  // ============================================
+  Future<void> add_admin_check_in() async {
+    if(connectivityHelper.hasConnection)
+      await add_admin_check_in_online();
+    else
+      await add_admin_check_in_offline();
+  }
+  
+  // ============================================
+  // تسجيل الحضور أونلاين
+  // ============================================
+  Future<void> add_admin_check_in_online() async {
+    print('\n📤 ========== تسجيل حضور المدير (أونلاين) ==========');
+    try {
+      isLoading.value = true;
+      
+      final now = DateTime.now();
+      final checkInTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+      final attendanceDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
+      
+      print('⏰ وقت الحضور: $checkInTime');
+      
+      final response = await postData(
+        Linkapi.add_admin_check_in,
+        {
+          "id_user": data_user["id_user"],
+          "check_in_time": checkInTime,
+          "attendance_date": attendanceDate,
+          "id_circle": 0, // Admin has id_circle = 0
+        },
+      );
+
+      if (response == null) {
+        print('❌ فشل الاتصال بالخادم');
+        mySnackbar("خطأ", "فشل الاتصال بالخادم");
+        return;
+      }
+
+      if (response is! Map) {
+        print('❌ رد غير صحيح من الخادم');
+        mySnackbar("خطأ", "رد غير صحيح من الخادم");
+        return;
+      }
+
+      if (response["stat"] == "ok") {
+        print('✅ تم تسجيل الحضور بنجاح');
+        
+        // حفظ محلياً
+        try {
+          int result = await db.insert('users_attendance', {
+            'id_server': response['id'],
+            'id_user': data_user["id_user"],
+            'id_circle': 0,
+            'check_in_time': checkInTime,
+            'attendance_date': attendanceDate,
+            'stat': 'NoPending',
+            'attendance_status': 1,
+          });
+          
+          if (result > 0) {
+            print('✅ تم حفظ الحضور محلياً - id_local: $result');
+          }
+        } catch (e) {
+          print('❌ خطأ في الحفظ المحلي: $e');
+        }
+        
+        attendanceStatus.value = "No_check_out_time";
+        mySnackbar("نجاح", "تم تسجيل الحضور بنجاح ✅", type: "g");
+        await check_admin_attendance();
+      } else {
+        print('❌ فشل التسجيل: ${response["msg"]}');
+        mySnackbar("خطأ", response["msg"] ?? "فشل تسجيل الحضور");
+      }
+    } catch (e) {
+      print('❌ خطأ: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء تسجيل الحضور");
+    } finally {
+      isLoading.value = false;
+    }
+    
+    print('✅ ========== انتهى تسجيل حضور المدير (أونلاين) ==========\n');
+  }
+  
+  // ============================================
+  // تسجيل الحضور أوفلاين
+  // ============================================
+  Future<void> add_admin_check_in_offline() async {
+
+    try {
+      isLoading.value = true;
+      
+      final now = DateTime.now();
+      final checkInTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+      
+      print('⏰ وقت الحضور: $checkInTime');
+      
+      int result = await db.insert('users_attendance', {
+        'id_user': data_user["id_user"],
+        'id_circle': 0,
+        'check_in_time': checkInTime,
+        'attendance_date': formattedDate,
+        'stat': 'Pending',
+        'attendance_status': 1,
+      });
+      
+      if (result > 0) {
+        print('✅ تم حفظ الحضور محلياً - id_local: $result');
+        attendanceStatus.value = "No_check_out_time";
+        mySnackbar("نجاح", "تم تسجيل الحضور ✅\n📱 محفوظ محلياً (بدون نت)", type: "g");
+        await check_admin_attendance();
+      } else {
+        print('❌ فشل الحفظ المحلي');
+        mySnackbar("فشل", "لم يتم حفظ الحضور");
+      }
+    } catch (e) {
+      print('❌ خطأ: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء تسجيل الحضور");
+    } finally {
+      isLoading.value = false;
+    }
+    
+    print('✅ ========== انتهى تسجيل حضور المدير (أوفلاين) ==========\n');
+  }
+
+  // ============================================
+  // تسجيل الانصراف (أونلاين/أوفلاين)
+  // ============================================
+  Future<void> add_admin_check_out() async {
+    if(connectivityHelper.hasConnection)
+      await add_admin_check_out_online();
+    else
+      await add_admin_check_out_offline();
+  }
+  
+  // ============================================
+  // تسجيل الانصراف أونلاين
+  // ============================================
+  Future<void> add_admin_check_out_online() async {
+    print('\n📤 ========== تسجيل انصراف المدير (أونلاين) ==========');
+    try {
+      isLoading.value = true;
+      
+      final now = DateTime.now();
+      final checkOutTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+      
+      final attendanceId = attendanceData["id"] ?? attendanceData["id_server"];
+      
+      if (attendanceId == null) {
+        print('❌ لم يتم العثور على سجل الحضور');
+        mySnackbar("خطأ", "لم يتم العثور على سجل الحضور");
+        return;
+      }
+      
+      print('⏰ وقت الانصراف: $checkOutTime');
+      print('🆔 معرف السجل: $attendanceId');
+      
+      final response = await postData(
+        Linkapi.add_admin_check_out,
+        {
+          "id": attendanceId,
+          "check_out_time": checkOutTime,
+        },
+      );
+
+      if (response == null) {
+        print('❌ فشل الاتصال بالخادم');
+        mySnackbar("خطأ", "فشل الاتصال بالخادم");
+        return;
+      }
+
+      if (response is! Map) {
+        print('❌ رد غير صحيح من الخادم');
+        mySnackbar("خطأ", "رد غير صحيح من الخادم");
+        return;
+      }
+
+      if (response["stat"] == "ok") {
+        print('✅ تم تسجيل الانصراف بنجاح');
+        
+        // تحديث محلياً
+        try {
+          List<Map<String, dynamic>> localRecord = await db.query(
+            "users_attendance",
+            where: "id_user = ? AND attendance_date = ? AND id_circle = 0",
+            whereArgs: [data_user["id_user"], formattedDate],
+          );
+          
+          if (localRecord.isNotEmpty) {
+            await db.update(
+              'users_attendance',
+              {'check_out_time': checkOutTime, 'stat': 'NoPending'},
+              where: 'id_local = ?',
+              whereArgs: [localRecord.first['id_local']],
+            );
+            print('✅ تم تحديث الانصراف محلياً');
+          }
+        } catch (e) {
+          print('❌ خطأ في التحديث المحلي: $e');
+        }
+        
+        attendanceStatus.value = "He_check_all";
+        mySnackbar("نجاح", "تم تسجيل الانصراف بنجاح ✅", type: "g");
+        await check_admin_attendance();
+      } else {
+        print('❌ فشل التسجيل: ${response["msg"]}');
+        mySnackbar("خطأ", response["msg"] ?? "فشل تسجيل الانصراف");
+      }
+    } catch (e) {
+      print('❌ خطأ: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء تسجيل الانصراف");
+    } finally {
+      isLoading.value = false;
+    }
+    
+    print('✅ ========== انتهى تسجيل انصراف المدير (أونلاين) ==========\n');
+  }
+  
+  // ============================================
+  // تسجيل الانصراف أوفلاين
+  // ============================================
+  Future<void> add_admin_check_out_offline() async {
+    print('\n📱 ========== تسجيل انصراف المدير (أوفلاين) ==========');
+    
+    try {
+      isLoading.value = true;
+      
+      final now = DateTime.now();
+      final checkOutTime = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}";
+      
+      print('⏰ وقت الانصراف: $checkOutTime');
+      
+      // جلب السجل المحلي
+      List<Map<String, dynamic>> localRecord = await db.query(
+        "users_attendance",
+        where: "id_user = ? AND attendance_date = ? AND id_circle = 0",
+        whereArgs: [data_user["id_user"], formattedDate],
+      );
+      
+      if (localRecord.isEmpty) {
+        print('❌ لا يوجد سجل حضور لتسجيل الانصراف');
+        mySnackbar("خطأ", "لا يوجد سجل حضور لتسجيل الانصراف");
+        return;
+      }
+      
+      int result = await db.update(
+        'users_attendance',
+        {'check_out_time': checkOutTime, 'stat': 'Pending'},
+        where: 'id_local = ?',
+        whereArgs: [localRecord.first['id_local']],
+      );
+      
+      if (result > 0) {
+        print('✅ تم حفظ الانصراف محلياً');
+        attendanceStatus.value = "He_check_all";
+        mySnackbar("نجاح", "تم تسجيل الانصراف ✅\n📱 محفوظ محلياً (بدون نت)", type: "g");
+        await check_admin_attendance();
+      } else {
+        print('❌ فشل الحفظ المحلي');
+        mySnackbar("فشل", "لم يتم حفظ الانصراف");
+      }
+    } catch (e) {
+      print('❌ خطأ: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء تسجيل الانصراف");
+    } finally {
+      isLoading.value = false;
+    }
+    
+    print('✅ ========== انتهى تسجيل انصراف المدير (أوفلاين) ==========\n');
+  }
+  
+  // ============================================
+  // مزامنة حضور المدير المعلق
+  // ============================================
+  Future admin_attendancePending() async {
+
+    if (!connectivityHelper.hasConnection) {
+
+      return;
+    }
+
+    try {
+      var pendingAttendance = await db.rawQuery('''
+        SELECT * FROM users_attendance 
+        WHERE stat = "Pending"
+        AND id_user = ${data_user["id_user"]}
+        AND id_circle = 0
+      ''');
+
+      if (pendingAttendance.isEmpty) {
+        mySnackbar("نجاح", "لقد تم المزامنة  بنجاح",type: "g");
+        return;
+      }
+
+
+      for (int i = 0; i < pendingAttendance.length; i++) {
+        var attendance = pendingAttendance[i];
+        bool syncSuccess = false;
+
+        // إذا لم يكن لديه id_server (إضافة جديدة)
+        if (attendance["id_server"] == null) {
+          print('📤 مزامنة حضور جديد - id_local: ${attendance["id_local"]}');
+          
+          var res = await handleRequest(
+            useDialog: false,
+            isLoading: RxBool(false),
+            action: () async {
+              return await postData(Linkapi.add_admin_check_in, {
+                "id_user": attendance["id_user"],
+                "id_circle": 0,
+                "check_in_time": attendance["check_in_time"],
+                "attendance_date": attendance["attendance_date"],
+              });
+            },
+          );
+
+          if (res != null && res["stat"] == "ok") {
+            int? serverId;
+            if (res["id"] is int) {
+              serverId = res["id"];
+            } else if (res["id"] is String) {
+              serverId = int.tryParse(res["id"]);
+            }
+
+            if (serverId != null && serverId > 0) {
+              await db.update(
+                'users_attendance',
+                {
+                  'id_server': serverId,
+                  'stat': 'NoPending',
+                },
+                where: 'id_local = ?',
+                whereArgs: [attendance["id_local"]],
+              );
+              syncSuccess = true;
+              print('   ✅ تم مزامنة الحضور الجديد - id_server: $serverId');
+              
+              // إذا كان هناك انصراف، نرسله أيضاً
+              if (attendance["check_out_time"] != null) {
+                print('   📤 مزامنة الانصراف...');
+                var resOut = await handleRequest(
+                  useDialog: false,
+                  isLoading: RxBool(false),
+                  action: () async {
+                    return await postData(Linkapi.add_admin_check_out, {
+                      "id": serverId,
+                      "check_out_time": attendance["check_out_time"],
+                    });
+                  },
+                );
+                
+                if (resOut != null && resOut["stat"] == "ok") {
+                  print('   ✅ تم مزامنة الانصراف');
+                } else {
+                  print('   ❌ فشلت مزامنة الانصراف');
+                }
+              }
+            }
+          } else {
+            print('   ❌ فشلت مزامنة الحضور الجديد');
+          }
+        }
+        // إذا كان لديه id_server (تحديث انصراف)
+        else if (attendance["check_out_time"] != null) {
+          print('📝 مزامنة انصراف - id_server: ${attendance["id_server"]}');
+          
+          var res = await handleRequest(
+            useDialog: false,
+            isLoading: RxBool(false),
+            action: () async {
+              return await postData(Linkapi.add_admin_check_out, {
+                "id": attendance["id_server"],
+                "check_out_time": attendance["check_out_time"],
+              });
+            },
+          );
+
+          if (res != null && res["stat"] == "ok") {
+            await db.update(
+              'users_attendance',
+              {'stat': 'NoPending'},
+              where: 'id_local = ?',
+              whereArgs: [attendance["id_local"]],
+            );
+            syncSuccess = true;
+            print('   ✅ تم مزامنة الانصراف');
+          } else {
+            print('   ❌ فشلت مزامنة الانصراف');
+          }
+          final attendanceDate = DateFormat('yyyy-MM-dd', "en").format(DateTime.now());
+
+           await db.delete("users_attendance",
+              where: "attendance_date !='${attendanceDate}' and stat!='Pending' and id_circle=0 "
+          );
+        }
+      }
+      check_admin_attendance();
+    } catch (e, stackTrace) {
+      print('❌ خطأ في مزامنة حضور المدير: $e');
+      print('📍 Stack trace: $stackTrace');
+    }
   }
 
 }

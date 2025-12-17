@@ -394,14 +394,21 @@ class ResignationRequestsReportController extends GetxController {
   }
 
   Future<void> loadData() async {
+    Map<String, dynamic> requestData = {
+      "id_user": "all"
+    };
+    
+    // إضافة center_id إذا كان موجود
+    if (dataArg?['center_id'] != null) {
+      requestData["center_id"] = dataArg['center_id'].toString();
+    }
+    
     var res = await handleRequest(
       isLoading: loading,
       useDialog: false,
       immediateLoading: true,
       action: () async {
-        return await postData(Linkapi.select_resignation_requests, {
-          "id_user": "all"
-        });
+        return await postData(Linkapi.select_resignation_requests, requestData);
       }
     );
     

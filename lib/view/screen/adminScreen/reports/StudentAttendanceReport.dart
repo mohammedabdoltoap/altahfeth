@@ -531,6 +531,11 @@ class StudentAttendanceReportController extends GetxController {
     } else {
       requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
     }
+    
+    // إضافة center_id إذا كان موجود
+    if (dataArg?['center_id'] != null) {
+      requestData["center_id"] = dataArg['center_id'].toString();
+    }
 
     var res = await handleRequest(
       isLoading: loading,

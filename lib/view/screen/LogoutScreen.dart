@@ -110,14 +110,14 @@ class _LogoutScreenState extends State<LogoutScreen>
 
   void _confirmLogout() async {
     // Reverse all animations
-    await Future.wait([
-      _fadeController.reverse(),
-      _scaleController.reverse(),
-      _slideController.reverse(),
-    ]);
+    // await Future.wait([
+    //   _fadeController.reverse(),
+    //   _scaleController.reverse(),
+    //   _slideController.reverse(),
+    // ]);
 
     // Clear user data
-    data_user_globle.clear();
+    // data_user_globle.clear();
 
     // Navigate to login
     Get.offAll(() => Login(), transition: Transition.fadeIn);

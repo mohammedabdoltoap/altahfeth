@@ -1,7 +1,9 @@
 import 'package:althfeth/constants/function.dart';
 import 'package:althfeth/controller/home_cont.dart';
 import 'package:althfeth/view/screen/dilaysAndRevoews/review.dart';
+import 'package:althfeth/view/screen/studentScreen/pendingStudentsManagement.dart';
 import 'package:althfeth/view/screen/studentScreen/update_Student.dart';
+import 'package:althfeth/view/screen/teacherScreen/Curriculum.dart';
 import 'package:althfeth/view/screen/user_attendance.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -14,6 +16,7 @@ import 'dilaysAndRevoews/update_daily_report.dart';
 import 'dilaysAndRevoews/update_review.dart';
 import 'package:althfeth/constants/inline_loading.dart';
 import 'studentScreen/StudentPlanReport.dart';
+import '../widget/offline_indicator.dart';
 
 
 class Home extends StatelessWidget {
@@ -82,6 +85,9 @@ class Home extends StatelessWidget {
         ),
         child: Column(
           children: [
+            // 🌐 مؤشر الاتصال بالإنترنت
+            OfflineIndicator(),
+
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(10),
@@ -160,25 +166,44 @@ class Home extends StatelessWidget {
                 final student = controller.filteredStudents[index - 1];
                   return CardStudent(
                   student: student,
-                  absence: (){
-                    controller.select_absence_report(student["id_student"],student["name_student"]);
+                  showCurriculum: () {
 
+                    if(connectivityHelper.hasConnection) {
+                      Get.to(()=>Curriculum(),arguments: student);
+                    } else {
+                      mySnackbar("تنبيه", "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                    }
+
+                  },
+                  absence: (){
+                    if(connectivityHelper.hasConnection) {
+                      controller.select_absence_report(student["id_student"],student["name_student"]);
+                    } else {
+                      mySnackbar("تنبيه", "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                    }
                   },
                   reviewReports: (){
-                    controller.select_review_report(student["id_student"]);
-
+                    if(connectivityHelper.hasConnection) {
+                      controller.select_review_report(student["id_student"]);
+                    } else {
+                      mySnackbar("تنبيه", "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                    }
                   },
                   dailyReports: (){
-                    controller.select_daily_report(student["id_student"]);
+                    if(connectivityHelper.hasConnection) {
+                      controller.select_daily_report(student["id_student"]);
+                    } else {
+                      mySnackbar("تنبيه", "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                    }
                   },
                   add_rep: () async {
-                    if(!holidayData["is_holiday"]) {
+                    if(holidayData["is_holiday"] != true) {
 
                       // التحقق من تسجيل حضور الأستاذ نفسه أولاً
                       await controller.check_teacher_attendance();
                       
                       if (controller.statTeacherAttendance.value == null) {
-                        Navigator.pop(context); // إغلاق dialog
+
                         mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
                         return;
                       }
@@ -209,8 +234,7 @@ class Home extends StatelessWidget {
                         }
                         return;
                       }
-                      
-                      // إذا تم تسجيل الحضور، تابع العملية
+
                       await controller.getLastDailyReport(student["id_student"], student["id_level"]);
 
                       final studentArgs = {
@@ -231,6 +255,7 @@ class Home extends StatelessWidget {
                           message: "لقد تم اضافة تسميع لهذا الطالب اليوم ولايمكن اضافة اكثر من تسميع. هل تريد تعديل وتجاوز الاول؟",
                         );
                         if (confirm == true) {
+
                           Get.to(() => Update_Daily_Report(), arguments: {
                             "student": studentArgs,
                             "lastDailyReport": controller.lastDailyReport,
@@ -238,11 +263,11 @@ class Home extends StatelessWidget {
                         }
                       }
                     } else {
-                      mySnackbar("تنبية", "اجازة بمناسبة${holidayData["reason"]}");
+                      mySnackbar("تنبية", "اجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}");
                     }
                   },
                   review: () async {
-                    if(!holidayData["is_holiday"]) {
+                    if(holidayData["is_holiday"] != true) {
                       // التحقق من تسجيل حضور الأستاذ نفسه أولاً
                       await controller.check_teacher_attendance();
                       
@@ -309,21 +334,27 @@ class Home extends StatelessWidget {
                         mySnackbar("تنبيه", "حصل خطأ في الاتصال");
                       }
                     } else {
-                      mySnackbar("تنبية", "اجازة بمناسبة${holidayData["reason"]}");
+                      mySnackbar("تنبية", "اجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}");
                     }
                   },
                   updateData: (){
-
-                    Get.to(()=>UpdateStudent(),arguments: student);
-
+                    if(connectivityHelper.hasConnection) {
+                      Get.to(()=>UpdateStudent(),arguments: student);
+                    } else {
+                      mySnackbar("تنبيه", "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                    }
                   },
                   viewPlan: (){
-                    Get.to(() => StudentPlanReport(), arguments: {
-                      "id_student": student["id_student"],
-                      "name_student": student["name_student"],
-                      "current_level_id": student["id_level"],
-                      "current_stage_id": student["id_stages"],
-                    });
+                    if(connectivityHelper.hasConnection) {
+                      Get.to(() => StudentPlanReport(), arguments: {
+                        "id_student": student["id_student"],
+                        "name_student": student["name_student"],
+                        "current_level_id": student["id_level"],
+                        "current_stage_id": student["id_stages"],
+                      });
+                    } else {
+                      mySnackbar("تنبيه", "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+                    }
                   },
                 );
               },
@@ -338,6 +369,41 @@ class Home extends StatelessWidget {
     ));
   }
 
+  // Widget _buildQuickStats() {
+  //   return Container(
+  //     margin: const EdgeInsets.symmetric(horizontal: 4),
+  //     child: Row(
+  //       children: [
+  //         Expanded(
+  //           child: _buildStatCard(
+  //             "إجمالي الطلاب",
+  //             "${controller.students.length}",
+  //             Icons.people,
+  //             Colors.blue,
+  //           ),
+  //         ),
+  //         const SizedBox(width: 8),
+  //         Expanded(
+  //           child: _buildStatCard(
+  //             "نتائج البحث",
+  //             "${controller.filteredStudents.length}",
+  //             Icons.search,
+  //             Colors.green,
+  //           ),
+  //         ),
+  //         const SizedBox(width: 8),
+  //         Expanded(
+  //           child: _buildStatCard(
+  //             "الحلقة",
+  //             controller.dataArg["name_circle"]?.toString() ?? "",
+  //             Icons.school,
+  //             Colors.orange,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
   Widget _buildQuickStats() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -360,13 +426,55 @@ class Home extends StatelessWidget {
               Colors.green,
             ),
           ),
+
           const SizedBox(width: 8),
           Expanded(
-            child: _buildStatCard(
-              "الحلقة",
-              controller.dataArg["name_circle"]?.toString() ?? "",
-              Icons.school,
-              Colors.orange,
+            child: GestureDetector(
+              onTap: () {
+                if(connectivityHelper.hasConnection)
+      Get.to(() => PendingStudentsManagement(), arguments: controller.dataArg);
+                else{
+                  mySnackbar("تنبية", "تحقق من الاتصال بالانترنت ");
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.pending_actions, color: Colors.red, size: 24),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "المعلقين",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      "الطلاب الذي لم يتم قبولهم الي الان",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],

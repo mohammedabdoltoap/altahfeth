@@ -5,6 +5,8 @@ import '../../screen/studentScreen/addStudent.dart';
 import 'package:get/get.dart';
 import '../../../constants/customTextField.dart';
 import '../../../constants/appButton.dart';
+import '../../../globals.dart';
+import '../../../constants/function.dart';
 class SearchAndButtonAddStudent extends StatefulWidget {
   final TextEditingController? controller;
   const SearchAndButtonAddStudent({super.key, this.controller});
@@ -51,7 +53,11 @@ class _SearchAndButtonAddStudentState extends State<SearchAndButtonAddStudent> {
           child: AppButton(
             text: "إضافة طالب",
             onPressed: () {
-              Get.to(() => Addstudent(), arguments: homeCont.dataArg);
+              if(connectivityHelper.hasConnection) {
+                Get.to(() => Addstudent(), arguments: homeCont.dataArg);
+              } else {
+                mySnackbar("تنبيه", "من الضروري الاتصال بالإنترنت لإجراء هذه العملية");
+              }
             },
             height: 50,
           ),

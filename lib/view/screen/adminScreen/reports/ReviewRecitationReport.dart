@@ -668,6 +668,11 @@ class ReviewRecitationReportController extends GetxController {
     } else {
       requestData["date"] = DateFormat('yyyy-MM-dd').format(selectedDate.value!);
     }
+    
+    // إضافة id_center للمدير (لفلترة حلقات المركز فقط عند اختيار "الكل")
+    if (dataArg?['center_id'] != null) {
+      requestData["id_center"] = dataArg['center_id'].toString();
+    }
 
     var res = await handleRequest(
       isLoading: loading,

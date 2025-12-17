@@ -772,7 +772,7 @@ class _PromotionDrawer extends StatelessWidget {
 
   void _navigateIfNotHoliday(BuildContext context, Widget Function() pageBuilder) {
     if (holidayData["is_holiday"] == true) {
-      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"]}", type: "y");
+      mySnackbar("تنبيه", "إجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}", type: "y");
       return;
     }
     Get.back();

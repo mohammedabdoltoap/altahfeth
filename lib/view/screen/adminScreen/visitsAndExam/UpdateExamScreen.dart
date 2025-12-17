@@ -18,7 +18,7 @@ class UpdateExamScreen extends StatelessWidget {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(
-          "تعديل بيانات الطالب",
+          "تعديل درجات الطالب",
           style: AppTheme.headingMedium.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -118,13 +118,13 @@ class UpdateExamScreen extends StatelessWidget {
               onChanged: (_) => checkGrade(controller: controller.hifzMonthly, label: "درجة الحفظ"),
             ),
 
-            CustomTextField(
-              controller: controller.tilawaMonthly,
-              label: "درجة التلاوة",
-              hint: "أدخل درجة التلاوة",
-              keyboardType: TextInputType.number,
-              onChanged: (_) => checkGrade(controller: controller.tilawaMonthly, label: "درجة التلاوة"),
-            ),
+              CustomTextField(
+                controller: controller.tilawaMonthly,
+                label: "درجة التلاوة",
+                hint: "أدخل درجة التلاوة",
+                keyboardType: TextInputType.number,
+                onChanged: (_) => checkGrade(controller: controller.tilawaMonthly, label: "درجة التلاوة"),
+              ),
 
             const SizedBox(height: AppTheme.spacingLarge),
             _buildSectionHeader(
@@ -183,6 +183,15 @@ class UpdateExamScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: AppTheme.spacingXLarge),
+
+              CustomTextField(
+                controller: controller.markManhage,
+                label: "درجة المنهج المصاحب",
+                hint: "تقييم المنهج المصاحب",
+                keyboardType: TextInputType.number,
+                onChanged: (_) => checkGrade(controller: controller.markManhage, label: "المنهج المصاحب"),
+              ),
+
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -354,6 +363,7 @@ class UpdateExamController extends GetxController {
   TextEditingController hifzRevision = TextEditingController();
   TextEditingController tilawaRevision = TextEditingController();
   TextEditingController notes = TextEditingController();
+  TextEditingController markManhage = TextEditingController();
 
   var id_visit;
   @override
@@ -401,6 +411,7 @@ class UpdateExamController extends GetxController {
     hifzRevision.text = (s["hifz_revision"] == 0 ||s["hifz_revision"]==null ) ? "" : s["hifz_revision"].toString();
     tilawaRevision.text = (s["tilawa_revision"] == 0 || s["tilawa_revision"]==null) ? "" : s["tilawa_revision"].toString();
     notes.text = (s["notes"] == null) ? "" : s["notes"].toString();
+    markManhage.text = (s["markManhage"] == null) ? "" : s["markManhage"].toString();
   }
 
   Map<String, dynamic>? findSoura(int? id) {
@@ -504,6 +515,7 @@ class UpdateExamController extends GetxController {
         "from_id_aya_revision": fromAyaRevision.value,
         "to_id_aya_revision": toAyaRevision.value,
         "notes": notes.text.trim(),
+        "markManhage":markManhage.text.trim(),
       };
 
       // ===== إرسال البيانات =====

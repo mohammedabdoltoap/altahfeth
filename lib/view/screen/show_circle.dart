@@ -7,6 +7,7 @@ import '../../globals.dart';
 import 'package:althfeth/constants/color.dart';
 import 'package:althfeth/constants/inline_loading.dart';
 import '../widget/common/promotional_footer.dart';
+import '../widget/offline_indicator.dart';
 
 class Show_Circle extends StatelessWidget {
   final Show_CircleController show_circleController = Get.put(Show_CircleController());
@@ -22,6 +23,8 @@ class Show_Circle extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // 🌐 مؤشر الاتصال بالإنترنت
+            CompactOfflineIndicator(),
             const SizedBox(height: 20),
 
             Expanded(
@@ -69,9 +72,11 @@ class Show_Circle extends StatelessWidget {
                           "username": show_circleController.dataArg["username"],
                           "id_user": show_circleController.dataArg["id_user"],
                           "role": show_circleController.dataArg["role"],
+                          "circles":show_circleController.data_circle
                         };
                         holidayData.clear();
                         Get.to(() => Home(), arguments: args);
+
                       },
                       child: Container(
                         width: double.infinity,

@@ -1,20 +1,26 @@
 import 'package:althfeth/constants/function.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../api/LinkApi.dart';
 import '../../api/apiFunction.dart';
+import '../../globals.dart';
 
 
 class Daily_ReportController extends GetxController{
   var dataArg_Student;
   var dataArglastDailyReport = Rxn<Map<String, dynamic>>();
   TextEditingController markController=TextEditingController();
+  String formattedDate = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}";
+
 
   @override
   void onInit()async {
     dataArg_Student=Get.arguments["student"];
     dataArglastDailyReport=Get.arguments["lastDailyReport"];
+    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // استدعاء منفصل للطلبين - يعملان بشكل متوازي
       select_fromId_soura_with_to_soura();
@@ -26,20 +32,29 @@ class Daily_ReportController extends GetxController{
 
   var to_id_aya = Rx<int?>(null);
   var toSoura = Rxn<Map<String, dynamic>>();
-
   var datasoura = <Map<String, dynamic>>[].obs;
   Future select_fromId_soura_with_to_soura() async {
+    // 🌐 فحص الاتصال بالإنترنت
+    if (connectivityHelper.hasConnection)
+    await select_fromId_soura_with_to_souraOnline();
+    else
+     await select_fromId_soura_with_to_souraOfline();
+
+
+  }
+  Future select_fromId_soura_with_to_souraOnline()async{
+    // 📡 مع الاتصال: جلب من الخادم
+
     var res=await handleRequest(
       loadingMessage: "جاري تحميل سور القرآن...",
       isLoading: RxBool(false),
-        action: ()async {
-      return  await postData(Linkapi.select_fromId_soura_with_to_soura, {
-        "id_level":dataArg_Student["id_level"],
-        "id_soura":dataArglastDailyReport.value!["to_id_soura"],
-      });
-        },);
-
-     if(res==null) return;
+      action: ()async {
+        return  await postData(Linkapi.select_fromId_soura_with_to_soura, {
+          "id_level":dataArg_Student["id_level"],
+          "id_soura":dataArglastDailyReport.value!["to_id_soura"],
+        });
+      },);
+    if(res==null) return;
 
     if (res is! Map) {
       mySnackbar("خطأ", "فشل الاتصال بالخادم");
@@ -47,7 +62,9 @@ class Daily_ReportController extends GetxController{
     }
 
     if (res["stat"] == "ok") {
-      datasoura.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      final surahs = List<Map<String, dynamic>>.from(res["data"]);
+      datasoura.assignAll(surahs);
+
     } else if(res["stat"]=="no") {
       String errorMsg = res["msg"] ?? "لايوجد سور";
       mySnackbar("لايوجد", errorMsg);
@@ -55,8 +72,97 @@ class Daily_ReportController extends GetxController{
       String errorMsg = res["msg"] ?? "خطأ في جلب السور";
       mySnackbar("خطأ", errorMsg);
     }
+
+
   }
-  Future select_evaluations() async {
+
+  Future select_fromId_soura_with_to_souraOfline()async{
+
+    final res = await selectFromIdSouraWithToSoura(
+      db: db,
+      idLevel: dataArg_Student["id_level"],
+      idSoura: dataArglastDailyReport.value!["to_id_soura"],
+    );
+
+    if (res["stat"] == "ok") {
+      final surahs = List<Map<String, dynamic>>.from(res["data"]);
+      datasoura.assignAll(surahs);
+
+
+    } else if(res["stat"]=="no") {
+      String errorMsg = res["msg"] ?? "لايوجد سور";
+      mySnackbar("لايوجد", errorMsg);
+    } else {
+      String errorMsg = res["msg"] ?? "خطأ في جلب السور";
+      mySnackbar("خطأ", errorMsg);
+    }
+
+  }
+  Future<Map<String, dynamic>> selectFromIdSouraWithToSoura({
+    required Database db,
+    required int idLevel,
+    required int idSoura,
+  }) async {
+    try {
+      // ================================
+      // 1) تنفيذ الاستعلام (JOIN + BETWEEN)
+      // ================================
+      List<Map<String, dynamic>> result = await db.rawQuery("""
+      SELECT sq.*
+      FROM level l
+      JOIN sour_quran sq 
+        ON sq.id_soura BETWEEN ? AND l.to_id_soura
+      WHERE l.id_level = ?
+    """, [idSoura, idLevel]);
+
+      // ================================
+      // 2) إذا فيه بيانات
+      // ================================
+      if (result.isNotEmpty) {
+        return {
+          "stat": "ok",
+          "data": result,
+        };
+      }
+
+      // ================================
+      // 3) إذا لا يوجد بيانات
+      // ================================
+      return {
+        "stat": "no",
+      };
+
+    } catch (e) {
+      // ================================
+      // 4) في حالة حدوث خطأ
+      // ================================
+      return {
+        "stat": "error",
+        "msg": "حدث خطأ أثناء تنفيذ الاستعلام: $e",
+      };
+    }
+  }
+
+ Future select_evaluations() async {
+    // 🌐 فحص الاتصال بالإنترنت
+    if (connectivityHelper.hasConnection) {
+     await select_evaluationsOnline();
+    }else{
+      await select_evaluationsOfline();
+    }
+
+
+  }
+ Future select_evaluationsOfline()async{
+
+   List d= await db.rawQuery("select * from evaluations");
+   if(d.isNotEmpty)
+     dataEvaluations.assignAll(List.from(d));
+
+ }
+  Future select_evaluationsOnline()async{
+
+    // 📡 مع الاتصال: جلب من الخادم
     final res = await handleRequest<dynamic>(
       isLoading: RxBool(false),
       // loadingMessage: "جاري تحميل التقييمات...",
@@ -73,20 +179,24 @@ class Daily_ReportController extends GetxController{
     }
 
     if (res["stat"] == "ok") {
-      dataEvaluations.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      final evaluations = List<Map<String, dynamic>>.from(res["data"]);
+      dataEvaluations.assignAll(evaluations);
+
     } else {
       String errorMsg = res["msg"] ?? "خطأ في جلب التقييمات";
       mySnackbar("خطأ", errorMsg);
     }
   }
 
-
   RxBool isaddDailyRepor=false.obs;
+
+
+  //add
  Future addDailyRepor()async{
 
    // فحص المدخلات قبل البدء
    if(toSoura.value.isNull){
-      mySnackbar("قم بتحيد نظاق النهاية", "حدد سورة النهاية");
+      mySnackbar("قم بتحيد نطاق النهاية", "حدد سورة النهاية");
       return;
     }
     if(to_id_aya.value.isNull){
@@ -95,11 +205,15 @@ class Daily_ReportController extends GetxController{
     }
 
    if(dataArglastDailyReport.value?["to_id_soura"]==toSoura.value!["id_soura"] && dataArglastDailyReport.value?["to_id_aya"]>=to_id_aya.value){
-     mySnackbar("قم بتحديد نظاق الايات بشكل صحيح ", "يجب ان يكون رقم ايه النهائة اكبر من البداية(ترتيب الايات ) ");
+     mySnackbar("قم بتحديد نطاق الايات بشكل صحيح ", "يجب ان يكون رقم ايه النهائة اكبر من البداية(ترتيب الايات ) ");
      return;
    }
    if(markController.text.isEmpty){
      mySnackbar("تنبية", "قم بادخال الدرجة");
+     return;
+   }
+   if((int.tryParse(markController.text) ?? -1) <0){
+     mySnackbar("تنبية", "قم بادخال التقييم بشكل صحيح بين 0 و 100 ");
      return;
    }
    if(selectedEvaluations.value.isNull) {
@@ -108,7 +222,7 @@ class Daily_ReportController extends GetxController{
    }
 
    // إعداد البيانات
-   Map data = {
+   Map<String, Object?> data = {
      "id_student": dataArg_Student["id_student"],
      "from_id_soura": dataArglastDailyReport.value?["to_id_soura"],
      "from_id_aya": dataArglastDailyReport.value?["to_id_aya"],
@@ -118,9 +232,35 @@ class Daily_ReportController extends GetxController{
      "id_circle": dataArg_Student["id_circle"],
      "mark":markController.text,
      "id_evaluation":selectedEvaluations.value,
+     "date":formattedDate
    };
 
-   // استخدام handleRequest للإرسال
+   if (connectivityHelper.hasConnection) {
+     await addDailyReporOnline(data);
+   }
+   else{
+     await addDailyReporOfline(data);
+   }
+
+
+ }
+  Future addDailyReporOfline(data)async {
+
+   data["stat"]=0;
+
+   // print("data=======${data}");
+   int res=await db.insert("daily_report", data);
+   if(res>0){
+     Get.back();
+     mySnackbar("نجاح", "تم الاضافة بنجاح محليا ... يرجى الاتصال بالانترنت في اقرب وقت لمزامنة البيانات ", type: "g");
+   }else{
+     mySnackbar("فشل", "حصل خطا في حفظ البيانات حاول مجددا او قم بالاتصال بالانترنت ");
+   }
+
+  }
+ Future addDailyReporOnline(data)async{
+
+   // 📡 مع الاتصال: إرسال للخادم
    final res = await handleRequest(
      isLoading: RxBool(false),
      loadingMessage: "جاري حفظ التسميع...",
@@ -140,14 +280,55 @@ class Daily_ReportController extends GetxController{
    }
 
    if (res["stat"] == "ok") {
-     Get.back();
-     mySnackbar("نجاح", "تم الاضافة بنجاح", type: "g");
+     try {
+       // الحصول على id_daily_report من السيرفر
+       final serverId = res["data"];
+       
+       if (serverId != null) {
+         // تحويل إلى int
+         int? idDailyReport;
+         if (serverId is int) {
+           idDailyReport = serverId;
+         } else if (serverId is String) {
+           idDailyReport = int.tryParse(serverId);
+         }
+
+         if (idDailyReport != null && idDailyReport > 0) {
+           // تحديث البيانات للحفظ المحلي
+           data["id_daily_report"] = idDailyReport;
+
+           data["stat"] = 1; // 1 = متزامن
+
+           // حفظ في قاعدة البيانات المحلية
+           int result = await db.insert("daily_report", data);
+           
+           if (result > 0) {
+             print('✅ تم حفظ التقرير محلياً بنجاح - id_local: $result, id_daily_report: $idDailyReport');
+           } else {
+             print('⚠️ فشل الحفظ المحلي - النتيجة: $result');
+           }
+         } else {
+           print('⚠️ ID غير صالح من السيرفر: $serverId');
+         }
+       } else {
+         print('⚠️ لم يتم إرجاع ID من السيرفر');
+       }
+
+       Get.back();
+       mySnackbar("نجاح", "تم الاضافة بنجاح", type: "g");
+     } catch (e, stackTrace) {
+       print('❌ خطأ في حفظ التقرير محلياً: $e');
+       print('📍 Stack trace: $stackTrace');
+       Get.back();
+       mySnackbar("نجاح", "تم الإضافة للخادم بنجاح (لم يتم الحفظ محلياً)", type: "g");
+     }
    } else {
      // قراءة رسالة الخطأ التفصيلية من الـAPI
      String errorMsg = res["msg"] ?? "حصل خطأ غير محدد";
      mySnackbar("تحذير", errorMsg);
    }
  }
+
 
    RxList<Map<String,dynamic>> dataEvaluations=<Map<String,dynamic>>[].obs;
   RxnInt selectedEvaluations=RxnInt(null);

@@ -333,7 +333,6 @@ class StudentsListUpdateController extends GetxController {
           });
         },
       );
-
       if (res == null) return;
       if (res is! Map) {
         mySnackbar("خطأ", "فشل الاتصال بالخادم");
@@ -342,7 +341,7 @@ class StudentsListUpdateController extends GetxController {
 
       if (res["stat"] == "ok") {
         students.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-        print("students====${students}");
+
       } else if (res["stat"] == "no") {
         mySnackbar("تنبيه", "لا يوجد طلاب في هذه الحلقة");
       } else if (res["stat"] == "error") {

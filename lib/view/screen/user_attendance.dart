@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../constants/ErrorRetryWidget.dart';
 import '../../constants/inline_loading.dart';
 import '../../controller/User_AttendanceController.dart';
+import '../widget/offline_indicator.dart';
 
 class User_Attendance extends StatelessWidget {
   final User_AttendanceController controller = Get.put(User_AttendanceController());
@@ -30,10 +31,10 @@ class User_Attendance extends StatelessWidget {
          if(controller.lodingUsersAttendanceToday.value)
            return InlineLoading( message: "تحميل الحضور والانصراف",indicatorSize: 40,);
 
-         if(controller.data_attendance_today.isEmpty && !controller.isTodayNew.value)
-           return ErrorRetryWidget(
-             onRetry: () => controller.select_users_attendance_today(),
-           );
+         // if(controller.data_attendance_today.isEmpty && !controller.isTodayNew.value)
+         //   return ErrorRetryWidget(
+         //     onRetry: () => controller.select_users_attendance_today(),
+         //   );
 
         return Padding(
           padding: const EdgeInsets.all(20.0),
@@ -43,6 +44,7 @@ class User_Attendance extends StatelessWidget {
               children: [
                 const SizedBox(height: 10),
 
+                OfflineIndicator(),
                 // 🔹 التاريخ واليوم الحالي بالعربية
                 Text(
                   controller.todayArabic,

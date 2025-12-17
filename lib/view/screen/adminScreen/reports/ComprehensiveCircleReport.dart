@@ -302,11 +302,18 @@ class ComprehensiveCircleReportController extends GetxController {
 
     loading.value = true;
     try {
-      final response = await postData(Linkapi.select_comprehensive_circle_report, {
+      Map<String, dynamic> requestData = {
         "id_circle": selectedCircle.value,
         "start_date": DateFormat('yyyy-MM-dd', 'en').format(startDate.value!),
         "end_date": DateFormat('yyyy-MM-dd', 'en').format(endDate.value!),
-      });
+      };
+      
+      // إضافة center_id إذا كان موجود
+      if (dataArg?['center_id'] != null) {
+        requestData["center_id"] = dataArg['center_id'].toString();
+      }
+      
+      final response = await postData(Linkapi.select_comprehensive_circle_report, requestData);
 
       if (response == null || response is! Map) {
         mySnackbar("خطأ", "فشل الاتصال بالخادم");

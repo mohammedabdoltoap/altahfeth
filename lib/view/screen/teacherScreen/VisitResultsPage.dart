@@ -463,7 +463,7 @@ class VisitResultsController extends GetxController {
   var dataArg;
   RxList<Map<String, dynamic>> visits = <Map<String, dynamic>>[].obs;
   RxBool loadingVisits = false.obs;
-  RxBool noHasData = false.obs;
+  RxBool noHasData = true.obs;
 
   @override
   void onInit() {
@@ -503,6 +503,7 @@ class VisitResultsController extends GetxController {
       visits.clear();
       noHasData.value=true;
     }
+
   }
 
   Future<void> viewVisitResults(Map<String, dynamic> visit) async {
@@ -592,8 +593,10 @@ class VisitResultsDetailsPage extends StatelessWidget {
   }
 
   Widget _buildResultCard(Map<String, dynamic> result) {
+    print("result========${result}");
     final hasMonthly = result["from_id_soura_monthly"] != null;
     final hasRevision = result["from_id_soura_revision"] != null;
+    final hasManhage = result["markManhage"] != null && result["markManhage"].toString().isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
@@ -667,9 +670,9 @@ class VisitResultsDetailsPage extends StatelessWidget {
                   if (hasMonthly) ...[
                     Expanded(
                       child: _buildTestSection(
-                        "الاختبار الشهري",
+                        "الاختبار الشهري للحفظ",
                         Icons.calendar_month_outlined,
-                        AppTheme.reportColors[1],
+                        AppTheme.reportColors[0],
                         result["from_soura_monthly_name"],
                         result["to_soura_monthly_name"],
                         result["from_id_aya_monthly"],
@@ -686,7 +689,7 @@ class VisitResultsDetailsPage extends StatelessWidget {
                       child: _buildTestSection(
                         "المراجعة",
                         Icons.refresh_outlined,
-                        AppTheme.reportColors[3],
+                        AppTheme.reportColors[1],
                         result["from_soura_revision_name"],
                         result["to_soura_revision_name"],
                         result["from_id_aya_revision"],
@@ -698,6 +701,14 @@ class VisitResultsDetailsPage extends StatelessWidget {
                   ],
                 ],
               ),
+              
+              // درجة المنهج المصاحب
+              if (hasManhage) ...[
+                const SizedBox(height: AppTheme.spacingMedium),
+                _buildManhageSection(
+                  result["markManhage"],
+                ),
+              ],
             ] else ...[
               Container(
                 padding: const EdgeInsets.all(AppTheme.spacingMedium),
@@ -804,6 +815,7 @@ class VisitResultsDetailsPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: _getMarkColor(hifzMark),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       "حفظ: $hifzMark",
@@ -824,6 +836,7 @@ class VisitResultsDetailsPage extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: _getMarkColor(tilawaMark),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       "تلاوة: $tilawaMark",
@@ -838,6 +851,58 @@ class VisitResultsDetailsPage extends StatelessWidget {
                 ),
               ],
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildManhageSection(dynamic markManhage) {
+    final color = AppTheme.reportColors[3];
+    
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingMedium),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(Icons.menu_book_outlined, color: color, size: 16),
+          ),
+          const SizedBox(width: AppTheme.spacingSmall),
+          Expanded(
+            child: Text(
+              "المنهج المصاحب",
+              style: AppTheme.bodyMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: _getMarkColor(markManhage),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              "$markManhage",
+              style: AppTheme.bodyMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -1015,7 +1080,7 @@ class VisitResultsDetailsController extends GetxController {
               pw.Directionality(
                 textDirection: pw.TextDirection.rtl,
                 child: pw.Table.fromTextArray(
-                  headers: ['الحالة', 'تلاوة مراجعة', 'حفظ مراجعة', 'تلاوة شهرية', 'حفظ شهري', 'اسم الطالب', '#'],
+                  headers: ['الحالة', 'منهج مصاحب', 'تلاوة مراجعة', 'حفظ مراجعة', 'تلاوة شهرية', 'حفظ شهري', 'اسم الطالب', '#'],
                   data: results.asMap().entries.map((entry) {
                     final index = entry.key + 1;
                     final result = entry.value;
@@ -1024,12 +1089,14 @@ class VisitResultsDetailsController extends GetxController {
                     final tilawaMonthly = result["tilawa_monthly"]?.toString() ?? '-';
                     final hifzRevision = result["hifz_revision"]?.toString() ?? '-';
                     final tilawaRevision = result["tilawa_revision"]?.toString() ?? '-';
+                    final markManhage = result["markManhage"]?.toString() ?? '-';
                     
                     final isTested = hifzMonthly != '-' || tilawaMonthly != '-' || 
-                                   hifzRevision != '-' || tilawaRevision != '-';
+                                   hifzRevision != '-' || tilawaRevision != '-' || markManhage != '-';
                     
                     return [
                       isTested ? 'مختبر' : 'غير مختبر',
+                      markManhage,
                       tilawaRevision,
                       hifzRevision,
                       tilawaMonthly,
@@ -1040,14 +1107,14 @@ class VisitResultsDetailsController extends GetxController {
                   }).toList(),
                   border: pw.TableBorder.all(width: 0.5, color: PdfColors.teal300),
                   headerStyle: pw.TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: pw.FontWeight.bold,
                     color: PdfColors.white,
                   ),
                   headerDecoration: const pw.BoxDecoration(
                     color: PdfColors.teal,
                   ),
-                  cellStyle: const pw.TextStyle(fontSize: 9),
+                  cellStyle: const pw.TextStyle(fontSize: 8),
                   cellAlignment: pw.Alignment.center,
                   cellHeight: 22,
                   headerHeight: 28,

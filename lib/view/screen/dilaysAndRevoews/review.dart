@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
@@ -55,8 +56,8 @@ class Review extends StatelessWidget {
 
               SouraSelector(),
               CustomTextField(
-                controller: controller.markController, 
-                label: "الدرجة", 
+                controller: controller.markController,
+                label: "الدرجة",
                 hint: "أدخل الدرجة (الحد الأقصى 100)",
                 keyboardType: TextInputType.number,
                 maxValue: 100, // ✅ لا يقبل أكثر من 100
@@ -64,14 +65,14 @@ class Review extends StatelessWidget {
               Obx(() {
                 final items = controller.dataEvaluations.toList();
                 return CustomDropdownField(
-                  label: "التقييم", 
-                  items: items,
-                  value: controller.selectedEvaluations.value, 
-                  onChanged: (val){
-                    controller.selectedEvaluations.value=val;
-                  }, 
-                  valueKey: "id_evaluation", 
-                  displayKey: "name_evaluation"
+                    label: "التقييم",
+                    items: items,
+                    value: controller.selectedEvaluations.value,
+                    onChanged: (val){
+                      controller.selectedEvaluations.value=val;
+                    },
+                    valueKey: "id_evaluation",
+                    displayKey: "name_evaluation"
                 );
               }),
 
@@ -115,32 +116,58 @@ class SouraSelector extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // التاريخ حق المراجعة
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.teal.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: controller.dataLastReview.value?["date"]!=null?
-                        Text(
-                          "اخر مراجعة بتاريخ : ${controller.dataLastReview.value?["date"]}",
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.teal.shade800,
-                            fontWeight: FontWeight.w500,
+                    // الملاحظة بشكل واضح داخل Card البداية
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.teal.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "ملاحظة:",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.teal.shade800,
+                            ),
                           ),
-                        ): Text(
-                          "اول مراجعة لهذا الطالب اليوم",
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Colors.teal.shade800,
-                            fontWeight: FontWeight.w500,
+                          const SizedBox(height: 4),
+                          Text(
+                            controller.dataLastReview.value?["date"]!=null
+                                ? "اخر مراجعة للطالب كان الي سورة ${controller.dataLastReview.value?["to_soura_name"]}، ايه رقم ${controller.dataLastReview.value?["to_id_aya"].toString()}"
+                                : "لا توجد مراجعة سابقة لهذا الطالب اليوم",
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.teal.shade700,
+                            ),
                           ),
-                        ),
+                          controller.dataLastReview.value?["date"]!=null?
+                          Text(
+                            "  بتاريخ : ${controller.dataLastReview.value?["date"]}",
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.teal.shade800,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ): Text(
+                            "اول مراجعة لهذا الطالب اليوم",
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: Colors.teal.shade800,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+
+                        ],
                       ),
                     ),
+
                     Text(
                       "نطاق البداية",
                       style: TextStyle(
@@ -152,21 +179,78 @@ class SouraSelector extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    // عرض السورة
-                    ReadOnlyTextField(
-                      value: controller.dataLastReview.value?["to_soura_name"],
-                      label: "من سورة",
-                      icon: Icons.play_arrow,
-                      color: primaryGreen,
-                    ),
+                    Obx(() {
+                      return DropdownButtonFormField<Map<String, dynamic>>(
+                        decoration: InputDecoration(
+                          prefixIcon:
+                          const Icon(Icons.play_arrow, color: Colors.teal),
+                          labelText: "من سورة",
+                          labelStyle: TextStyle(color: Colors.teal),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        value: controller.fromSoura.value,
+                        items: controller.datasoura.map((soura) {
+                          return DropdownMenuItem<Map<String, dynamic>>(
+                            value: soura,
+                            child: Text(
+                              "${soura['soura_name']} (${soura['soura_no']})",
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+
+                          controller.fromSoura.value = val;
+                          controller.from_id_aya.value = null;
 
 
-                    const SizedBox(height: 10),
-                    ReadOnlyTextField(
-                      value: controller.dataLastReview.value?["to_id_aya"].toString(),
-                      label: "من الاية",
-                      icon: Icons.format_list_numbered,
+                        },
+                      );
+                    }
                     ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    Obx(() {
+                      // لو ما تم اختيار سورة ما نعرضش أي حاجة
+                      if (controller.fromSoura.value == null) {
+                        return const SizedBox(); // أو ممكن ترجع Text("اختر سورة أولاً")
+                      }
+
+                      // نحصل على عدد الآيات من السورة المختارة
+                      final ayatCount = int.tryParse(controller.fromSoura.value?['ayat_count']
+                          .toString() ?? "0") ?? 0;
+
+                      // نبني القائمة من 0 إلى ayatCount
+                      final ayatItems = List.generate(
+                        ayatCount, // بدون +1 لأننا سنبدأ من 1
+
+                            (index) => DropdownMenuItem<int>(
+                          value: index + 1, // نخليها تبدأ من 1 بدل 0
+                          child: Text((index + 1).toString()),
+                        ),
+                      );
+
+                      return DropdownButtonFormField<int>(
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.format_list_numbered,
+                              color: Colors.teal),
+                          labelText: "الي الآية رقم",
+                          labelStyle: TextStyle(color: Colors.teal),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        value: controller.from_id_aya.value,
+                        items: ayatItems,
+                        onChanged: (val) {
+                          controller.from_id_aya.value = val;
+
+                        },
+                      );
+                    }),
 
                   ],
                 ),
@@ -217,7 +301,8 @@ class SouraSelector extends StatelessWidget {
                           controller.to_id_aya.value = null;
                         },
                       );
-                    }),
+                    }
+                    ),
                     SizedBox(
                       height: 10,
                     ),
@@ -260,6 +345,7 @@ class SouraSelector extends StatelessWidget {
                         },
                       );
                     }),
+
                   ],
 
                 ),

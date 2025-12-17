@@ -63,8 +63,10 @@ class Attendance extends StatelessWidget {
                     
                     // تحديد حالة الطالب: 1 = حاضر، 0 = غائب، 2 = غائب بعذر
                     int attendanceStatus = student["status"] is bool 
-                        ? (student["status"] ? 1 : 0) 
-                        : (student["status"] ?? 0);
+                        ? (student["status"] ? 1 : 0)
+                        : student["status"] is String
+                            ? int.tryParse(student["status"]) ?? 0
+                            : (student["status"] ?? 0);
                     
                     return Card(
                       elevation: 3,

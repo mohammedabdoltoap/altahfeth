@@ -132,11 +132,12 @@ class CircleReportController extends GetxController {
         isLoading.value = false;
         return;
       }
-      
-      print("requestData=====${requestData}");
-      final res = await postData(apiEndpoint, requestData);
-      print("res=====${res}");
-      
+
+      final res =await handleRequest(isLoading: RxBool(false), action: ()async {
+      return await postData(apiEndpoint, requestData);
+
+      },);
+
       if (res != null && res is Map) {
         if (res["stat"] == "ok") {
           reportData.assignAll(List<Map<String, dynamic>>.from(res["data"] ?? []));
@@ -153,7 +154,7 @@ class CircleReportController extends GetxController {
           mySnackbar("خطأ", res["msg"] ?? "حدث خطأ");
         }
       } else {
-        mySnackbar("خطأ", "فشل الاتصال بالخادم");
+        return;
       }
     } catch (e) {
       print("e.toString()========${e.toString()}");

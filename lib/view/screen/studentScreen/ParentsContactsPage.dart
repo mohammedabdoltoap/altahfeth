@@ -542,6 +542,9 @@ class ParentsContactsController extends GetxController {
           "id_circle": dataArg?["id_circle"]?.toString(),
       },)  ;
       });
+      if(response == null){
+        return;
+      }
 
       // ✅ التحقق من النتيجة
       if (response["stat"] == "ok") {

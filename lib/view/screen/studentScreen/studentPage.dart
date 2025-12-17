@@ -1,8 +1,11 @@
 import 'package:althfeth/constants/appButton.dart';
 import 'package:althfeth/constants/customAppBar.dart';
+import 'package:althfeth/view/screen/login.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../constants/function.dart';
 import '../../../controller/studentControllers/StudentPageController.dart';
+import '../../../globals.dart';
 import 'StudentPlanReport.dart';
 import '../../widget/common/promotional_footer.dart';
 
@@ -25,11 +28,17 @@ class StudentPage extends StatelessWidget {
             content: const Text('هل أنت متأكد من الخروج من التطبيق؟'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
+                onPressed: () {
+                  Get.back();
+                  _logout();
+                },
                 child: const Text('إلغاء'),
               ),
               TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: () {
+                  Get.back();
+                  _logout();
+                },
                 child: const Text('خروج', style: TextStyle(color: Colors.red)),
               ),
             ],
@@ -91,7 +100,16 @@ class StudentPage extends StatelessWidget {
     );
   }
 
+  void _logout() {
+    // مسح البيانات المحفوظة
+    data_user_globle.clear();
 
+    // العودة لصفحة تسجيل الدخول
+    Get.offAll(() => Login());
+
+    // عرض رسالة تأكيد
+    mySnackbar("تم بنجاح", "تم تسجيل الخروج بنجاح", type: "g");
+  }
   Widget _buildInfoRow(
     IconData icon,
     String label,

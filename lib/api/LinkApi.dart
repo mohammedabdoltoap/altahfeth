@@ -1,7 +1,7 @@
 class Linkapi {
   // ==================== SERVER URL ====================
-  static const String server = "https://masart.io/alt/";
-  // static const String server = "http://192.168.60.65/alt/";
+  static const String server = "https://masart.io/alt2/";
+  // static const String server = "http://192.168.113.65/alt/";
 
 
   // ==================== STUDENT APIs ====================
@@ -9,6 +9,11 @@ class Linkapi {
   // DELETE
   static const String delet_student_skills = "${server}student/delete.php?mark=delet_student_skills";
 
+
+  static const String delete_pending_student = "${server}student/delete.php?mark=delete_pending_student";
+
+  static const String get_pending_students = "${server}student/select.php?mark=get_pending_students";
+  static const String update_StudentPendeng = "${server}student/update.php?mark=update_StudentPendeng";
 
 
 
@@ -55,9 +60,14 @@ class Linkapi {
   static const String get_circle = "${server}users/select.php?mark=get_circle";
   static const String select_fromId_soura_with_to_soura = "${server}users/select.php?mark=select_fromId_soura_with_to_soura";
   static const String getLastDailyReport = "${server}users/select.php?mark=getLastDailyReport";
+  static const String getLastDailyReportByStudent = "${server}users/select.php?mark=getLastDailyReportByStudent";
   static const String get_users = "${server}users/select.php?mark=get_users";
   static const String getLastReview = "${server}users/select.php?mark=getLastReview";
+  static const String getLastReviewByStudent = "${server}users/select.php?mark=getLastReviewByStudent";
+  static const String getLastAttendanceByStudent = "${server}users/select.php?mark=getLastAttendanceByStudent";
   static const String select_Holiday_Days = "${server}users/select.php?mark=select_Holiday_Days";
+  static const String get_special_days = "${server}users/select.php?mark=get_special_days";
+  static const String get_weekend_days = "${server}users/select.php?mark=get_weekend_days";
   static const String select_users_attendance_today = "${server}users/select.php?mark=select_users_attendance_today";
   static const String select_all_users_attendance_by_date = "${server}users/select.php?mark=select_all_users_attendance_by_date";
   static const String select_visits_type_months_years = "${server}users/select.php?mark=select_visits_type_months_years";
@@ -76,7 +86,7 @@ class Linkapi {
   static const String select_student_attendance = "${server}users/select.php?mark=select_student_attendance";
   static const String select_daily_recitation_report = "${server}users/select.php?mark=select_daily_recitation_report";
   static const String select_review_recitation_report = "${server}users/select.php?mark=select_review_recitation_report";
-  static const String select_admin_absence_report = "${server}users/select.php?mark=select_absence_report";
+  static const String select_admin_absence_report = "${server}users/select.php?mark=select_admin_absence_report";
   static const String select_comprehensive_student_performance = "${server}users/select.php?mark=select_comprehensive_student_performance";
   static const String select_circle_statistics = "${server}users/select.php?mark=select_circle_statistics";
   static const String select_comprehensive_circle_report = "${server}users/select.php?mark=select_comprehensive_circle_report";
@@ -94,6 +104,28 @@ class Linkapi {
   static const String select_data_visit_previous = "${server}users/select.php?mark=select_data_visit_previous";
   static const String select_notes_for_teacher_by_circle = "${server}users/select.php?mark=select_notes_for_teacher_by_circle";
   static const String select_notes_for_teacher_forVisit = "${server}users/select.php?mark=select_notes_for_teacher_forVisit";
+  static const String selecDataCenter = "${server}users/select.php?mark=selecDataCenter";
+  static const String select_employee_by_user = "${server}users/select.php?mark=select_employee_by_user";
+
+  // ==================== CURRICULUM (المنهج) APIs ====================
+  static const String selectHadiths = "${server}users/select.php?mark=selectHadiths";
+  static const String selectTuhfatAlAtfal = "${server}users/select.php?mark=selectTuhfatAlAtfal";
+  static const String selectMathurat = "${server}users/select.php?mark=selectMathurat";
+  static const String selectLastHadith = "${server}users/select.php?mark=selectLastHadith";
+  static const String selectLastTuhfatAlAtfal = "${server}users/select.php?mark=selectLastTuhfatAlAtfal";
+  static const String selectLastMathurat = "${server}users/select.php?mark=selectLastMathurat";
+  static const String saveStudentHadithRange = "${server}users/insert.php?mark=saveStudentHadithRange";
+  static const String saveStudentTuhfatAlAtfalRange = "${server}users/insert.php?mark=saveStudentTuhfatAlAtfalRange";
+  static const String saveStudentMahuratRange = "${server}users/insert.php?mark=saveStudentMahuratRange";
+  static const String updateStudentHadithRange = "${server}users/update.php?mark=updateStudentHadithRange";
+  static const String updateStudentMathurRange = "${server}users/update.php?mark=updateStudentMathurRange";
+  static const String updateStudentTuhfatRange = "${server}users/update.php?mark=updateStudentTuhfatRange";
+  
+  // ==================== ADAB (الآداب) APIs ====================
+  static const String selectAdab = "${server}users/select.php?mark=selectAdab";
+  static const String selectLastAdab = "${server}users/select.php?mark=selectLastAdab";
+  static const String saveStudentAdabRange = "${server}users/insert.php?mark=saveStudentAdabRange";
+  static const String updateStudentAdabRange = "${server}users/update.php?mark=updateStudentAdabRange";
 
   // ==================== PROMOTION (ترفيع) APIs ====================
   static const String select_centers = "${server}users/select.php?mark=select_centers";
@@ -109,7 +141,11 @@ class Linkapi {
   static const String addDailyReport = "${server}users/insert.php?mark=addDailyReport";
   static const String addResignation = "${server}users/insert.php?mark=addResignation";
   static const String addReview = "${server}users/insert.php?mark=addReview";
+  static const String addAttendance = "${server}users/insert.php?mark=add_check_in_time_usersAttendance";
   static const String add_check_in_time_usersAttendance = "${server}users/insert.php?mark=add_check_in_time_usersAttendance";
+  static const String add_admin_check_in = "${server}users/insert.php?mark=add_admin_check_in";
+  static const String add_admin_check_out = "${server}users/insert.php?mark=add_admin_check_out";
+  static const String select_admin_attendance_today = "${server}users/select.php?mark=select_admin_attendance_today";
   static const String add_check_out_time_usersAttendance = "${server}users/insert.php?mark=add_check_out_time_usersAttendance";
   static const String add_substitute_attendance = "${server}users/insert.php?mark=add_substitute_attendance";
   static const String select_available_substitute_teachers = "${server}users/select.php?mark=select_available_substitute_teachers";
@@ -136,4 +172,11 @@ class Linkapi {
   static const String updateReview = "${server}users/update.php?mark=updateReview";
   static const String update_visit_exam_result = "${server}users/update.php?mark=update_visit_exam_result";
   static const String update_notes_for_teacher = "${server}users/update.php?mark=update_notes_for_teacher";
+  static const String update_employee_profile = "${server}users/update.php?mark=update_employee_profile";
+
+
+    //apiLocal
+  static const String select_sour_quranAll = "${server}apiLocal/select.php?mark=select_sour_quranAll";
+  static const String select_levelsAll = "${server}apiLocal/select.php?mark=select_levelsAll";
+
 }

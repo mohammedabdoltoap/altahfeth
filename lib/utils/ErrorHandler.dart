@@ -274,7 +274,14 @@ class ErrorHandler {
     // منع تكرار معالجة نفس الخطأ
     String errorKey = '${error.runtimeType}_${error.toString().hashCode}';
     if (_handledErrors.contains(errorKey)) return;
-    _handledErrors.add(errorKey);
+    
+    // استخدم List محلية بدلاً من محاولة تعديل Set مباشرة
+    try {
+      _handledErrors.add(errorKey);
+    } catch (e) {
+      // إذا فشل الإضافة، تابع بدون إضافة
+      developer.log('Failed to add error key: $e');
+    }
     
     if (showSnackbar) {
       _safeShowSnackbar(message);

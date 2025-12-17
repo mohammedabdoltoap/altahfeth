@@ -434,15 +434,22 @@ class LeaveRequestsReportController extends GetxController {
   }
 
   Future<void> loadData() async {
+    Map<String, dynamic> requestData = {
+      "id_user": "all" // لجلب جميع الطلبات للأدمن
+    };
+    
+    // إضافة center_id إذا كان موجود
+    if (dataArg?['center_id'] != null) {
+      requestData["center_id"] = dataArg['center_id'].toString();
+    }
+    
     var res = await handleRequest(
       isLoading: loading,
       useDialog: true,
       immediateLoading: true,
       loadingMessage: "جميع لطلبات الاجازه",
       action: () async {
-        return await postData(Linkapi.select_leave_requests, {
-          "id_user": "all" // لجلب جميع الطلبات للأدمن
-        });
+        return await postData(Linkapi.select_leave_requests, requestData);
       }
     );
     

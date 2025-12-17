@@ -650,10 +650,12 @@ class StudentPageController extends GetxController{
       'الحفظ (التلاوة)',
       'الحفظ (الحفظ)',
       'نطاق الحفظ',
+      'المنهج المصاحب',
       'الحلقة',
       'الشهر',
       'السنة',
       'التاريخ',
+
     ];
 
     final rows = filteredData.map((r) {
@@ -670,10 +672,13 @@ class StudentPageController extends GetxController{
         (r['from_soura_monthly_name'] != null && r['to_soura_monthly_name'] != null)
             ? '${r['from_soura_monthly_name']} (${r['from_id_aya_monthly']?.toString() ?? '0'}) -- ${r['to_soura_monthly_name']} (${r['to_id_aya_monthly']?.toString() ?? '0'})'
             : '—',
+        (r['markManhage'] ?? '—').toString(),
+
         (r['name_circle'] ?? '—').toString(),
         (r['month_name'] ?? '—').toString(),
         (r['name_year'] ?? '—').toString(),
         (r['date']?.toString().split(' ')[0] ?? '—').toString(),
+
       ];
     }).toList();
 
@@ -685,6 +690,7 @@ class StudentPageController extends GetxController{
       60.0,  // الحفظ (التلاوة) - صغير
       60.0,  // الحفظ (الحفظ) - صغير
       120.0, // نطاق الحفظ - كبير للنصوص الطويلة
+      80.0,  // الحلقة - متوسط
       80.0,  // الحلقة - متوسط
       60.0,  // الشهر - صغير
       50.0,  // السنة - صغير

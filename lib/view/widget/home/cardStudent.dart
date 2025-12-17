@@ -9,6 +9,7 @@ class CardStudent extends StatelessWidget {
   final VoidCallback? updateData;
   final VoidCallback? dailyReports;
   final VoidCallback? reviewReports;
+  final VoidCallback? showCurriculum;
   final VoidCallback? absence;
   final VoidCallback? viewPlan;
 
@@ -20,6 +21,7 @@ class CardStudent extends StatelessWidget {
     required this.updateData,
     required this.dailyReports,
     required this.reviewReports,
+    required this.showCurriculum,
     required this.absence,
     this.viewPlan,
   });
@@ -176,14 +178,26 @@ class CardStudent extends StatelessWidget {
                     children: [
                       Expanded(
                         child: AppButton(
-                          text: "عرض خطة الطالب",
+                          text: " خطة الطالب",
                           onPressed: viewPlan,
                           height: 45,
                           color: Colors.purple,
                           foregroundColor: Colors.white,
-                          icon: Icons.assignment_outlined,
                         ),
                       ),
+                      const SizedBox(width: 10),
+
+                       Expanded(
+                        child: AppButton(
+                          text: "المنهج المصاحب",
+                          onPressed: showCurriculum,
+                          height: 45,
+                          color: Colors.teal,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+
+
                     ],
                   ),
                 ],
