@@ -1,3 +1,4 @@
+import 'package:althfeth/controller/home_cont.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../api/LinkApi.dart';
@@ -16,13 +17,13 @@ class EditEmployeeProfileController extends GetxController {
   RxBool isLoading = false.obs;
   RxBool isSaving = false.obs;
   
-  var employeeData = <String, dynamic>{}.obs;
+  // var employeeData = <String, dynamic>{}.obs;
   
   @override
   void onInit() {
     super.onInit();
     dataArg = Get.arguments;
-    WidgetsBinding.instance.addPostFrameCallback((_) => loadEmployeeData());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loginWithInternet());
   }
   
   @override
@@ -32,52 +33,76 @@ class EditEmployeeProfileController extends GetxController {
     phoneController.dispose();
     super.onClose();
   }
-  
-  Future<void> loadEmployeeData() async {
-    var res = await handleRequest(
-      isLoading: isLoading,
-      useDialog: false,
-      immediateLoading: true,
-      action: () async {
-        return await postData(Linkapi.select_employee_by_user, {
-          "id_user": dataArg["id_user"],
+
+Map <String,dynamic> data_user={};
+
+  Future<void> _loginWithInternet() async {
+    print('🌐 محاولة تسجيل الدخول عبر الإنترنت...');
+
+    try {
+
+      // 1️⃣ استدعاء API (postData) لإرسال بيانات المستخدم للخادم
+      // postData ترسل HTTP POST request مع JSON data و Bearer token
+      var response =await handleRequest( useDialog: true,
+          loadingMessage: "جاري تحميل البيانات الشخصية ",
+          immediateLoading: true,
+          isLoading: (false.obs), action: ()async {
+        return   await postData(Linkapi.select_users_id_user, {
+        "id_user": dataArg["id_user"],
         });
-      },
-    );
-    
-    if (res == null) return;
-    
-    if (res is! Map) {
-      mySnackbar("خطأ", "فشل الاتصال بالخادم");
-      return;
-    }
-    
-    if (res["stat"] == "ok") {
-      if (res["data"] != null && res["data"] is List && res["data"].isNotEmpty) {
-        employeeData.value = res["data"][0];
-        nameController.text = employeeData["name"] ?? "";
-        emailController.text = employeeData["email"] ?? "";
-        phoneController.text = employeeData["phone"] ?? "";
-        password.text = employeeData["password"] ?? "";
+
+      },);
+
+      if (response == null) {
+        return;
       }
-    } else if (res["stat"] == "no") {
-      Get.back();
-      mySnackbar("تنبيه", "تواصل مع الادارة بحيث يتم اضافتك كموظف اولا");
-    } else {
-      mySnackbar("خطأ", res["msg"] ?? "حدث خطأ أثناء جلب البيانات");
+
+      if (response is! Map) {
+        mySnackbar("خطأ", "رد غير صحيح من الخادم");
+        return;
+      }
+      if (response["stat"] == "ok") {
+        // ✅ تسجيل الدخول نجح
+        data_user = response["data"];
+
+        nameController.text = data_user["username"] ?? "";
+        emailController.text = data_user["email"] ?? "";
+        phoneController.text = data_user["phone"].toString() ?? "";
+        password.text = data_user["password"] ?? "";
+
+
+      } else if (response["stat"] == "no") {
+        // ❌ البيانات خاطئة (username أو password غير صحيح)
+        mySnackbar("خطأ", "اسم المستخدم أو كلمة المرور خاطئة");
+      } else if (response["stat"] == "error") {
+        // ❌ خطأ من الخادم
+        String errorMsg = response["msg"] ?? "خطأ في الخادم";
+        mySnackbar("خطأ", errorMsg);
+      }
+    } catch (e) {
+      mySnackbar("خطأ", "فشل الاتصال بالخادم${e}");
     }
   }
-  
+
   Future<void> updateProfile() async {
     if (!_validateInputs()) return;
     if(password.text.trim().isEmpty){
       mySnackbar("تنبيه", "يرجى إدخال كلمة سر");
       return;
     }
-    if(emailController.text.trim().isEmpty){
+    if(phoneController.text.trim().isEmpty){
       mySnackbar("تنبيه", "يرجى إدخال email");
       return;
+    }
 
+    String phoneText = phoneController.text.trim();
+
+    int? phone = int.tryParse(phoneText);
+
+    if (phone == null) {
+      // ❌ ليس رقم
+      mySnackbar("تنبية","رقم الهاتف غير صحيح");
+      return;
     }
 
     var res = await handleRequest(
@@ -86,12 +111,13 @@ class EditEmployeeProfileController extends GetxController {
       useDialog: true,
       action: () async {
         return await postData(Linkapi.update_employee_profile, {
-          "id_employee": employeeData["id_employee"],
-          "id_user": employeeData["id_user"],
-          "name": nameController.text.trim(),
+          // "id_employee": employeeData["id_employee"],
+          "id_user": dataArg["id_user"],
+          "username": nameController.text.trim(),
           "email": emailController.text.trim(),
-          "phone":phoneController.text.trim(),
+          "phone":phone,
           "password":password.text.trim(),
+
         });
       },
     );
@@ -105,10 +131,21 @@ class EditEmployeeProfileController extends GetxController {
     
     if (res["stat"] == "ok") {
 
-       db.update("users", {"password":password.text.trim()},where: "id_user=${employeeData["id_user"]}");
+       db.update("users", {
+         "username": nameController.text.trim(),
+         "email": emailController.text.trim(),
+         "phone":phoneController.text.trim(),
+         "password":password.text.trim(),
+
+
+       },where: "id_user=${dataArg["id_user"]}");
 
       Get.back();
       mySnackbar("نجح", "تم تحديث البيانات بنجاح", type: "g");
+      if(dataArg["role_id"]==4){
+        HomeCont homeCont=Get.find();
+        homeCont.nameUser.value=nameController.text.trim();
+      }
 
     } else if (res["stat"] == "no") {
       mySnackbar("تنبيه", res["msg"] ?? "فشل التحديث", type: "y");

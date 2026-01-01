@@ -13,16 +13,17 @@ import '../globals.dart';
 class HomeCont extends GetxController {
   var dataArg;
   RxBool isOfflineMode = false.obs;
-
+  RxString nameUser="".obs;
   @override
   void onInit(){
     dataArg = Get.arguments;
-    
+
+    nameUser.value=dataArg["username"];
     WidgetsBinding.instance.addPostFrameCallback((_) async {
 
 
       await getstudents();
-      
+
       if (connectivityHelper.hasConnection) {
         print('\n✅ يوجد اتصال بالإنترنت - بدء المزامنة في الخلفية');
         
@@ -34,53 +35,8 @@ class HomeCont extends GetxController {
   }
 
   Future _showInitializationDialog()async {
-    Get.dialog(
-      WillPopScope(
-        onWillPop: () async => false, // منع الإغلاق
-        child: AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(height: 20),
-              // أيقونة تحميل متحركة
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(
-                  strokeWidth: 4,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Color(0xFF006B6B), // اللون الأساسي
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              Text(
-                "جاري تهيئة النظام",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                "يرجى الانتظار...",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
-              ),
-              SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-      barrierDismissible: false, // منع الإغلاق بالضغط خارجه
-    );
 
-    await initialDataSync();
+await     initialDataSync();
 
   }
 
@@ -97,8 +53,9 @@ class HomeCont extends GetxController {
 
       // 4️⃣ تنظيف السجلات القديمة
       await cleanupOldRecords();
-      
-      print('\n✅ اكتملت المزامنة في الخلفية بنجاح\n');
+
+
+
     } catch (e) {
       print('❌ خطأ في المزامنة الخلفية: $e');
     }
@@ -230,6 +187,7 @@ class HomeCont extends GetxController {
          }
        }
      }
+
    }
 
   }
@@ -482,6 +440,8 @@ class HomeCont extends GetxController {
        if (Get.isDialogOpen == true) {
          Get.back();
        }
+       await Future.delayed(Duration(milliseconds: 300));
+
        return;
      }
 
@@ -502,10 +462,9 @@ class HomeCont extends GetxController {
      }
     await check_teacher_attendanceOne();
      if (Get.isDialogOpen == true) {
-
-
        Get.back();
      }
+
    } catch (e) {
      print('❌ خطأ في التحميل الأولي: $e');
    }
@@ -828,7 +787,9 @@ class HomeCont extends GetxController {
   Future<void> _getStudentsFromInternet() async {
     try {
 
-      final res =await handleRequest(isLoading: loding_get_circle_and_students, action: ()async {
+      final res =await handleRequest(
+        useDialog: false,
+        isLoading: loding_get_circle_and_students, action: ()async {
         return  await postData(Linkapi.getstudents, {
           "id_circle": dataArg["id_circle"]
         });
@@ -1225,7 +1186,7 @@ class HomeCont extends GetxController {
     final res = await handleRequest<dynamic>(
       isLoading: RxBool(false),
       loadingMessage: "التحقق من حضورك...",
-      useDialog: true,
+      useDialog: false,
       immediateLoading: true,
       action: () async {
 

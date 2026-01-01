@@ -486,13 +486,13 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            "الأستاذ ${homeCont.dataArg["username"]}",
+      Obx(() => Text(
+            "الأستاذ ${homeCont.nameUser.value}",
             style: theme.textTheme.titleLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.bold,
             ),
-          ),
+          ),)
         ],
       ),
     );

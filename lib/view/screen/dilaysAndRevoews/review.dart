@@ -179,37 +179,129 @@ class SouraSelector extends StatelessWidget {
 
                     const SizedBox(height: 20),
 
-                    Obx(() {
-                      return DropdownButtonFormField<Map<String, dynamic>>(
-                        decoration: InputDecoration(
-                          prefixIcon:
-                          const Icon(Icons.play_arrow, color: Colors.teal),
-                          labelText: "من سورة",
-                          labelStyle: TextStyle(color: Colors.teal),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        value: controller.fromSoura.value,
-                        items: controller.datasoura.map((soura) {
-                          return DropdownMenuItem<Map<String, dynamic>>(
-                            value: soura,
-                            child: Text(
-                              "${soura['soura_name']} (${soura['soura_no']})",
-                              style: const TextStyle(fontSize: 18),
+                    Autocomplete<Map<String, dynamic>>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return controller.datasoura;
+                          }
+                          return controller.datasoura.where((soura) {
+                            final souraName = soura['soura_name'].toString().toLowerCase();
+                            final souraNo = soura['soura_no'].toString();
+                            final searchText = textEditingValue.text.toLowerCase();
+                            return souraName.contains(searchText) || souraNo.contains(searchText);
+                          });
+                        },
+                        displayStringForOption: (Map<String, dynamic> option) {
+                          return "${option['soura_name']} (${option['soura_no']})";
+                        },
+                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                          if (controller.fromSoura.value != null && textEditingController.text.isEmpty) {
+                            textEditingController.text = "${controller.fromSoura.value!['soura_name']} (${controller.fromSoura.value!['soura_no']})";
+                          }
+                          return TextFormField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.play_arrow, color: Colors.teal),
+                              labelText: "من سورة",
+                              labelStyle: TextStyle(color: Colors.teal),
+                              hintText: "ابحث عن سورة...",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            style: const TextStyle(fontSize: 18),
+                          );
+                        },
+                        onSelected: (Map<String, dynamic> selection) {
+                          controller.fromSoura.value = selection;
+                          controller.from_id_aya.value = null;
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Material(
+                                elevation: 8.0,
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.white,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxHeight: 250,
+                                    maxWidth: MediaQuery.of(context).size.width - 40,
+                                  ),
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    itemBuilder: (context, index) {
+                                      final option = options.elementAt(index);
+                                      return InkWell(
+                                        onTap: () => onSelected(option),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border(
+                                              bottom: BorderSide(
+                                                color: Colors.grey.shade200,
+                                                width: 1,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.teal.shade50,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.menu_book,
+                                                  color: Colors.teal.shade700,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  "${option['soura_name']}",
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.grey.shade800,
+                                                  ),
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.teal.shade100,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  "${option['soura_no']}",
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.teal.shade700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
                             ),
                           );
-                        }).toList(),
-                        onChanged: (val) {
-
-                          controller.fromSoura.value = val;
-                          controller.from_id_aya.value = null;
-
-
                         },
-                      );
-                    }
-                    ),
+                      ),
                     SizedBox(
                       height: 10,
                     ),
@@ -275,34 +367,129 @@ class SouraSelector extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Obx(() {
-                      return DropdownButtonFormField<Map<String, dynamic>>(
-                        decoration: InputDecoration(
-                          prefixIcon:
-                          const Icon(Icons.play_arrow, color: Colors.teal),
-                          labelText: "الي سورة",
-                          labelStyle: TextStyle(color: Colors.teal),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        value: controller.toSoura.value,
-                        items: controller.datasoura.map((soura) {
-                          return DropdownMenuItem<Map<String, dynamic>>(
-                            value: soura,
-                            child: Text(
-                              "${soura['soura_name']} (${soura['soura_no']})",
-                              style: const TextStyle(fontSize: 18),
+                    Autocomplete<Map<String, dynamic>>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return controller.datasoura;
+                          }
+                          return controller.datasoura.where((soura) {
+                            final souraName = soura['soura_name'].toString().toLowerCase();
+                            final souraNo = soura['soura_no'].toString();
+                            final searchText = textEditingValue.text.toLowerCase();
+                            return souraName.contains(searchText) || souraNo.contains(searchText);
+                          });
+                        },
+                        displayStringForOption: (Map<String, dynamic> option) {
+                          return "${option['soura_name']} (${option['soura_no']})";
+                        },
+                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                          if (controller.toSoura.value != null && textEditingController.text.isEmpty) {
+                            textEditingController.text = "${controller.toSoura.value!['soura_name']} (${controller.toSoura.value!['soura_no']})";
+                          }
+                          return TextFormField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.play_arrow, color: Colors.teal),
+                              labelText: "الي سورة",
+                              labelStyle: TextStyle(color: Colors.teal),
+                              hintText: "ابحث عن سورة...",
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
+                            style: const TextStyle(fontSize: 18),
                           );
-                        }).toList(),
-                        onChanged: (val) {
-                          controller.toSoura.value = val;
+                        },
+                        onSelected: (Map<String, dynamic> selection) {
+                          controller.toSoura.value = selection;
                           controller.to_id_aya.value = null;
                         },
-                      );
-                    }
-                    ),
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Material(
+                                elevation: 8.0,
+                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.white,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxHeight: 250,
+                                    maxWidth: MediaQuery.of(context).size.width - 40,
+                                  ),
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                    shrinkWrap: true,
+                                    itemCount: options.length,
+                                    itemBuilder: (context, index) {
+                                      final option = options.elementAt(index);
+                                      return InkWell(
+                                        onTap: () => onSelected(option),
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            border: Border(
+                                              bottom: BorderSide(
+                                                color: Colors.grey.shade200,
+                                                width: 1,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.teal.shade50,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.menu_book,
+                                                  color: Colors.teal.shade700,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                              SizedBox(width: 12),
+                                              Expanded(
+                                                child: Text(
+                                                  "${option['soura_name']}",
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.grey.shade800,
+                                                  ),
+                                                ),
+                                              ),
+                                              Container(
+                                                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.teal.shade100,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  "${option['soura_no']}",
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.teal.shade700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     SizedBox(
                       height: 10,
                     ),

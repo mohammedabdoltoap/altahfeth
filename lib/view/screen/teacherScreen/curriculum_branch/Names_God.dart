@@ -7,8 +7,8 @@ import 'package:althfeth/view/widget/curriculum_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-class Adab extends StatelessWidget {
-  final AdabController adabController = Get.put(AdabController());
+class NamesGod extends StatelessWidget {
+  final NamesGodController namesGodController = Get.put(NamesGodController());
 
   @override
   Widget build(BuildContext context) {
@@ -18,8 +18,8 @@ class Adab extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                AppTheme.reportColors[3],
-                AppTheme.reportColors[3].withOpacity(0.85),
+                AppTheme.reportColors[2],
+                AppTheme.reportColors[2].withOpacity(0.85),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -36,14 +36,14 @@ class Adab extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                Icons.menu_book_rounded,
+                Icons.auto_awesome_rounded,
                 color: Colors.white,
                 size: 24,
               ),
             ),
             SizedBox(width: 12),
             Text(
-              'تحديد نطاق الآداب',
+              'أسماء الله الحسنى',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -62,7 +62,7 @@ class Adab extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.reportColors[3].withOpacity(0.05),
+              AppTheme.reportColors[2].withOpacity(0.05),
               Colors.white,
               AppTheme.backgroundColor.withOpacity(0.3),
             ],
@@ -71,7 +71,7 @@ class Adab extends StatelessWidget {
         ),
         child: Obx(() {
           // حالة التحميل
-          if (adabController.isLoading.value && adabController.adabList.isEmpty) {
+          if (namesGodController.isLoading.value && namesGodController.namesGodList.isEmpty) {
             return Center(
               child: Container(
                 margin: EdgeInsets.all(AppTheme.spacingXLarge),
@@ -80,13 +80,13 @@ class Adab extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       Colors.white,
-                      AppTheme.reportColors[3].withOpacity(0.05),
+                      AppTheme.reportColors[2].withOpacity(0.05),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.reportColors[3].withOpacity(0.15),
+                      color: AppTheme.reportColors[2].withOpacity(0.15),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                       spreadRadius: 2,
@@ -104,21 +104,21 @@ class Adab extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppTheme.reportColors[3].withOpacity(0.1),
+                        color: AppTheme.reportColors[2].withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: CircularProgressIndicator(
-                        color: AppTheme.reportColors[3],
+                        color: AppTheme.reportColors[2],
                         strokeWidth: 3,
                       ),
                     ),
                     SizedBox(height: AppTheme.spacingLarge),
                     Text(
-                      'جاري تحميل الآداب...',
+                      'جاري تحميل أسماء الله الحسنى...',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.reportColors[3],
+                        color: AppTheme.reportColors[2],
                       ),
                     ),
                   ],
@@ -128,7 +128,7 @@ class Adab extends StatelessWidget {
           }
 
           // حالة فارغة
-          if (adabController.adabList.isEmpty) {
+          if (namesGodController.namesGodList.isEmpty) {
             return Center(
               child: Container(
                 margin: EdgeInsets.all(AppTheme.spacingXLarge),
@@ -139,14 +139,14 @@ class Adab extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       Colors.white,
-                      AppTheme.reportColors[3].withOpacity(0.05),
+                      AppTheme.reportColors[2].withOpacity(0.05),
                       Colors.grey[50]!,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(AppTheme.radiusXLarge),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.reportColors[3].withOpacity(0.2),
+                      color: AppTheme.reportColors[2].withOpacity(0.2),
                       blurRadius: 30,
                       offset: const Offset(0, 10),
                       spreadRadius: 3,
@@ -158,7 +158,7 @@ class Adab extends StatelessWidget {
                     ),
                   ],
                   border: Border.all(
-                    color: AppTheme.reportColors[3].withOpacity(0.1),
+                    color: AppTheme.reportColors[2].withOpacity(0.1),
                     width: 2,
                   ),
                 ),
@@ -170,25 +170,25 @@ class Adab extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppTheme.reportColors[3].withOpacity(0.15),
-                            AppTheme.reportColors[3].withOpacity(0.05),
+                            AppTheme.reportColors[2].withOpacity(0.15),
+                            AppTheme.reportColors[2].withOpacity(0.05),
                           ],
                         ),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.menu_book_rounded,
+                        Icons.auto_awesome_rounded,
                         size: 90,
-                        color: AppTheme.reportColors[3].withOpacity(0.7),
+                        color: AppTheme.reportColors[2].withOpacity(0.7),
                       ),
                     ),
                     SizedBox(height: AppTheme.spacingXLarge),
                     Text(
-                      'لا توجد آداب متاحة',
+                      'لا توجد أسماء متاحة',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.reportColors[3],
+                        color: AppTheme.reportColors[2],
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -215,68 +215,41 @@ class Adab extends StatelessWidget {
               children: [
                 // معلومات الطالب
                 StudentInfoCard(
-                  studentName: adabController.studentData['name_student']?.toString() ?? 'غير محدد',
+                  studentName: namesGodController.studentData['name_student']?.toString() ?? 'غير محدد',
                 ),
                 
                 SizedBox(height: AppTheme.spacingLarge),
 
                 // آخر تسميع
-                if (adabController.lastAdab.isNotEmpty)
+                if (namesGodController.lastNamesGod.isNotEmpty)
                   LastRecordCard(
                     title: 'آخر تسميع',
-                    date: adabController.lastAdab["date"]?.toString() ?? '-',
-                    startItemName: adabController.lastAdab["start_item_name"]?.toString() ?? '-',
-                    endItemName: adabController.lastAdab["end_item_name"]?.toString() ?? '-',
-                    mark: adabController.lastAdab["mark"]?.toString() ?? '-',
-                    onEdit: () => adabController.showEditDialog(),
-                    accentColor: AppTheme.reportColors[3],
+                    date: namesGodController.lastNamesGod["date"]?.toString() ?? '-',
+                    startItemName: namesGodController.lastNamesGod["start_item_name"]?.toString() ?? '-',
+                    endItemName: namesGodController.lastNamesGod["end_item_name"]?.toString() ?? '-',
+                    mark: namesGodController.lastNamesGod["mark"]?.toString() ?? '-',
+                    onEdit: () => namesGodController.showEditDialog(),
+                    accentColor: AppTheme.reportColors[4],
                   )
                 else
                   Container(
-                    padding: EdgeInsets.all(AppTheme.spacingLarge),
+                    padding: EdgeInsets.all(AppTheme.spacingMedium),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.reportColors[3].withOpacity(0.1),
-                          AppTheme.reportColors[3].withOpacity(0.05),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-                      border: Border.all(
-                        color: AppTheme.reportColors[3].withOpacity(0.3),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.reportColors[3].withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                      border: Border.all(color: Colors.blue[200]!),
                     ),
                     child: Row(
                       children: [
-                        Container(
-                          padding: EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppTheme.reportColors[3].withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.info_outline,
-                            color: AppTheme.reportColors[3],
-                            size: 24,
-                          ),
-                        ),
-                        SizedBox(width: AppTheme.spacingMedium),
+                        Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                        SizedBox(width: AppTheme.spacingSmall),
                         Expanded(
                           child: Text(
-                            'أول تسميع آداب لهذا الطالب',
+                            'أول تسميع أسماء الله الحسنى لهذا الطالب',
                             style: TextStyle(
-                              fontSize: 15,
-                              color: AppTheme.reportColors[3],
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
+                              fontSize: 14,
+                              color: Colors.blue[700],
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -294,13 +267,14 @@ class Adab extends StatelessWidget {
                 ),
                 SizedBox(height: AppTheme.spacingMedium),
                 CustomDropdown(
-                  value: adabController.selectedStartAdab.value,
-                  hint: 'اختر أدب البداية',
-                  items: adabController.adabList,
-                  idKey: 'id_Adab',
-                  nameKey: 'name_Adab',
+                  value: namesGodController.selectedStartName.value,
+                  hint: 'اختر اسم البداية',
+                  items: namesGodController.namesGodList,
+                  idKey: 'id_Names_God',
+                  nameKey: 'name_Names_God',
                   onChanged: (value) {
-                    adabController.selectedStartAdab.value = value;
+                    print("id_Names_God==${value}");
+                    namesGodController.selectedStartName.value = value;
                   },
                   accentColor: Colors.green[700]!,
                 ),
@@ -315,13 +289,13 @@ class Adab extends StatelessWidget {
                 ),
                 SizedBox(height: AppTheme.spacingMedium),
                 CustomDropdown(
-                  value: adabController.selectedEndAdab.value,
-                  hint: 'اختر أدب النهاية',
-                  items: adabController.adabList,
-                  idKey: 'id_Adab',
-                  nameKey: 'name_Adab',
+                  value: namesGodController.selectedEndName.value,
+                  hint: 'اختر اسم النهاية',
+                  items: namesGodController.namesGodList,
+                  idKey: 'id_Names_God',
+                  nameKey: 'name_Names_God',
                   onChanged: (value) {
-                    adabController.selectedEndAdab.value = value;
+                    namesGodController.selectedEndName.value = value;
                   },
                   accentColor: Colors.red[700]!,
                 ),
@@ -329,7 +303,7 @@ class Adab extends StatelessWidget {
                 SizedBox(height: AppTheme.spacingLarge),
                 
                 CustomTextField(
-                  controller: adabController.controller_text,
+                  controller: namesGodController.controller_text,
                   label: "التقييم",
                   hint: "الدرجة (0-100)",
                   keyboardType: TextInputType.number,
@@ -340,9 +314,9 @@ class Adab extends StatelessWidget {
 
                 // زر الحفظ
                 SaveButton(
-                  isLoading: adabController.isSaving.value,
-                  onPressed: () => adabController.saveAdabRange(false),
-                  label: 'حفظ نطاق الآداب',
+                  isLoading: namesGodController.isSaving.value,
+                  onPressed: () => namesGodController.saveNamesGodRange(false),
+                  label: 'حفظ نطاق أسماء الله الحسنى',
                 ),
               ],
             ),
@@ -353,17 +327,17 @@ class Adab extends StatelessWidget {
   }
 }
 
-class AdabController extends GetxController {
-  var adabList = <Map<String, dynamic>>[].obs;
-  RxMap lastAdab = <String, dynamic>{}.obs;
+class NamesGodController extends GetxController {
+  var namesGodList = <Map<String, dynamic>>[].obs;
+  RxMap lastNamesGod = <String, dynamic>{}.obs;
   RxBool isLoading = false.obs;
   RxBool isSaving = false.obs;
   TextEditingController controller_text = TextEditingController();
   
   var studentData = <String, dynamic>{};
   
-  Rx<Map<String, dynamic>?> selectedStartAdab = Rx<Map<String, dynamic>?>(null);
-  Rx<Map<String, dynamic>?> selectedEndAdab = Rx<Map<String, dynamic>?>(null);
+  Rx<Map<String, dynamic>?> selectedStartName = Rx<Map<String, dynamic>?>(null);
+  Rx<Map<String, dynamic>?> selectedEndName = Rx<Map<String, dynamic>?>(null);
   
   @override
   void onInit() {
@@ -371,15 +345,15 @@ class AdabController extends GetxController {
     if (Get.arguments != null) {
       studentData = Get.arguments;
     }
-    selectAdab();
-    selectLastAdab();
+    selectNamesGod();
+    selectLastNamesGod();
   }
   
-  Future selectAdab() async {
+  Future selectNamesGod() async {
     var res = await handleRequest(
       isLoading: isLoading,
       action: () async {
-        return await postData(Linkapi.selectAdab, {});
+        return await postData(Linkapi.selectNamesGod, {});
       },
     );
     
@@ -387,20 +361,21 @@ class AdabController extends GetxController {
     
     if (res["stat"] == "ok") {
       final data = List<Map<String, dynamic>>.from(res["data"]);
-      adabList.assignAll(data);
+      namesGodList.assignAll(data);
+      print("namesGodList====${namesGodList}");
     } else if (res["stat"] == "no") {
-      adabList.clear();
-      mySnackbar("تنبيه", "لا توجد آداب متاحة");
+      namesGodList.clear();
+      mySnackbar("تنبيه", "لا توجد أسماء متاحة");
     } else {
-      mySnackbar("خطأ", res["msg"] ?? "خطأ في جلب الآداب");
+      mySnackbar("خطأ", res["msg"] ?? "خطأ في جلب أسماء الله الحسنى");
     }
   }
 
-  Future selectLastAdab() async {
+  Future selectLastNamesGod() async {
     var res = await handleRequest(
       isLoading: RxBool(false),
       action: () async {
-        return await postData(Linkapi.selectLastAdab, {
+        return await postData(Linkapi.selectLastNamesGod, {
           "id_student": studentData['id_student'],
         });
       },
@@ -410,22 +385,22 @@ class AdabController extends GetxController {
 
     if (res["stat"] == "ok") {
       final data = Map<String, dynamic>.from(res["data"]);
-      lastAdab.assignAll(data);
+      lastNamesGod.assignAll(data);
     } else if (res["stat"] == "no") {
-      lastAdab.clear();
+      lastNamesGod.clear();
     } else {
       mySnackbar("خطأ", res["msg"] ?? "خطأ في جلب آخر تسميع");
     }
   }
   
-  Future<bool> saveAdabRange(isEdit) async {
-    if (selectedStartAdab.value == null) {
-      mySnackbar("تنبيه", "الرجاء اختيار أدب البداية");
+  Future<bool> saveNamesGodRange(isEdit) async {
+    if (selectedStartName.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار اسم البداية");
       return false;
     }
     
-    if (selectedEndAdab.value == null) {
-      mySnackbar("تنبيه", "الرجاء اختيار أدب النهاية");
+    if (selectedEndName.value == null) {
+      mySnackbar("تنبيه", "الرجاء اختيار اسم النهاية");
       return false;
     }
     
@@ -441,24 +416,24 @@ class AdabController extends GetxController {
       return false;
     }
 
-    bool isEditing = lastAdab.isNotEmpty && lastAdab['id'] != null;
+
+    bool isEditing = lastNamesGod.isNotEmpty && lastNamesGod['id'] != null;
     
     var data = {
       "id_student": studentData['id_student'],
-      "start_adab_id": selectedStartAdab.value?['id_Adab'] ?? 1,
-      "end_adab_id": selectedEndAdab.value?['id_Adab'] ?? 1,
+      "start_item_name": selectedStartName.value?['id_Names_God'] ?? 1,
+      "end_item_name": selectedEndName.value?['id_Names_God'] ?? 1,
       "mark": controller_text.text.trim(),
     };
-    
     if (isEditing) {
-      data["id"] = lastAdab['id'];
+      data["id"] = lastNamesGod['id'];
     }
 
     var res = await handleRequest(
       isLoading: isSaving,
       action: () async {
         return await postData(
-            isEdit ? Linkapi.updateStudentAdabRange : Linkapi.saveStudentAdabRange,
+            isEdit ? Linkapi.updateStudentNamesGodRange : Linkapi.saveStudentNamesGodRange,
           data
         );
       },
@@ -467,10 +442,10 @@ class AdabController extends GetxController {
     if (res == null) return false;
 
     if (res["stat"] == "ok") {
-      mySnackbar("نجاح", "تم حفظ نطاق الآداب بنجاح", type: "g");
-      await selectLastAdab();
-      selectedStartAdab.value = null;
-      selectedEndAdab.value = null;
+      mySnackbar("نجاح", "تم حفظ نطاق أسماء الله الحسنى بنجاح", type: "g");
+      await selectLastNamesGod();
+      selectedStartName.value = null;
+      selectedEndName.value = null;
       controller_text.clear();
       return true;
     } else {
@@ -480,65 +455,67 @@ class AdabController extends GetxController {
   }
 
   void showEditDialog() {
-    if (lastAdab.isEmpty) return;
-    
+    print("lastNamesGod==${lastNamesGod}");
+    print("namesGodList==${namesGodList}");
+    if (lastNamesGod.isEmpty) return;
+
     Map<String, dynamic>? startItem;
     Map<String, dynamic>? endItem;
     try {
-      startItem = adabList.firstWhere(
-        (adab) => adab['id_Adab'] == lastAdab['start_adab_id'],
+      startItem = namesGodList.firstWhere(
+        (name) => name['name_Names_God'] == lastNamesGod['start_item_name'],
       );
     } catch (_) {
       startItem = null;
     }
     try {
-      endItem = adabList.firstWhere(
-        (adab) => adab['id_Adab'] == lastAdab['end_adab_id'],
+      endItem = namesGodList.firstWhere(
+        (name) => name['name_Names_God'] == lastNamesGod['end_item_name'],
       );
     } catch (_) {
       endItem = null;
     }
 
-    selectedStartAdab.value = startItem;
-    selectedEndAdab.value = endItem;
-    controller_text.text = lastAdab['mark']?.toString() ?? '';
+    selectedStartName.value = startItem;
+    selectedEndName.value = endItem;
+    controller_text.text = lastNamesGod['mark']?.toString() ?? '';
     
     Get.dialog(
       Obx(() => EditRecordDialog(
         title: 'تعديل آخر تسميع',
-        date: lastAdab["date"]?.toString() ?? '-',
+        date: lastNamesGod["date"]?.toString() ?? '-',
         startDropdown: CustomDropdown(
-          value: selectedStartAdab.value,
-          hint: 'اختر أدب البداية',
-          items: adabList,
-          idKey: 'id_Adab',
-          nameKey: 'name_Adab',
+          value: selectedStartName.value,
+          hint: 'اختر اسم البداية',
+          items: namesGodList,
+          idKey: 'id_Names_God',
+          nameKey: 'name_Names_God',
           onChanged: (value) {
-            selectedStartAdab.value = value;
+            selectedStartName.value = value;
           },
-          accentColor: AppTheme.reportColors[3],
+          accentColor: AppTheme.reportColors[4],
         ),
         endDropdown: CustomDropdown(
-          value: selectedEndAdab.value,
-          hint: 'اختر أدب النهاية',
-          items: adabList,
-          idKey: 'id_Adab',
-          nameKey: 'name_Adab',
+          value: selectedEndName.value,
+          hint: 'اختر اسم النهاية',
+          items: namesGodList,
+          idKey: 'id_Names_God',
+          nameKey: 'name_Names_God',
           onChanged: (value) {
-            selectedEndAdab.value = value;
+            selectedEndName.value = value;
           },
-          accentColor: AppTheme.reportColors[3],
+          accentColor: AppTheme.reportColors[4],
         ),
         markController: controller_text,
         isSaving: isSaving.value,
         onSave: () async {
-          final success = await saveAdabRange(true);
+          final success = await saveNamesGodRange(true);
           if (success) {
             Get.back();
           }
         },
         onCancel: () => Get.back(),
-        accentColor: AppTheme.reportColors[3],
+        accentColor: AppTheme.reportColors[4],
       )),
     );
   }

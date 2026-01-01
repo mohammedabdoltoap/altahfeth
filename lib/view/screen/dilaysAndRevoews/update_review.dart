@@ -9,6 +9,7 @@ import '../../../constants/color.dart';
 import '../../../constants/customTextField.dart';
 import '../../../constants/readOnlyTextField.dart';
 import '../../../controller/dilayAndRevoesController/Update_ReviewController.dart';
+import '../../widget/searchable_soura_dropdown.dart';
 
 class Update_Review extends StatelessWidget {
   Update_ReviewController controller=Get.put(Update_ReviewController());
@@ -190,33 +191,16 @@ class SouraSelectorUpDate extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 20),
-                            Obx(() {
-                              return DropdownButtonFormField<Map<String, dynamic>>(
-                                decoration: InputDecoration(
-                                  prefixIcon:
-                                  Icon(Icons.play_arrow, color: primaryGreen),
-                                  labelText: "من سورة",
-                                  labelStyle: TextStyle(color: primaryGreen),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                value: controller.fromSoura.value,
-                                items: controller.datasoura.map((soura) {
-                                  return DropdownMenuItem<Map<String, dynamic>>(
-                                    value: soura,
-                                    child: Text(
-                                      "${soura['soura_name']} (${soura['soura_no']})",
-                                      style: const TextStyle(fontSize: 18),
-                                    ),
-                                  );
-                                }).toList(),
-                                onChanged: (val) {
-                                  controller.fromSoura.value = val;
-                                  controller.from_id_aya.value = null;
-                                },
-                              );
-                            }),
+                            SearchableSouraDropdown(
+                              souraList: controller.datasoura,
+                              selectedSoura: controller.fromSoura.value,
+                              onSelected: (selection) {
+                                controller.fromSoura.value = selection;
+                                controller.from_id_aya.value = null;
+                              },
+                              labelText: "من سورة",
+                              accentColor: primaryGreen,
+                            ),
                             SizedBox(
                               height: 10,
                             ),

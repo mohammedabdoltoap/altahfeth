@@ -25,7 +25,7 @@ class ShowCircleExamController extends GetxController{
 
   Future<void> select_circle_for_center() async {
     showLoading(message: " تحميل الحلقات.");
-    await del();
+
     var res = await postData(Linkapi.select_circle_for_center, {"id_user": dataArg["id_user"]});
     hideLoading();
     if (res["stat"] == "ok") {

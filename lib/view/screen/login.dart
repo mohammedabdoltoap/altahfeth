@@ -143,6 +143,7 @@ class Login extends StatelessWidget {
                       isLoading: loginController.isLoading.value,
                       onPressed: () {
                         if (loginController.isStudent.value) {
+
                           loginController.select_data_Student();
                         } else {
                           loginController.select_data_user();

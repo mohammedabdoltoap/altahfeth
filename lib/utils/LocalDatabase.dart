@@ -52,6 +52,8 @@ class LocalDatabase {
       CREATE TABLE IF NOT EXISTS users (
         id_user INTEGER PRIMARY KEY,
         username TEXT NOT NULL,
+        phone TEXT  NULL,
+        email TEXT  NULL,
         password TEXT NOT NULL,
         status INTEGER,
         created_at TEXT NULL,

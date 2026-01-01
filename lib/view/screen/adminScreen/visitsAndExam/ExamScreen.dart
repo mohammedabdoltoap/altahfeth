@@ -374,7 +374,7 @@ class ExamScreenController extends GetxController {
       useDialog: true,
       immediateLoading: true,
       action: () async {
-        await del();
+
         return await postData(Linkapi.select_sour_quran, {});
       },
     );
@@ -400,6 +400,12 @@ class ExamScreenController extends GetxController {
 
   /// دالة التحقق من صحة البيانات وإرجاع Map جاهز للحفظ
   Future insert_visit_exam_result() async {
+    // ===== 🛡️ حماية من الضغط المتكرر =====
+    if (isSave.value) {
+      print("⚠️ جاري الحفظ بالفعل، تم تجاهل الطلب المكرر");
+      return;
+    }
+    
     try {
       // ===== فحص نطاق الحفظ الشهري =====
       if (fromSoura_monthly.value?["id_soura"] != null &&
@@ -473,8 +479,8 @@ class ExamScreenController extends GetxController {
       // ===== إرسال البيانات =====
       var res =await handleRequest(
         isLoading: isSave,
-        useDialog: false,
-
+        useDialog: true,
+        immediateLoading: true,
         action: () async{
            return await postData(Linkapi.insert_visit_exam_result, data);
 

@@ -519,17 +519,30 @@ class UpdateExamController extends GetxController {
       };
 
       // ===== إرسال البيانات =====
+      // التحقق من وجود id_result لتحديد نوع العملية
       var api = studentData["id_result"] == null
           ? Linkapi.insert_visit_exam_result
           : Linkapi.update_visit_exam_result;
 
-      var res = await postData(api, data);
+      print("🔍 Debug - id_result: ${studentData["id_result"]}");
+      print("🔍 Debug - API used: ${api == Linkapi.insert_visit_exam_result ? 'INSERT' : 'UPDATE'}");
+
+      var res = await handleRequest(isLoading: RxBool(false), action: ()async {
+      return await postData(api, data);
+
+
+      },
+      immediateLoading: true,
+        loadingMessage: "جاري التعديل...",
+        useDialog: true
+      );
 
       if (res["stat"] == "ok") {
-        StudentsListUpdateController controller = Get.find();
-        await controller.select_data_visit_previous();
         Get.back();
         mySnackbar("نجاح", "${res["msg"]}", type: "g");
+        StudentsListUpdateController controller = Get.find();
+        await controller.select_data_visit_previous();
+
       } else if (res["stat"] == "no") {
         mySnackbar("تنبيه", "${res["msg"]}");
       } else if (res["stat"] == "error") {

@@ -1,8 +1,10 @@
+import 'package:althfeth/view/screen/adminScreen/showCircleForCenter.dart';
 import 'package:althfeth/view/screen/adminScreen/visitsAndExam/add%20_Visit.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../widget/offline_indicator.dart';
+import '../LeaveRequestsPage.dart';
 import '../teacherScreen/EditEmployeeProfile.dart';
 import '../user_attendance.dart';
 import 'AdminReportsPage.dart';
@@ -400,11 +402,27 @@ class Home_Admin extends StatelessWidget {
         _buildToolItem(
           title: "طلب استقالة",
           subtitle: "تقديم طلب استقالة جديد",
-          icon: Icons.assignment_turned_in,
+          icon: Icons.exit_to_app,
           color: Colors.red,
           onTap: _showResignationRequest,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
+        _buildToolItem(
+          title: "طلب إجازة",
+          subtitle: "تقديم طلب إجازة جديد",
+          icon: Icons.beach_access,
+          color: Colors.blue,
+          onTap: _showLeaveRequestsPage,
+        ),
+        const SizedBox(height: 12),
+        _buildToolItem(
+          title: "خطط الطلاب",
+          subtitle: "الاطلاع على الطلاب وخططهم",
+          icon: Icons.school,
+          color: Colors.green,
+          onTap: _showshowCircleForCenter,
+        ),
+        const SizedBox(height: 12),
         Obx(() {
           final status = controller.attendanceStatus.value;
           
@@ -439,20 +457,19 @@ class Home_Admin extends StatelessWidget {
         const SizedBox(height: 12),
         _buildToolItem(
           title: "المزامنة",
-          subtitle: "المزمنة مع السيرفر",
-          icon: Icons.pending,
+          subtitle: "المزامنة مع السيرفر",
+          icon: Icons.sync,
           color: Colors.blue,
           onTap: () => controller.admin_attendancePending(),
         ),
         const SizedBox(height: 12),
         _buildToolItem(
-          title: "تعديل البيانات ",
+          title: "تعديل البيانات",
           subtitle: "تعديل البيانات الشخصية",
-          icon: Icons.person,
-          color: Colors.green,
+          icon: Icons.edit,
+          color: Colors.teal,
           onTap: () {
             Get.to(() => EditEmployeeProfile(), arguments: controller.data_user);
-
           },
         ),
         const SizedBox(height: 12),
@@ -463,13 +480,11 @@ class Home_Admin extends StatelessWidget {
           color: Colors.grey,
           onTap: _showLogoutDialog,
         ),
-
-
       ],
     );
   }
 
-  // بناء عنصر أداة متجاوب
+  // بناء عنصر أداة بسيط
   Widget _buildToolItem({
     required String title,
     required String subtitle,
@@ -477,86 +492,82 @@ class Home_Admin extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // تحديد أحجام العناصر حسب عرض الشاشة
-        double iconSize = constraints.maxWidth > 400 ? 24 : 20;
-        double titleSize = constraints.maxWidth > 400 ? 16 : 14;
-        double subtitleSize = constraints.maxWidth > 400 ? 14 : 12;
-        double padding = constraints.maxWidth > 400 ? 16 : 12;
-        
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: onTap,
-              child: Padding(
-                padding: EdgeInsets.all(padding),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(padding * 0.75),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(icon, color: color, size: iconSize),
-                    ),
-                    SizedBox(width: padding),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: titleSize,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF2D3748),
-                            ),
-                          ),
-                          SizedBox(height: padding * 0.25),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontSize: subtitleSize,
-                              color: Colors.grey[600],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: Colors.grey[400],
-                      size: iconSize,
-                    ),
-                  ],
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D3748),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  color: Colors.grey[400],
+                  size: 20,
+                ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
   void _showResignationRequest() {
     Get.to(() => ResignationRequestPage(), arguments: controller.data_user);
+  }
+  void _showLeaveRequestsPage() {
+    Get.to(() => LeaveRequestsPage(), arguments: controller.data_user);
+  }
+  void _showshowCircleForCenter() {
+    Get.to(() => showCircleForCenter(), arguments: controller.data_user);
   }
 
   void _showLogoutDialog() {

@@ -190,6 +190,7 @@ class Add_VisitController extends GetxController{
   Future select_previous_visits() async {
     if (loadingPreviousVisits.value) return;
     if(circles.isNotEmpty) {
+
       final res = await handleRequest<dynamic>(
         isLoading: loadingPreviousVisits,
         loadingMessage: "جاري تحميل الزيارات السابقة...",
@@ -206,7 +207,9 @@ class Add_VisitController extends GetxController{
         mySnackbar("خطأ", "فشل الاتصال بالخادم");
         return;
       }
+      print("res======${res}");
       if (res["stat"] == "ok") {
+
         all_previous_visits.assignAll(
             List<Map<String, dynamic>>.from(res["data"]));
 

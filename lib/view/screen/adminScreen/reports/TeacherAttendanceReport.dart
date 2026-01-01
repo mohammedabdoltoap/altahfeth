@@ -230,9 +230,9 @@ class TeacherAttendanceReport extends StatelessWidget {
                         child: Row(
                           children: [
                             _buildStatChip('مكتمل', completedDays.toString(), Colors.green),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4),
                             _buildStatChip('غير مكتمل', incompleteDays.toString(), Colors.orange),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 4),
                             _buildStatChip('الإجمالي', totalDays.toString(), Colors.blue),
                           ],
                         ),

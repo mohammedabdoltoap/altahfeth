@@ -2,7 +2,10 @@ import 'package:althfeth/view/screen/teacherScreen/curriculum_branch/Adab.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:althfeth/constants/app_theme.dart';
+import 'curriculum_branch/Gharib_Quran.dart';
 import 'curriculum_branch/Hadiths.dart';
+import 'curriculum_branch/Names_God.dart';
+import 'curriculum_branch/Quran_Tadabbur.dart';
 import 'curriculum_branch/TuhfatAlAtfal.dart';
 import 'curriculum_branch/Mathurat.dart';
 
@@ -95,6 +98,34 @@ class Curriculum extends StatelessWidget {
               color: AppTheme.reportColors[0],
               onTap: () {
                 Get.to(() => Adab(), arguments: curriculumController.data);
+              },
+            ),
+            SizedBox(height: AppTheme.spacingMedium),
+            _buildCurriculumCard(
+              title: 'اسماء الله',
+              subtitle: 'اسماء الله الحسنى ',
+              icon: Icons.book,
+              color: AppTheme.reportColors[0],
+              onTap: () {
+                Get.to(() => NamesGod(), arguments: curriculumController.data);
+              },
+            ), SizedBox(height: AppTheme.spacingMedium),
+            _buildCurriculumCard(
+              title: 'تدبر القرآن',
+              subtitle: 'تدبر القرآن',
+              icon: Icons.book,
+              color: AppTheme.reportColors[0],
+              onTap: () {
+                Get.to(() => QuranTadabbur(), arguments: curriculumController.data);
+              },
+            ), SizedBox(height: AppTheme.spacingMedium),
+            _buildCurriculumCard(
+              title: 'غريب القرآن',
+              subtitle: 'غريب القرآن ',
+              icon: Icons.book,
+              color: AppTheme.reportColors[0],
+              onTap: () {
+                Get.to(() => GharibQuran(), arguments: curriculumController.data);
               },
             ),
           ],

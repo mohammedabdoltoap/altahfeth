@@ -634,7 +634,8 @@ class LoginController extends GetxController {
       useDialog: false,
       immediateLoading: true,
       action: () async {
-        await del();
+        print("usernameController.text.trim()==${usernameController.text.trim()}");
+
         return await postData(Linkapi.select_data_student, {
           "name_student": usernameController.text.trim(),
           "password": passwordController.text.trim(),

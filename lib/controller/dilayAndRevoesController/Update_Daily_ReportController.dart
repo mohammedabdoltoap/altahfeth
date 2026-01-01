@@ -92,12 +92,14 @@ class Update_Daily_ReportController extends GetxController{
     if (res["stat"] == "ok") {
       // final surahs = List<Map<String, dynamic>>.from(res["data"]);
       // datasoura.assignAll(surahs);
-      print("dataArglastDailyReport=====${dataArglastDailyReport}");
+
       datasoura.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-      toSoura.value = datasoura.firstWhere(
+
+
+      toSoura.value = datasoura.firstWhereOrNull(
             (soura) => soura["id_soura"].toString() == dataArglastDailyReport.value?["to_id_soura"].toString(),
-        orElse: () => {},
       );
+
       to_id_aya.value = int.tryParse(dataArglastDailyReport.value?["to_id_aya"].toString() ?? "");
 
     } else if(res["stat"]=="no") {
@@ -124,9 +126,8 @@ class Update_Daily_ReportController extends GetxController{
       // final surahs = List<Map<String, dynamic>>.from(res["data"]);
       // datasoura.assignAll(surahs);
       datasoura.assignAll(List<Map<String, dynamic>>.from(res["data"]));
-      toSoura.value = datasoura.firstWhere(
+      toSoura.value = datasoura.firstWhereOrNull(
             (soura) => soura["id_soura"].toString() == dataArglastDailyReport.value?["to_id_soura"].toString(),
-        orElse: () => {},
       );
       to_id_aya.value = int.tryParse(dataArglastDailyReport.value?["to_id_aya"].toString() ?? "");
 

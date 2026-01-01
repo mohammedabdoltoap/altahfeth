@@ -202,6 +202,7 @@ class EditEmployeeProfile extends StatelessWidget {
             icon: Icons.phone_outlined,
             controller: controller.phoneController,
             hint: "رقم الهاتف",
+            keyboardType: TextInputType.number,
             // readOnly: true,
             // enabled: false,
             //

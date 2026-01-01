@@ -56,6 +56,7 @@ class Linkapi {
   // SELECT
 
   static const String select_users = "${server}users/select.php?mark=select_users";
+  static const String select_users_id_user = "${server}users/select.php?mark=select_users_id_user";
   static const String getstudents = "${server}users/select.php?mark=getstudents";
   static const String get_circle = "${server}users/select.php?mark=get_circle";
   static const String select_fromId_soura_with_to_soura = "${server}users/select.php?mark=select_fromId_soura_with_to_soura";
@@ -73,6 +74,7 @@ class Linkapi {
   static const String select_visits_type_months_years = "${server}users/select.php?mark=select_visits_type_months_years";
   static const String select_visitsed = "${server}users/select.php?mark=select_visitsed";
   static const String select_circle_for_center = "${server}users/select.php?mark=select_circle_for_center";
+  static const String select_circle_for_center2 = "${server}users/select.php?mark=select_circle_for_center2";
   static const String select_years = "${server}users/select.php?mark=select_years";
   static const String select_visits = "${server}users/select.php?mark=select_visits";
   static const String select_visit_results = "${server}users/select.php?mark=select_visit_results";
@@ -105,7 +107,6 @@ class Linkapi {
   static const String select_notes_for_teacher_by_circle = "${server}users/select.php?mark=select_notes_for_teacher_by_circle";
   static const String select_notes_for_teacher_forVisit = "${server}users/select.php?mark=select_notes_for_teacher_forVisit";
   static const String selecDataCenter = "${server}users/select.php?mark=selecDataCenter";
-  static const String select_employee_by_user = "${server}users/select.php?mark=select_employee_by_user";
 
   // ==================== CURRICULUM (المنهج) APIs ====================
   static const String selectHadiths = "${server}users/select.php?mark=selectHadiths";
@@ -126,6 +127,24 @@ class Linkapi {
   static const String selectLastAdab = "${server}users/select.php?mark=selectLastAdab";
   static const String saveStudentAdabRange = "${server}users/insert.php?mark=saveStudentAdabRange";
   static const String updateStudentAdabRange = "${server}users/update.php?mark=updateStudentAdabRange";
+
+  // ==================== NAMES_GOD (أسماء الله الحسنى) APIs ====================
+  static const String selectNamesGod = "${server}users/select.php?mark=selectNamesGod";
+  static const String selectLastNamesGod = "${server}users/select.php?mark=selectLastNamesGod";
+  static const String saveStudentNamesGodRange = "${server}users/insert.php?mark=saveStudentNamesGodRange";
+  static const String updateStudentNamesGodRange = "${server}users/update.php?mark=updateStudentNamesGodRange";
+
+  // ==================== GHARIB QURAN (غريب القرآن) APIs ====================
+  static const String selectSouraForGharib = "${server}users/select.php?mark=selectSouraForGharib";
+  static const String selectLastGharibQuran = "${server}users/select.php?mark=selectLastGharibQuran";
+  static const String saveGharibQuranRange = "${server}users/insert.php?mark=saveGharibQuranRange";
+  static const String updateGharibQuranRange = "${server}users/update.php?mark=updateGharibQuranRange";
+
+  // ==================== QURAN TADABBUR (تدبر القرآن) APIs ====================
+  static const String selectSouraForTadabbur = "${server}users/select.php?mark=selectSouraForTadabbur";
+  static const String selectLastQuranTadabbur = "${server}users/select.php?mark=selectLastQuranTadabbur";
+  static const String saveQuranTadabburRange = "${server}users/insert.php?mark=saveQuranTadabburRange";
+  static const String updateQuranTadabburRange = "${server}users/update.php?mark=updateQuranTadabburRange";
 
   // ==================== PROMOTION (ترفيع) APIs ====================
   static const String select_centers = "${server}users/select.php?mark=select_centers";

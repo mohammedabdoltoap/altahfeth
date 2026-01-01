@@ -70,8 +70,9 @@ class Show_Circle extends StatelessWidget {
                         final args = {
                           ...dataCircle,
                           "username": show_circleController.dataArg["username"],
+                          "password": show_circleController.dataArg["password"],
                           "id_user": show_circleController.dataArg["id_user"],
-                          "role": show_circleController.dataArg["role"],
+                          "role_id": show_circleController.dataArg["role_id"],
                           "circles":show_circleController.data_circle
                         };
                         holidayData.clear();

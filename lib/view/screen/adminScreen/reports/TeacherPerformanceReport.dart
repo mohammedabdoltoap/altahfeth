@@ -143,17 +143,17 @@ class TeacherPerformanceReport extends StatelessWidget {
                             Row(
                               children: [
                                 _buildStatChip('طلاب', studentCount.toString(), Colors.blue),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 4),
                                 _buildStatChip('تسميع', recitationCount.toString(), Colors.purple),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 4),
                                 _buildStatChip('مراجعة', reviewCount.toString(), Colors.teal),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Row(
                               children: [
                                 _buildStatChip('حضور', (int.tryParse(item['attendance_count']?.toString() ?? '0') ?? 0).toString(), Colors.green),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 4),
                                 _buildStatChip('إجازة', (int.tryParse(item['leave_count']?.toString() ?? '0') ?? 0).toString(), Colors.orange),
                               ],
                             ),
