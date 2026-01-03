@@ -47,17 +47,24 @@ class ReviewController extends GetxController{
   RxnInt selectedEvaluations = RxnInt(null);
 
   Future select_evaluations() async {
-    if (connectivityHelper.hasConnection) {
-      await select_evaluationsOnline();
-    } else {
-      await select_evaluationsOffline();
-    }
+    // 📱 الجلب من المحلي مباشرة (البيانات محفوظة عند التثبيت)
+    await select_evaluationsOffline();
   }
 
   Future select_evaluationsOffline() async {
-    List d = await db.rawQuery("select * from evaluations");
-    if (d.isNotEmpty) {
-      dataEvaluations.assignAll(List.from(d));
+    try {
+      List<Map<String, dynamic>> d = await db.rawQuery("SELECT * FROM evaluations");
+      
+      if (d.isNotEmpty) {
+        dataEvaluations.assignAll(d);
+        print('✅ تم جلب ${d.length} تقييم من المحلي');
+      } else {
+        print('⚠️ لا توجد تقييمات محلية');
+        mySnackbar("تنبيه", "لا توجد تقييمات محفوظة", type: "y");
+      }
+    } catch (e) {
+      print('❌ خطأ في جلب التقييمات محلياً: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء جلب التقييمات");
     }
   }
 
@@ -89,29 +96,32 @@ class ReviewController extends GetxController{
   var datasouraFrom = <Map<String, dynamic>>[].obs;
 
   Future select_fromId_soura_with_to_soura() async {
-    if (connectivityHelper.hasConnection) {
-      await select_fromId_soura_with_to_souraOnline();
-    } else {
-      await select_fromId_soura_with_to_souraOffline();
-    }
+    // 📱 الجلب من المحلي مباشرة (البيانات محفوظة عند التثبيت)
+    await select_fromId_soura_with_to_souraOffline();
   }
 
   Future select_fromId_soura_with_to_souraOffline() async {
-    final res = await selectFromIdSouraWithToSoura(
-      db: db,
-      idLevel: student["id_level"],
-      idSoura: dataLastReview.value!["to_id_soura"],
-    );
+    try {
+      final res = await selectFromIdSouraWithToSoura(
+        db: db,
+        idLevel: student["id_level"],
+        idSoura: dataLastReview.value!["to_id_soura"],
+      );
 
-    if (res["stat"] == "ok") {
-      final surahs = List<Map<String, dynamic>>.from(res["data"]);
-      datasoura.assignAll(surahs);
-    } else if (res["stat"] == "no") {
-      String errorMsg = res["msg"] ?? "لايوجد سور";
-      mySnackbar("لايوجد", errorMsg);
-    } else {
-      String errorMsg = res["msg"] ?? "خطأ في جلب السور";
-      mySnackbar("خطأ", errorMsg);
+      if (res["stat"] == "ok") {
+        final surahs = List<Map<String, dynamic>>.from(res["data"]);
+        datasoura.assignAll(surahs);
+        print('✅ تم جلب ${surahs.length} سورة من المحلي');
+      } else if (res["stat"] == "no") {
+        String errorMsg = res["msg"] ?? "لايوجد سور";
+        mySnackbar("لايوجد", errorMsg);
+      } else {
+        String errorMsg = res["msg"] ?? "خطأ في جلب السور";
+        mySnackbar("خطأ", errorMsg);
+      }
+    } catch (e) {
+      print('❌ خطأ في جلب السور محلياً: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء جلب السور");
     }
   }
 
@@ -121,13 +131,18 @@ class ReviewController extends GetxController{
     required int idSoura,
   }) async {
     try {
+      // استعلام محسّن: جلب جميع السور من البداية إلى نهاية المستوى
       List<Map<String, dynamic>> result = await db.rawQuery("""
-      SELECT sq.*
-      FROM level l
-      JOIN sour_quran sq 
-        ON sq.id_soura BETWEEN ? AND l.to_id_soura
-      WHERE l.id_level = ?
-    """, [1, idLevel]);
+        SELECT sq.*
+        FROM sour_quran sq
+        WHERE sq.id_soura >= 1
+          AND sq.id_soura <= (
+            SELECT l.to_id_soura 
+            FROM level l 
+            WHERE l.id_level = ?
+          )
+        ORDER BY sq.id_soura
+      """, [idLevel]);
 
       if (result.isNotEmpty) {
         return {
@@ -138,6 +153,7 @@ class ReviewController extends GetxController{
 
       return {
         "stat": "no",
+        "msg": "لا توجد سور متاحة",
       };
     } catch (e) {
       return {

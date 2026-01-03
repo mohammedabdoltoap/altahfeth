@@ -6,7 +6,7 @@ class CardStudent extends StatelessWidget {
   final Map<String, dynamic> student;
   final VoidCallback? add_rep;
   final VoidCallback? review;
-  final VoidCallback? combinedDaily;
+  // final VoidCallback? combinedDaily;
   final VoidCallback? updateData;
   final VoidCallback? dailyReports;
   final VoidCallback? reviewReports;
@@ -19,7 +19,7 @@ class CardStudent extends StatelessWidget {
     required this.student,
     this.add_rep,
     this.review,
-    this.combinedDaily,
+    // this.combinedDaily,
     required this.updateData,
     required this.dailyReports,
     required this.reviewReports,
@@ -105,13 +105,13 @@ class CardStudent extends StatelessWidget {
               Column(
                 children: [
                   // زر التسميع والمراجعة المدمج (يجبر على إدخال البيانات للاثنين)
-                  AppButton(
-                    text: "التسميع والمراجعة معاً (إجباري)",
-                    onPressed: combinedDaily,
-                    height: 45,
-                    color: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                  ),
+                  // AppButton(
+                  //   text: "التسميع والمراجعة معاً (إجباري)",
+                  //   onPressed: combinedDaily,
+                  //   height: 45,
+                  //   color: Colors.deepPurple,
+                  //   foregroundColor: Colors.white,
+                  // ),
                   const SizedBox(height: 10),
                   // أزرار التسميع والمراجعة المنفصلة
                   Row(

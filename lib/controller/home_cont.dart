@@ -1108,33 +1108,42 @@ await     initialDataSync();
   String formattedDate = "${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}";
 
   Future check_teacher_attendance() async {
-
-    if(connectivityHelper.hasConnection)
-      await check_teacher_attendanceOnline();
-    else
-      await check_teacher_attendanceOfline();
-
-
-
+    // 📱 استراتيجية Offline-First: التحقق من المحلي أولاً
+    await check_teacher_attendanceOfline();
   }
 
-  Future check_teacher_attendanceOfline()async{
+  Future check_teacher_attendanceOfline() async {
+    try {
+      final res = await selectUsersAttendanceTodayOfline(
+        db: db,
+        idUser: dataArg["id_user"],
+        attendanceDate: formattedDate,
+        idCircle: dataArg["id_circle"],
+      );
 
-    final res = await selectUsersAttendanceTodayOfline(
-      db: db,
-      idUser: dataArg["id_user"],
-      attendanceDate: formattedDate,
-      idCircle: dataArg["id_circle"],
-    );
-
-    if (res["stat"] == "No_record_today") {
-      statTeacherAttendance.value = 0; // لم يسجل حضور
-    } else if (res["stat"] == "No_check_out_time" || res["stat"] == "He_check_all") {
-      statTeacherAttendance.value = 1; // سجل حضور
-    } else {
-      statTeacherAttendance.value = null;
+      if (res["stat"] == "No_record_today") {
+        // ⚠️ لا يوجد سجل محلي لليوم - التحقق من السيرفر
+        print('⚠️ لا يوجد سجل حضور محلي لليوم، التحقق من السيرفر...');
+        if (connectivityHelper.hasConnection) {
+          await check_teacher_attendanceOnline();
+        } else {
+          statTeacherAttendance.value = 0; // لم يسجل حضور
+          print('📵 لا يوجد اتصال بالإنترنت');
+        }
+      } else if (res["stat"] == "No_check_out_time" || res["stat"] == "He_check_all") {
+        // ✅ وجد سجل محلي لليوم - لا حاجة للسيرفر
+        statTeacherAttendance.value = 1; // سجل حضور
+        print('✅ تم العثور على سجل حضور محلي لليوم - لا حاجة للسيرفر');
+      } else {
+        statTeacherAttendance.value = null;
+      }
+    } catch (e) {
+      print('❌ خطأ في التحقق من الحضور محلياً: $e');
+      // في حالة الخطأ، حاول من السيرفر
+      if (connectivityHelper.hasConnection) {
+        await check_teacher_attendanceOnline();
+      }
     }
-
   }
   Future<Map<String, dynamic>> selectUsersAttendanceTodayOfline({
     required Database db,
@@ -1224,7 +1233,6 @@ await     initialDataSync();
         if (res["data"] != null && res["data"] is Map) {
           var serverData = res["data"];
 
-          print("serverData========${serverData}");
           int result = await db.insert('users_attendance', {
             'id_server': serverData['id'],
             'id_user': dataArg["id_user"],

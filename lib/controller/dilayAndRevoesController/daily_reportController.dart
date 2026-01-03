@@ -34,13 +34,8 @@ class Daily_ReportController extends GetxController{
   var toSoura = Rxn<Map<String, dynamic>>();
   var datasoura = <Map<String, dynamic>>[].obs;
   Future select_fromId_soura_with_to_soura() async {
-    // 🌐 فحص الاتصال بالإنترنت
-    if (connectivityHelper.hasConnection)
-    await select_fromId_soura_with_to_souraOnline();
-    else
-     await select_fromId_soura_with_to_souraOfline();
-
-
+    // 📱 الجلب من المحلي مباشرة (البيانات محفوظة عند التثبيت)
+    await select_fromId_soura_with_to_souraOfline();
   }
   Future select_fromId_soura_with_to_souraOnline()async{
     // 📡 مع الاتصال: جلب من الخادم
@@ -76,27 +71,29 @@ class Daily_ReportController extends GetxController{
 
   }
 
-  Future select_fromId_soura_with_to_souraOfline()async{
+  Future select_fromId_soura_with_to_souraOfline() async {
+    try {
+      final res = await selectFromIdSouraWithToSoura(
+        db: db,
+        idLevel: dataArg_Student["id_level"],
+        idSoura: dataArglastDailyReport.value!["to_id_soura"],
+      );
 
-    final res = await selectFromIdSouraWithToSoura(
-      db: db,
-      idLevel: dataArg_Student["id_level"],
-      idSoura: dataArglastDailyReport.value!["to_id_soura"],
-    );
-
-    if (res["stat"] == "ok") {
-      final surahs = List<Map<String, dynamic>>.from(res["data"]);
-      datasoura.assignAll(surahs);
-
-
-    } else if(res["stat"]=="no") {
-      String errorMsg = res["msg"] ?? "لايوجد سور";
-      mySnackbar("لايوجد", errorMsg);
-    } else {
-      String errorMsg = res["msg"] ?? "خطأ في جلب السور";
-      mySnackbar("خطأ", errorMsg);
+      if (res["stat"] == "ok") {
+        final surahs = List<Map<String, dynamic>>.from(res["data"]);
+        datasoura.assignAll(surahs);
+        print('✅ تم جلب ${surahs.length} سورة من المحلي');
+      } else if (res["stat"] == "no") {
+        String errorMsg = res["msg"] ?? "لايوجد سور";
+        mySnackbar("لايوجد", errorMsg);
+      } else {
+        String errorMsg = res["msg"] ?? "خطأ في جلب السور";
+        mySnackbar("خطأ", errorMsg);
+      }
+    } catch (e) {
+      print('❌ خطأ في جلب السور محلياً: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء جلب السور");
     }
-
   }
   Future<Map<String, dynamic>> selectFromIdSouraWithToSoura({
     required Database db,
@@ -104,20 +101,19 @@ class Daily_ReportController extends GetxController{
     required int idSoura,
   }) async {
     try {
-      // ================================
-      // 1) تنفيذ الاستعلام (JOIN + BETWEEN)
-      // ================================
+      // استعلام محسّن: جلب السور من idSoura إلى نهاية المستوى
       List<Map<String, dynamic>> result = await db.rawQuery("""
-      SELECT sq.*
-      FROM level l
-      JOIN sour_quran sq 
-        ON sq.id_soura BETWEEN ? AND l.to_id_soura
-      WHERE l.id_level = ?
-    """, [idSoura, idLevel]);
+        SELECT sq.*
+        FROM sour_quran sq
+        WHERE sq.id_soura >= ? 
+          AND sq.id_soura <= (
+            SELECT l.to_id_soura 
+            FROM level l 
+            WHERE l.id_level = ?
+          )
+        ORDER BY sq.id_soura
+      """, [idSoura, idLevel]);
 
-      // ================================
-      // 2) إذا فيه بيانات
-      // ================================
       if (result.isNotEmpty) {
         return {
           "stat": "ok",
@@ -125,17 +121,11 @@ class Daily_ReportController extends GetxController{
         };
       }
 
-      // ================================
-      // 3) إذا لا يوجد بيانات
-      // ================================
       return {
         "stat": "no",
+        "msg": "لا توجد سور متاحة",
       };
-
     } catch (e) {
-      // ================================
-      // 4) في حالة حدوث خطأ
-      // ================================
       return {
         "stat": "error",
         "msg": "حدث خطأ أثناء تنفيذ الاستعلام: $e",
@@ -143,23 +133,26 @@ class Daily_ReportController extends GetxController{
     }
   }
 
- Future select_evaluations() async {
-    // 🌐 فحص الاتصال بالإنترنت
-    if (connectivityHelper.hasConnection) {
-     await select_evaluationsOnline();
-    }else{
-      await select_evaluationsOfline();
-    }
-
-
+  Future select_evaluations() async {
+    // 📱 الجلب من المحلي مباشرة (البيانات محفوظة عند التثبيت)
+    await select_evaluationsOfline();
   }
- Future select_evaluationsOfline()async{
-
-   List d= await db.rawQuery("select * from evaluations");
-   if(d.isNotEmpty)
-     dataEvaluations.assignAll(List.from(d));
-
- }
+  Future select_evaluationsOfline() async {
+    try {
+      List<Map<String, dynamic>> d = await db.rawQuery("SELECT * FROM evaluations");
+      
+      if (d.isNotEmpty) {
+        dataEvaluations.assignAll(d);
+        print('✅ تم جلب ${d.length} تقييم من المحلي');
+      } else {
+        print('⚠️ لا توجد تقييمات محلية');
+        mySnackbar("تنبيه", "لا توجد تقييمات محفوظة", type: "y");
+      }
+    } catch (e) {
+      print('❌ خطأ في جلب التقييمات محلياً: $e');
+      mySnackbar("خطأ", "حدث خطأ أثناء جلب التقييمات");
+    }
+  }
   Future select_evaluationsOnline()async{
 
     // 📡 مع الاتصال: جلب من الخادم

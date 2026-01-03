@@ -333,110 +333,110 @@ class Home extends StatelessWidget {
                       mySnackbar("تنبية", "اجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}");
                     }
                   },
-                  combinedDaily: () async {
-                    if(holidayData["is_holiday"] != true) {
-                      // التحقق من تسجيل حضور الأستاذ نفسه أولاً
-                      await controller.check_teacher_attendance();
-                      
-                      if (controller.statTeacherAttendance.value == null) {
-                        mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
-                        return;
-                      }
-                      
-                      if (controller.statTeacherAttendance.value == 0) {
-                        // عرض dialog للانتقال لصفحة الحضور
-                        bool? goToAttendance = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("تسجيل الحضور مطلوب"),
-                            content: const Text("يجب عليك تسجيل حضورك أولاً قبل تسجيل التسميع أو المراجعة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text("إلغاء"),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text("الانتقال"),
-                              ),
-                            ],
-                          ),
-                        );
-                        
-                        if (goToAttendance == true) {
-                          Get.to(() => User_Attendance(), arguments: controller.dataArg);
-                        }
-                        return;
-                      }
-
-                      // جلب آخر تسميع ومراجعة
-                      await controller.getLastDailyReport(student["id_student"], student["id_level"]);
-                      await controller.getLastReview(student["id_student"], student["id_level"]);
-
-                      final studentArgs = {
-                        ...student,
-                        "id_user": controller.dataArg["id_user"],
-                      };
-
-                      // التحقق من حالة التسميع والمراجعة
-                      bool hasDailyToday = controller.statLastDailyReport.value == 2;
-                      bool hasReviewToday = controller.stat_getLastReview == 1;
-
-                      // إذا كان هناك تسميع ومراجعة لنفس اليوم، نفتح صفحة التعديل المدمجة
-                      if (hasDailyToday && hasReviewToday) {
-                        bool? confirm = await showConfirmDialog(
-                          context: context,
-                          title: "تنبيه",
-                          message: "لقد تم إضافة تسميع ومراجعة لهذا الطالب اليوم.\nهل تريد تعديل البيانات الموجودة معاً؟",
-                        );
-                        if (confirm == true) {
-                          // فتح صفحة التعديل المدمجة
-                          Get.to(() => UpdateCombinedDailyPage(), arguments: {
-                            "student": studentArgs,
-                            "lastDailyReport": controller.lastDailyReport,
-                            "dataLastReview": controller.dataLastReview,
-                          });
-                        }
-                        return;
-                      } else if (hasDailyToday) {
-                        bool? confirm = await showConfirmDialog(
-                          context: context,
-                          title: "تنبيه",
-                          message: "لقد تم إضافة تسميع لهذا الطالب اليوم.\nهل تريد تعديل التسميع الموجود؟",
-                        );
-                        if (confirm == true) {
-                          Get.to(() => Update_Daily_Report(), arguments: {
-                            "student": studentArgs,
-                            "lastDailyReport": controller.lastDailyReport,
-                          });
-                        }
-                        return;
-                      } else if (hasReviewToday) {
-                        bool? confirm = await showConfirmDialog(
-                          context: context,
-                          title: "تنبيه",
-                          message: "لقد تم إضافة مراجعة لهذا الطالب اليوم.\nهل تريد تعديل المراجعة الموجودة؟",
-                        );
-                        if (confirm == true) {
-                          Get.to(() => Update_Review(), arguments: {
-                            "dataLastReview": controller.dataLastReview,
-                            "student": student,
-                          });
-                        }
-                        return;
-                      }
-
-                      // إذا لم يكن هناك بيانات لنفس اليوم، نفتح الصفحة المدمجة
-                      Get.to(() => CombinedDailyPage(), arguments: {
-                        "student": studentArgs,
-                        "lastDailyReport": controller.lastDailyReport,
-                        "dataLastReview": controller.dataLastReview,
-                        "forceBoth": true, // علامة لإجبار إدخال البيانات للاثنين
-                      });
-                    } else {
-                      mySnackbar("تنبية", "اجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}");
-                    }
-                  },
+                  // combinedDaily: () async {
+                  //   if(holidayData["is_holiday"] != true) {
+                  //     // التحقق من تسجيل حضور الأستاذ نفسه أولاً
+                  //     await controller.check_teacher_attendance();
+                  //
+                  //     if (controller.statTeacherAttendance.value == null) {
+                  //       mySnackbar("تنبيه", "حدث خطأ في التحقق من حضورك");
+                  //       return;
+                  //     }
+                  //
+                  //     if (controller.statTeacherAttendance.value == 0) {
+                  //       // عرض dialog للانتقال لصفحة الحضور
+                  //       bool? goToAttendance = await showDialog<bool>(
+                  //         context: context,
+                  //         builder: (context) => AlertDialog(
+                  //           title: const Text("تسجيل الحضور مطلوب"),
+                  //           content: const Text("يجب عليك تسجيل حضورك أولاً قبل تسجيل التسميع أو المراجعة.\n\nهل تريد الانتقال إلى صفحة تسجيل الحضور والانصراف؟"),
+                  //           actions: [
+                  //             TextButton(
+                  //               onPressed: () => Navigator.pop(context, false),
+                  //               child: const Text("إلغاء"),
+                  //             ),
+                  //             ElevatedButton(
+                  //               onPressed: () => Navigator.pop(context, true),
+                  //               child: const Text("الانتقال"),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //       );
+                  //
+                  //       if (goToAttendance == true) {
+                  //         Get.to(() => User_Attendance(), arguments: controller.dataArg);
+                  //       }
+                  //       return;
+                  //     }
+                  //
+                  //     // جلب آخر تسميع ومراجعة
+                  //     await controller.getLastDailyReport(student["id_student"], student["id_level"]);
+                  //     await controller.getLastReview(student["id_student"], student["id_level"]);
+                  //
+                  //     final studentArgs = {
+                  //       ...student,
+                  //       "id_user": controller.dataArg["id_user"],
+                  //     };
+                  //
+                  //     // التحقق من حالة التسميع والمراجعة
+                  //     bool hasDailyToday = controller.statLastDailyReport.value == 2;
+                  //     bool hasReviewToday = controller.stat_getLastReview == 1;
+                  //
+                  //     // إذا كان هناك تسميع ومراجعة لنفس اليوم، نفتح صفحة التعديل المدمجة
+                  //     if (hasDailyToday && hasReviewToday) {
+                  //       bool? confirm = await showConfirmDialog(
+                  //         context: context,
+                  //         title: "تنبيه",
+                  //         message: "لقد تم إضافة تسميع ومراجعة لهذا الطالب اليوم.\nهل تريد تعديل البيانات الموجودة معاً؟",
+                  //       );
+                  //       if (confirm == true) {
+                  //         // فتح صفحة التعديل المدمجة
+                  //         Get.to(() => UpdateCombinedDailyPage(), arguments: {
+                  //           "student": studentArgs,
+                  //           "lastDailyReport": controller.lastDailyReport,
+                  //           "dataLastReview": controller.dataLastReview,
+                  //         });
+                  //       }
+                  //       return;
+                  //     } else if (hasDailyToday) {
+                  //       bool? confirm = await showConfirmDialog(
+                  //         context: context,
+                  //         title: "تنبيه",
+                  //         message: "لقد تم إضافة تسميع لهذا الطالب اليوم.\nهل تريد تعديل التسميع الموجود؟",
+                  //       );
+                  //       if (confirm == true) {
+                  //         Get.to(() => Update_Daily_Report(), arguments: {
+                  //           "student": studentArgs,
+                  //           "lastDailyReport": controller.lastDailyReport,
+                  //         });
+                  //       }
+                  //       return;
+                  //     } else if (hasReviewToday) {
+                  //       bool? confirm = await showConfirmDialog(
+                  //         context: context,
+                  //         title: "تنبيه",
+                  //         message: "لقد تم إضافة مراجعة لهذا الطالب اليوم.\nهل تريد تعديل المراجعة الموجودة؟",
+                  //       );
+                  //       if (confirm == true) {
+                  //         Get.to(() => Update_Review(), arguments: {
+                  //           "dataLastReview": controller.dataLastReview,
+                  //           "student": student,
+                  //         });
+                  //       }
+                  //       return;
+                  //     }
+                  //
+                  //     // إذا لم يكن هناك بيانات لنفس اليوم، نفتح الصفحة المدمجة
+                  //     Get.to(() => CombinedDailyPage(), arguments: {
+                  //       "student": studentArgs,
+                  //       "lastDailyReport": controller.lastDailyReport,
+                  //       "dataLastReview": controller.dataLastReview,
+                  //       "forceBoth": true, // علامة لإجبار إدخال البيانات للاثنين
+                  //     });
+                  //   } else {
+                  //     mySnackbar("تنبية", "اجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}");
+                  //   }
+                  // },
                   updateData: (){
                     if(connectivityHelper.hasConnection) {
                       Get.to(()=>UpdateStudent(),arguments: student);
