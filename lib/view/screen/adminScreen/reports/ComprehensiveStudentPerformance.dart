@@ -266,21 +266,21 @@ class ComprehensiveStudentPerformance extends StatelessWidget {
           const SizedBox(height: 12),
           
           // إحصائيات الحضور
-          _buildStatCard(
-            "الحضور والغياب",
-            Icons.calendar_today,
-            Colors.teal,
-            [
-              _buildStatRow("إجمالي الأيام", attendanceStats['total_days']?.toString() ?? '0'),
-              _buildStatRow("أيام الحضور", attendanceStats['present_count']?.toString() ?? '0', Colors.green),
-              _buildStatRow("أيام الغياب", attendanceStats['absent_count']?.toString() ?? '0', Colors.red),
-              _buildStatRow(
-                "نسبة الحضور",
-                _calculateAttendanceRate(attendanceStats),
-                Colors.blue,
-              ),
-            ],
-          ),
+          // _buildStatCard(
+          //   "الحضور والغياب",
+          //   Icons.calendar_today,
+          //   Colors.teal,
+          //   [
+          //     _buildStatRow("إجمالي الأيام", attendanceStats['total_days']?.toString() ?? '0'),
+          //     _buildStatRow("أيام الحضور", attendanceStats['present_count']?.toString() ?? '0', Colors.green),
+          //     _buildStatRow("أيام الغياب", attendanceStats['absent_count']?.toString() ?? '0', Colors.red),
+          //     _buildStatRow(
+          //       "نسبة الحضور",
+          //       _calculateAttendanceRate(attendanceStats),
+          //       Colors.blue,
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );
@@ -329,7 +329,7 @@ class ComprehensiveStudentPerformance extends StatelessWidget {
                       children: [
                         _buildMiniStat("التسميع", totalRecitations.toString(), Colors.purple),
                         _buildMiniStat("المراجعة", totalReviews.toString(), Colors.orange),
-                        _buildMiniStat("الحضور", "${attendanceRate.toStringAsFixed(0)}%", Colors.teal),
+                        // _buildMiniStat("الحضور", "${attendanceRate.toStringAsFixed(0)}%", Colors.teal),
                       ],
                     ),
                     const Divider(height: 24),
@@ -776,13 +776,13 @@ class ComprehensiveStudentPerformanceController extends GetxController {
                         '${reviewStats['max_mark'] ?? 0}',
                         '${reviewStats['min_mark'] ?? 0}',
                       ],
-                      [
-                        'الحضور',
-                        '${attendanceStats['total_days'] ?? 0}',
-                        '${_calculateAttendanceRateForPDF(attendanceStats)}%',
-                        '-',
-                        '-',
-                      ],
+                      // [
+                      //   'الحضور',
+                      //   '${attendanceStats['total_days'] ?? 0}',
+                      //   '${_calculateAttendanceRateForPDF(attendanceStats)}%',
+                      //   '-',
+                      //   '-',
+                      // ],
                     ],
                     border: pw.TableBorder.all(width: 0.5, color: PdfColors.indigo300),
                     headerStyle: pw.TextStyle(
@@ -922,7 +922,7 @@ class ComprehensiveStudentPerformanceController extends GetxController {
                 pw.Directionality(
                   textDirection: pw.TextDirection.rtl,
                   child: pw.Table.fromTextArray(
-                    headers: ['الحضور%', 'المراجعة', 'التسميع', 'الحلقة', 'اسم الطالب', '#'],
+                    headers: [ 'المراجعة', 'التسميع', 'الحلقة', 'اسم الطالب', '#'],
                     data: studentsData.asMap().entries.map((entry) {
                       final index = entry.key + 1;
                       final student = entry.value;
@@ -930,10 +930,11 @@ class ComprehensiveStudentPerformanceController extends GetxController {
                       final presentCount = int.tryParse(student['present_count']?.toString() ?? '0') ?? 0;
                       final absentCount = int.tryParse(student['absent_count']?.toString() ?? '0') ?? 0;
                       final totalDays = presentCount + absentCount;
-                      final attendanceRate = totalDays > 0 ? (presentCount / totalDays * 100).toStringAsFixed(0) : '0';
+                      // final attendanceRate = 3;
+                      // totalDays > 0 ? (presentCount / totalDays * 100).toStringAsFixed(0) : '0';
                       
                       return [
-                        '$attendanceRate%',
+
                         '${double.tryParse(student['avg_review_mark']?.toString() ?? '0')?.toStringAsFixed(1) ?? '0.0'}',
                         '${double.tryParse(student['avg_recitation_mark']?.toString() ?? '0')?.toStringAsFixed(1) ?? '0.0'}',
                         student['name_circle'] ?? circleName,

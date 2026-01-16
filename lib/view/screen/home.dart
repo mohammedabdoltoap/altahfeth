@@ -7,6 +7,7 @@ import 'package:althfeth/view/screen/teacherScreen/Curriculum.dart';
 import 'package:althfeth/view/screen/user_attendance.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../constants/NewsToastWidget.dart';
 import '../../globals.dart';
 import '../widget/home/appDrawer.dart';
 import '../widget/home/cardStudent.dart';
@@ -90,6 +91,9 @@ class Home extends StatelessWidget {
           children: [
             // 🌐 مؤشر الاتصال بالإنترنت
             OfflineIndicator(),
+
+            // news
+            NewsToastWidget(),
 
             Expanded(
               child: Padding(
@@ -260,7 +264,8 @@ class Home extends StatelessWidget {
                           });
                         }
                       }
-                    } else {
+                    }
+                    else {
                       mySnackbar("تنبية", "اجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}");
                     }
                   },

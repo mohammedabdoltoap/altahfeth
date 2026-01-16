@@ -81,8 +81,13 @@ class AppDrawer extends StatelessWidget {
                 icon: Icons.fingerprint_rounded,
                 text: "حضور وانصراف المعلم",
                 onTap: () {
-                  Get.back();
-                  Get.to(() => User_Attendance(), arguments: homeCont.dataArg);
+                  if(holidayData["is_holiday"] != true) {
+                    Get.back();
+                    Get.to(() => User_Attendance(),
+                        arguments: homeCont.dataArg);
+                  } else {
+                    mySnackbar("تنبية", "اجازة بمناسبة ${holidayData["reason"] ?? 'إجازة'}");
+                  }
                 },
                 theme: theme,
               ),

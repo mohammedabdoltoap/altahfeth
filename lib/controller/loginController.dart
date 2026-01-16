@@ -488,7 +488,7 @@ class LoginController extends GetxController {
         mySnackbar("خطأ", "رد غير صحيح من الخادم");
         return;
       }
-      print("response=====${response}");
+      // print("response==${response}");
       if (response["stat"] == "ok") {
         // ✅ تسجيل الدخول نجح
         data_user = response["data"];
@@ -497,6 +497,9 @@ class LoginController extends GetxController {
         if (data_user["status"] == 1) {
 
           data_user_globle = data_user;
+          // dataNewsGloble=response["news"];
+          dataNewsGloble = List<Map<String, dynamic>>.from(response["news"]);
+          print("dataNewsGloble=====${dataNewsGloble}");
           isOfflineMode.value = false; // نحن في وضع Online
           
           _navigateByRole(data_user);
@@ -538,13 +541,18 @@ class LoginController extends GetxController {
         return;
       }
 
-      if (localUser['password'] == password) {
-        // ✅ كلمة المرور صحيحة
-        data_user = localUser;
-        data_user_globle = data_user;
-        isOfflineMode.value = true; // نحن في وضع Offline
 
-        _navigateByRole(data_user);
+      if (localUser['password'] == password ) {
+        if(localUser["status"]==1) {
+          // ✅ كلمة المرور صحيحة
+          data_user = localUser;
+          data_user_globle = data_user;
+          isOfflineMode.value = true; // نحن في وضع Offline
+
+          _navigateByRole(data_user);
+        }else{
+          mySnackbar("تنبية", "حسابك موقف حاليا من قبل الادارة ",type: "y");
+        }
       } else {
         mySnackbar(
           "خطأ",
@@ -649,10 +657,12 @@ class LoginController extends GetxController {
       return;
     }
 
-    if (response["stat"] == "ok") {
+    if (response["stat"] == "ok" && response["data"]["status"]==1 ) {
       data_user = response["data"];
+      // if(data_user["status"]==1)
       Get.offAll(() => StudentPage(), arguments: data_user);
-    }  else if (response["stat"]=="no"){
+
+    }  else if (response["stat"]=="no" || response["data"]["status"]!=1){
       mySnackbar("خطأ", "اسم المستخدم أو كلمة المرور خاطئة");
     }
     else if(response["stat"]=="erorr"){

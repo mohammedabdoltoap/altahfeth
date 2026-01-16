@@ -16,7 +16,7 @@ class AbsenceReport extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("تقرير الغياب"),
+        title: const Text("تقرير الغياب (بدون عذر)"),
         backgroundColor: Colors.red,
         actions: [
           IconButton(
@@ -152,8 +152,8 @@ class AbsenceReport extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatCard("إجمالي الغياب", totalAbsences.toString(), Colors.red),
-                    _buildStatCard("عدد الطلاب", controller.absenceList.length.toString(), Colors.blue),
+                    _buildStatCard("إجمالي الغياب (بدون عذر) ", totalAbsences.toString(), Colors.red),
+                    _buildStatCard("عدد الطلاب(الغائبيين) ", controller.absenceList.length.toString(), Colors.blue),
                   ],
                 ),
               );
@@ -245,9 +245,10 @@ class AbsenceReport extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem('أيام الغياب', absentCount.toString(), Colors.red),
+                    _buildStatItem(' أيام الغياب (بدون عذر) ', absentCount.toString(), Colors.red),
                     _buildStatItem('إجمالي الأيام', totalDays.toString(), Colors.blue),
-                    _buildStatItem('نسبة الحضور', '${attendanceRate.toStringAsFixed(0)}%', Colors.green),
+                    // _buildStatItem('نسبة الحضور', '${attendanceRate.toStringAsFixed(0)}%', Colors.green),
+
                   ],
                 ),
                 const SizedBox(height: 12),

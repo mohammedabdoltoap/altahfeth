@@ -14,8 +14,9 @@ class AttendanceController extends GetxController {
 
   RxList<Map<String, dynamic>> filteredStudents = <Map<String, dynamic>>[].obs;
   RxString searchQuery = ''.obs;
-  RxList<Map<String, dynamic>> students = <Map<String, dynamic>>[].obs;
 
+  RxList<Map<String, dynamic>> students = <Map<String, dynamic>>[].obs;
+  RxList<Map<String, dynamic>> leaves = <Map<String, dynamic>>[].obs;
   final TextEditingController searchController = TextEditingController();
 
   @override
@@ -55,7 +56,10 @@ class AttendanceController extends GetxController {
     }
 
     if (res["stat"] == "ok") {
-      students.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      // students.assignAll(List<Map<String, dynamic>>.from(res["data"]));
+      leaves.assignAll(List<Map<String, dynamic>>.from(res["leaves"]));
+      students.assignAll(List<Map<String, dynamic>>.from(res["students"]));
+
       filteredStudents.assignAll(students);
     } else if (res["stat"] == "no") {
       mySnackbar("لا يوجد طلاب بالحَلقة", "لا توجد بيانات");

@@ -76,7 +76,7 @@ void safeUIExecution(
 }
 
 mySnackbar( titile, messige,{type="r"}){
-  final Color bg = type=="r" ? Colors.red : type=="y" ? Colors.amberAccent : Colors.green;
+  final Color bg = type=="r" ? Colors.red : type=="y" ? Colors.orangeAccent : Colors.green;
   Get.snackbar(
     "$titile",
     "$messige",
@@ -88,6 +88,30 @@ mySnackbar( titile, messige,{type="r"}){
     borderRadius: 12,
   );
 }
+
+// void showNewsSnackBar(List<Map<String, dynamic>> news) async {
+//   // لون ثابت لكل الأخبار (يمكن تغييره)
+//   final Color bg = Colors.teal;
+//
+//   // عرض كل خبر على حدة
+//   for (var n in news) {
+//     Get.snackbar(
+//       "أخبار اليوم",          // العنوان
+//       n['title_news'],         // عنوان الخبر
+//       snackPosition: SnackPosition.BOTTOM,
+//       backgroundColor: bg,
+//       colorText: Colors.white,
+//       margin: const EdgeInsets.all(12),
+//       borderRadius: 12,
+//       duration: const Duration(seconds: 4),
+//       animationDuration: const Duration(milliseconds: 400),
+//     );
+//
+//     // انتظار 4 ثواني قبل عرض الخبر التالي
+//     await Future.delayed(const Duration(seconds: 4));
+//   }
+// }
+
 
 Future<T?> handleRequest<T>({
   required RxBool isLoading,

@@ -11,6 +11,7 @@ import 'AdminReportsPage.dart';
 import 'ResignationRequestPage.dart';
 import '../login.dart';
 import '../../../constants/function.dart';
+import '../../../constants/NewsToastWidget.dart';
 import '../../../globals.dart';
 import '../../../api/LinkApi.dart';
 import '../../../api/apiFunction.dart';
@@ -72,6 +73,10 @@ class Home_Admin extends StatelessWidget {
             child: Column(
               children: [
                 OfflineIndicator(),
+                
+                // إشعارات الأخبار - تظهر فقط عند وجود بيانات
+                if (dataNewsGloble.isNotEmpty)
+                  NewsToastWidget(),
 
                 // Header جذاب
                 _buildHeader(),

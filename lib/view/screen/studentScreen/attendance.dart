@@ -40,6 +40,70 @@ class Attendance extends StatelessWidget {
           // ✅ بعد التحميل
           return Column(
             children: [
+
+              // 🟠 قسم الطلاب المجازين
+              if (controller.leaves.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.orange.withOpacity(0.4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.event_busy, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Text(
+                            " طلاب لديهم إجازة اليوم ",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Colors.orange,
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // قائمة المجازين
+                      ...controller.leaves.map((leave) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person, size: 18, color: Colors.orange),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  leave["name_student"] ?? "طالب غير معروف",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              // Text(
+                              //   leave["leave_type"] == "single" ? "إجازة يوم" : "إجازة فترة",
+                              //   style: const TextStyle(
+                              //     fontSize: 12,
+                              //     color: Colors.grey,
+                              //   ),
+                              // ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+
               // 🔍 حقل البحث باستخدام CustomTextField
               CustomTextField(
 

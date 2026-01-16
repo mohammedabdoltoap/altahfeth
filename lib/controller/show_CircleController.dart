@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../api/LinkApi.dart';
 import '../api/apiFunction.dart';
+import '../constants/NewsToastWidget.dart';
 import '../constants/function.dart';
 import '../globals.dart';
 import '../utils/ConnectivityHelper.dart';
@@ -20,6 +21,7 @@ class Show_CircleController extends GetxController {
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       get_circle();
+
     });
   }
 

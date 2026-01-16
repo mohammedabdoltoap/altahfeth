@@ -2,6 +2,7 @@ import 'package:althfeth/view/screen/home.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../constants/NewsToastWidget.dart';
 import '../../controller/show_CircleController.dart';
 import '../../globals.dart';
 import 'package:althfeth/constants/color.dart';
@@ -25,7 +26,9 @@ class Show_Circle extends StatelessWidget {
           children: [
             // 🌐 مؤشر الاتصال بالإنترنت
             CompactOfflineIndicator(),
-            const SizedBox(height: 20),
+
+
+            // const SizedBox(height: 20),
 
             Expanded(
               child: Obx(() {

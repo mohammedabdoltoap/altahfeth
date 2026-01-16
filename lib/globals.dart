@@ -19,3 +19,4 @@ late Database db;
 
 
 Map data_user_globle={};
+List<Map<String, dynamic>> dataNewsGloble=[];

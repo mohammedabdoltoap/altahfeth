@@ -82,6 +82,7 @@ class Linkapi {
   static const String select_student_exam = "${server}users/select.php?mark=select_student_exam";
   static const String select_evaluations = "${server}users/select.php?mark=select_evaluations";
   static const String select_leave_requests = "${server}users/select.php?mark=select_leave_requests";
+  static const String select_leave_requests_student = "${server}users/select.php?mark=select_leave_requests_student";
   static const String select_resignation_requests = "${server}users/select.php?mark=select_resignation_requests";
   static const String select_teacher_performance = "${server}users/select.php?mark=select_teacher_performance";
   static const String select_teacher_complete_stats = "${server}users/select.php?mark=select_teacher_complete_stats";
@@ -170,6 +171,7 @@ class Linkapi {
   static const String select_available_substitute_teachers = "${server}users/select.php?mark=select_available_substitute_teachers";
   static const String insert_visits = "${server}users/insert.php?mark=insert_visits";
   static const String insert_leave_requests = "${server}users/insert.php?mark=insert_leave_requests";
+  static const String insert_leave_requests_student = "${server}users/insert.php?mark=insert_leave_requests_student";
   static const String insert_visit_exam_result = "${server}users/insert.php?mark=insert_visit_exam_result";
   static const String insert_notes_for_teacher = "${server}users/insert.php?mark=insert_notes_for_teacher";
   static const String insert_public_visits = "${server}users/insert.php?mark=insert_public_visits";

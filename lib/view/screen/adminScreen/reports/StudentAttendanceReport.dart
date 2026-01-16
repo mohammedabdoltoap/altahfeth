@@ -143,31 +143,48 @@ class StudentAttendanceReport extends StatelessWidget {
             // تحقق من نوع البيانات
             final isSummary = controller.attendanceList.first.containsKey('present_count');
             
-            int present, absent, total;
+            int present, total;
+            int absentWithoutExcuse, absentWithExcuse;
             
             if (isSummary) {
               // حساب من البيانات المجمعة
-              present = controller.attendanceList.fold(0, (sum, s) => 
+              present = controller.attendanceList.fold(0, (sum, s) =>
                 sum + (int.tryParse(s['present_count'].toString()) ?? 0));
-              absent = controller.attendanceList.fold(0, (sum, s) => 
-                sum + (int.tryParse(s['absent_count'].toString()) ?? 0));
-              total = present + absent;
+
+              total = controller.attendanceList.fold(0, (sum, s) =>
+                sum + (int.tryParse(s['total_days'].toString()) ?? 0));
+
+              absentWithoutExcuse = controller.attendanceList.fold(0, (sum, s) =>
+                sum + (int.tryParse(s['absent_without_excuse_count']?.toString() ?? '0') ?? 0));
+
+              absentWithExcuse = controller.attendanceList.fold(0, (sum, s) =>
+                sum + (int.tryParse(s['absent_with_excuse_count']?.toString() ?? '0') ?? 0));
+
+              if (!controller.attendanceList.first.containsKey('absent_without_excuse_count') &&
+                  !controller.attendanceList.first.containsKey('absent_with_excuse_count')) {
+                absentWithoutExcuse = total - present;
+                absentWithExcuse = 0;
+              }
             } else {
               // حساب من البيانات التفصيلية
-              present = controller.attendanceList.where((s) => s['status'] == '1').length;
-              absent = controller.attendanceList.where((s) => s['status'] == '0').length;
+              present = controller.attendanceList.where((s) => s['status']?.toString() == '1').length;
+              absentWithoutExcuse = controller.attendanceList.where((s) => s['status']?.toString() == '0').length;
+              absentWithExcuse = controller.attendanceList.where((s) => s['status']?.toString() == '2').length;
               total = controller.attendanceList.length;
             }
             
             return Container(
               padding: const EdgeInsets.all(16),
               color: Colors.grey.shade100,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              child: Wrap(
+                alignment: WrapAlignment.spaceAround,
+                runSpacing: 8,
                 children: [
                   _buildStatCard("الحضور", present.toString(), Colors.green),
-                  _buildStatCard("الغياب", absent.toString(), Colors.red),
-                  _buildStatCard(isSummary ? "إجمالي الأيام" : "إجمالي الطلاب", total.toString(), Colors.blue),
+                  
+                  _buildStatCard("غياب بدون عذر", absentWithoutExcuse.toString(), Colors.red),
+                  _buildStatCard("غائب بعذر", absentWithExcuse.toString(), Colors.orange),
+                  _buildStatCard(isSummary ? "إجمالي " : "إجمالي الطلاب", total.toString(), Colors.blue),
                 ],
               ),
             );
@@ -198,8 +215,16 @@ class StudentAttendanceReport extends StatelessWidget {
                   if (isSummary) {
                     // عرض ملخص (للفترة)
                     final presentCount = int.tryParse(student['present_count'].toString()) ?? 0;
-                    final absentCount = int.tryParse(student['absent_count'].toString()) ?? 0;
                     final totalDays = int.tryParse(student['total_days'].toString()) ?? 0;
+                    int absentWithoutExcuseCount = int.tryParse(student['absent_without_excuse_count']?.toString() ?? '0') ?? 0;
+                    int absentWithExcuseCount = int.tryParse(student['absent_with_excuse_count']?.toString() ?? '0') ?? 0;
+
+                    if (!student.containsKey('absent_without_excuse_count') &&
+                        !student.containsKey('absent_with_excuse_count')) {
+                      absentWithoutExcuseCount = totalDays - presentCount;
+                      absentWithExcuseCount = 0;
+                    }
+
                     final attendanceRate = totalDays > 0 ? (presentCount / totalDays * 100) : 0.0;
                     
                     return Card(
@@ -236,11 +261,13 @@ class StudentAttendanceReport extends StatelessWidget {
                             padding: const EdgeInsets.all(16),
                             child: Column(
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                Wrap(
+                                  alignment: WrapAlignment.spaceAround,
+                                  runSpacing: 8,
                                   children: [
                                     _buildStatItem('الحضور', presentCount.toString(), Colors.green),
-                                    _buildStatItem('الغياب', absentCount.toString(), Colors.red),
+                                    _buildStatItem('غياب بدون عذر', absentWithoutExcuseCount.toString(), Colors.red),
+                                    _buildStatItem('غائب بعذر', absentWithExcuseCount.toString(), Colors.orange),
                                     _buildStatItem('الإجمالي', totalDays.toString(), Colors.blue),
                                   ],
                                 ),
@@ -262,7 +289,12 @@ class StudentAttendanceReport extends StatelessWidget {
                     );
                   } else {
                     // عرض تفصيلي (ليوم واحد)
-                    final isPresent = student['status'] == '1';
+                    final status = student['status']?.toString() ?? '0';
+                    final isPresent = status == '1';
+                    final isExcusedAbsent = status == '2';
+                    final statusText = isPresent ? 'حاضر' : isExcusedAbsent ? 'غائب بعذر' : 'غائب';
+                    final statusColor = isPresent ? Colors.green : isExcusedAbsent ? Colors.orange : Colors.red;
+                    final statusIcon = isPresent ? Icons.check : isExcusedAbsent ? Icons.error_outline : Icons.close;
                     
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -273,9 +305,9 @@ class StudentAttendanceReport extends StatelessWidget {
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(12),
                         leading: CircleAvatar(
-                          backgroundColor: isPresent ? Colors.green : Colors.red,
+                          backgroundColor: statusColor,
                           child: Icon(
-                            isPresent ? Icons.check : Icons.close,
+                            statusIcon,
                             color: Colors.white,
                           ),
                         ),
@@ -298,9 +330,9 @@ class StudentAttendanceReport extends StatelessWidget {
                                 ),
                               ),
                             Text(
-                              isPresent ? 'حاضر' : 'غائب',
+                              statusText,
                               style: TextStyle(
-                                color: isPresent ? Colors.green : Colors.red,
+                                color: statusColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -338,43 +370,50 @@ class StudentAttendanceReport extends StatelessWidget {
   }
 
   Widget _buildStatCard(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      child: Column(
+        
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
   
   Widget _buildStatItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
           ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12),
-        ),
-      ],
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -595,9 +634,45 @@ class StudentAttendanceReportController extends GetxController {
           : useDateRange.value && startDate.value != null && endDate.value != null
               ? 'من ${DateFormat('yyyy-MM-dd').format(startDate.value!)} إلى ${DateFormat('yyyy-MM-dd').format(endDate.value!)}'
               : '';
-      
-      final present = attendanceList.where((s) => s['status'] == '1').length;
-      final absent = attendanceList.where((s) => s['status'] == '0').length;
+
+      final isSummary = attendanceList.first.containsKey('present_count');
+
+      int present;
+      int absentWithoutExcuse;
+      int absentWithExcuse;
+
+      if (isSummary) {
+        present = attendanceList.fold(0, (sum, s) =>
+          sum + (int.tryParse(s['present_count']?.toString() ?? '0') ?? 0));
+
+        absentWithoutExcuse = attendanceList.fold(0, (sum, s) =>
+          sum + (int.tryParse(s['absent_without_excuse_count']?.toString() ?? '0') ?? 0));
+
+        absentWithExcuse = attendanceList.fold(0, (sum, s) =>
+          sum + (int.tryParse(s['absent_with_excuse_count']?.toString() ?? '0') ?? 0));
+
+        if (!attendanceList.first.containsKey('absent_without_excuse_count') &&
+            !attendanceList.first.containsKey('absent_with_excuse_count')) {
+          final totalDays = attendanceList.fold(0, (sum, s) =>
+            sum + (int.tryParse(s['total_days']?.toString() ?? '0') ?? 0));
+
+          absentWithoutExcuse = totalDays - present;
+          absentWithExcuse = 0;
+        }
+      } else {
+        present = attendanceList.where((s) => s['status']?.toString() == '1').length;
+        absentWithoutExcuse = attendanceList.where((s) => s['status']?.toString() == '0').length;
+        absentWithExcuse = attendanceList.where((s) => s['status']?.toString() == '2').length;
+      }
+
+      final totalAbsent = absentWithoutExcuse + absentWithExcuse;
+
+      final circleName = selectedCircle.value == 'all'
+          ? 'جميع الحلقات'
+          : (circlesList.firstWhere(
+                (circle) => circle['id_circle'].toString() == selectedCircle.value.toString(),
+                orElse: () => {'name_circle': 'غير محدد'},
+              )['name_circle']?.toString() ?? 'غير محدد');
 
       pdf.addPage(
         pw.MultiPage(
@@ -664,12 +739,17 @@ class StudentAttendanceReportController extends GetxController {
                           ),
                           pw.SizedBox(height: 2),
                           pw.Text(
-                            'حضور: $present | غياب: $absent | إجمالي: ${attendanceList.length}',
+                            'حضور: $present | إجمالي: ${attendanceList.length}',
                             style: const pw.TextStyle(fontSize: 9),
                           ),
                           pw.SizedBox(height: 2),
                           pw.Text(
-                            'الحلقة: ${circlesList.firstWhere((circle) => circle['id_circle'].toString() == selectedCircle.value.toString(), orElse: () => {'name_circle': 'غير محدد'})['name_circle']}',
+                            'غياب بدون عذر: $absentWithoutExcuse | غائب بعذر: $absentWithExcuse | الغياب: $totalAbsent',
+                            style: const pw.TextStyle(fontSize: 9),
+                          ),
+                          pw.SizedBox(height: 2),
+                          pw.Text(
+                            'الحلقة: $circleName',
                             style: const pw.TextStyle(fontSize: 8),
                           ),
                         ],
@@ -686,7 +766,9 @@ class StudentAttendanceReportController extends GetxController {
               pw.Directionality(
                 textDirection: pw.TextDirection.rtl,
                 child: pw.Table.fromTextArray(
-                  headers: ['ملاحظات', 'الحالة', 'الحلقة', 'اسم الطالب', '#'],
+                  headers: isSummary
+                      ? ['الإجمالي', 'غائب بعذر', 'غياب بدون عذر', 'الحضور', 'الحلقة', 'اسم الطالب', '#']
+                      : ['ملاحظات', 'الحالة', 'الحلقة', 'اسم الطالب', '#'],
                   data: () {
                     // ترتيب البيانات حسب اسم الحلقة
                     final sortedList = List<Map<String, dynamic>>.from(attendanceList);
@@ -699,11 +781,36 @@ class StudentAttendanceReportController extends GetxController {
                     return sortedList.asMap().entries.map((entry) {
                       final index = entry.key + 1;
                       final item = entry.value;
-                      final isPresent = item['status'] == '1';
+
+                      if (isSummary) {
+                        final presentCount = int.tryParse(item['present_count']?.toString() ?? '0') ?? 0;
+                        final totalDays = int.tryParse(item['total_days']?.toString() ?? '0') ?? 0;
+                        int absentWithoutExcuseCount = int.tryParse(item['absent_without_excuse_count']?.toString() ?? '0') ?? 0;
+                        int absentWithExcuseCount = int.tryParse(item['absent_with_excuse_count']?.toString() ?? '0') ?? 0;
+
+                        if (!item.containsKey('absent_without_excuse_count') &&
+                            !item.containsKey('absent_with_excuse_count')) {
+                          absentWithoutExcuseCount = totalDays - presentCount;
+                          absentWithExcuseCount = 0;
+                        }
+
+                        return [
+                          totalDays.toString(),
+                          absentWithExcuseCount.toString(),
+                          absentWithoutExcuseCount.toString(),
+                          presentCount.toString(),
+                          item['name_circle'] ?? "",
+                          item['name_student'] ?? '-',
+                          index.toString(),
+                        ];
+                      }
+
+                      final status = item['status']?.toString() ?? '0';
+                      final statusText = status == '1' ? 'حاضر' : status == '2' ? 'غائب بعذر' : 'غائب';
                       
                       return [
                         item['notes'] ?? '-',
-                        isPresent ? 'حاضر' : 'غائب',
+                        statusText,
                         item['name_circle'] ?? "",
                         item['name_student'] ?? '-',
                         index.toString(),

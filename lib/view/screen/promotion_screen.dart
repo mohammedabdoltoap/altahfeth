@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../constants/NewsToastWidget.dart';
+import '../../constants/app_theme.dart';
 import '../../controller/promotion_controller.dart';
 import 'package:althfeth/constants/function.dart';
 import 'package:althfeth/globals.dart';
@@ -9,10 +11,6 @@ import 'package:althfeth/view/screen/teacherScreen/TeacherResignationPage.dart';
 import 'promotion_pending.dart';
 
 class PromotionScreen extends StatelessWidget {
-  final Color primaryTeal = const Color(0xFF008080);
-  final Color lightTeal = const Color(0xFF66CCCC);
-
-
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(PromotionController());
@@ -22,31 +20,76 @@ class PromotionScreen extends StatelessWidget {
           controller.isEditMode.value 
             ? 'تعديل طلب الترفيع' 
             : 'نموذج طلب الترفيع للطالب',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: AppTheme.headingMedium,
         )),
-        backgroundColor: primaryTeal,
+        backgroundColor: AppTheme.primaryColor,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryColor,
+                AppTheme.primaryColor.withOpacity(0.8),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       drawer: _PromotionDrawer(),
-      body: Obx(() {
-        // ✅ عرض مؤشر تحميل أثناء تحميل البيانات الأولية
-        if (controller.isLoading.value && controller.centers.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(color: primaryTeal),
-                const SizedBox(height: 16),
-                const Text(
-                  'جاري تحميل البيانات...',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
-          );
-        }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.backgroundColor,
+              Colors.white,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
+          children: [
+            // إشعارات الأخبار
+            if (dataNewsGloble.isNotEmpty)
+              NewsToastWidget(),
+            
+            // المحتوى الرئيسي
+            Expanded(
+              child: Obx(() {
 
-        return Stepper(
+                // ✅ عرض مؤشر تحميل أثناء تحميل البيانات الأولية
+                if (controller.isLoading.value && controller.centers.isEmpty) {
+                  return Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(40),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+                        boxShadow: AppTheme.cardShadow,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                            color: AppTheme.primaryColor,
+                            strokeWidth: 3,
+                          ),
+                          const SizedBox(height: AppTheme.spacingLarge),
+                          Text(
+                            'جاري تحميل البيانات...',
+                            style: AppTheme.bodyLarge.copyWith(
+                              color: AppTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return Stepper(
           type: StepperType.vertical,
           currentStep: controller.currentStep.value,
           onStepContinue: controller.canContinue(controller.currentStep.value)
@@ -79,7 +122,7 @@ class PromotionScreen extends StatelessWidget {
                             ? details.onStepContinue
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryTeal,
+                          backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.white,
                           padding:
                           const EdgeInsets.symmetric(vertical: 16),
@@ -103,19 +146,19 @@ class PromotionScreen extends StatelessWidget {
                   ? Text(
                 'المحدد: ${controller.selectedCenterName.value}',
                 style: TextStyle(
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600),
               )
                   : null,
               content: _SearchableSelector(
                 label: 'المركز',
                 valueText: controller.selectedCenterName.value ?? '',
-                color: primaryTeal,
+                color: AppTheme.primaryColor,
                 onSelect: () async {
                   final selected = await _openSearchPicker(
                     context: context,
                     title: 'اختر مركز',
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     items: controller.centers
                         .map((e) =>
                     {
@@ -147,19 +190,19 @@ class PromotionScreen extends StatelessWidget {
                   ? Text(
                 'المحددة: ${controller.selectedCircleName.value}',
                 style: TextStyle(
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600),
               )
                   : null,
               content: _SearchableSelector(
                 label: 'الحلقة',
                 valueText: controller.selectedCircleName.value ?? '',
-                color: primaryTeal,
+                color: AppTheme.primaryColor,
                 onSelect: () async {
                   final selected = await _openSearchPicker(
                     context: context,
                     title: 'اختر حلقة',
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     items: controller.circles
                         .map((e) =>
                     {
@@ -193,7 +236,7 @@ class PromotionScreen extends StatelessWidget {
                   ? Text(
                 'المحدد: ${controller.selectedStudentName.value}',
                 style: TextStyle(
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600),
               )
                   : null,
@@ -203,12 +246,12 @@ class PromotionScreen extends StatelessWidget {
                   _SearchableSelector(
                     label: 'الطالب',
                     valueText: controller.selectedStudentName.value ?? '',
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     onSelect: () async {
                       final selected = await _openSearchPicker(
                         context: context,
                         title: 'اختر طالب',
-                        color: primaryTeal,
+                        color: AppTheme.primaryColor,
                         items: controller.students
                             .map((e) =>
                         {
@@ -231,22 +274,23 @@ class PromotionScreen extends StatelessWidget {
                   if (controller.selectedStudentId.value != null) ...[
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(AppTheme.spacingMedium),
                       decoration: BoxDecoration(
-                        color: primaryTeal.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: primaryTeal.withOpacity(0.2)),
+                        color: AppTheme.primaryColor.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+                        boxShadow: AppTheme.cardShadow,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.info_outline, color: primaryTeal,
-                                  size: 20),
-                              const SizedBox(width: 8),
-                              Text('معلومات الطالب', style: TextStyle(
-                                  color: primaryTeal,
+                              Icon(Icons.info_outline, color: AppTheme.primaryColor,
+                                  size: AppTheme.iconMedium),
+                              const SizedBox(width: AppTheme.spacingSmall),
+                              Text('معلومات الطالب', style: AppTheme.bodyMedium.copyWith(
+                                  color: AppTheme.primaryColor,
                                   fontWeight: FontWeight.bold)),
                             ],
                           ),
@@ -280,7 +324,7 @@ class PromotionScreen extends StatelessWidget {
                 'المجموع: ${controller.calculateTotal()} / ${controller.subjects
                     .fold<int>(0, (sum, s) => sum + (s['MaxGrade'] as int))}',
                 style: TextStyle(
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600),
               )
                   : null,
@@ -298,11 +342,11 @@ class PromotionScreen extends StatelessWidget {
                               decimal: true),
                           decoration: _decoration(
                               subject['SubjectName']?.toString() ?? '',
-                              primaryTeal).copyWith(
+                              AppTheme.primaryColor).copyWith(
                             hintText:
                             'أدخل الدرجة (حد أقصى ${subject['MaxGrade']})',
                             prefixIcon:
-                            Icon(Icons.grade, color: primaryTeal),
+                            Icon(Icons.grade, color: AppTheme.primaryColor),
                             suffixText:
                             '/ ${subject['MaxGrade']}',
                           ),
@@ -324,17 +368,18 @@ class PromotionScreen extends StatelessWidget {
                       .any((c) => c.text.isNotEmpty)) ...[
                     const SizedBox(height: 20),
                     Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(AppTheme.spacingXLarge),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            primaryTeal.withOpacity(0.1),
-                            lightTeal.withOpacity(0.1),
+                            AppTheme.primaryColor.withOpacity(0.08),
+                            AppTheme.primaryColor.withOpacity(0.04),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                         border: Border.all(
-                            color: primaryTeal.withOpacity(0.3)),
+                            color: AppTheme.primaryColor.withOpacity(0.3)),
+                        boxShadow: AppTheme.cardShadow,
                       ),
                       child: Column(
                         children: [
@@ -344,7 +389,7 @@ class PromotionScreen extends StatelessWidget {
                             'من ${controller.subjects.fold<int>(
                                 0, (sum, s) => sum + (s['MaxGrade'] as int))}',
                             Icons.summarize,
-                            primaryTeal,
+                            AppTheme.primaryColor,
                           ),
                           const SizedBox(height: 16),
                           _buildStatCard(
@@ -380,7 +425,7 @@ class PromotionScreen extends StatelessWidget {
                   ? Text(
                 '${controller.selectedCommitteeIds.length + 1} عضو محدد',
                 style: TextStyle(
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600),
               )
                   : null,
@@ -389,12 +434,12 @@ class PromotionScreen extends StatelessWidget {
                 valueText: controller.selectedCommitteeIds.isEmpty
                     ? ''
                     : '${controller.selectedCommitteeIds.length} مختار',
-                color: primaryTeal,
+                color: AppTheme.primaryColor,
                 onSelect: () async {
                   final selected = await _openMultiSelectPicker(
                     context: context,
                     title: 'اختر أعضاء اللجنة',
-                    color: primaryTeal,
+                    color: AppTheme.primaryColor,
                     items: controller.committeeMembers
                         .map((e) =>
                     {
@@ -425,23 +470,20 @@ class PromotionScreen extends StatelessWidget {
               content: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(AppTheme.spacingXLarge),
                     decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                       border: Border.all(
-                          color: primaryTeal.withOpacity(0.3)),
+                          color: AppTheme.primaryColor.withOpacity(0.3)),
+                      boxShadow: AppTheme.cardShadow,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'ملخص البيانات',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: primaryTeal,
-                          ),
+                          style: AppTheme.headingSmall,
                         ),
                         const SizedBox(height: 16),
                         _buildSummaryRow('الحلقة',
@@ -477,7 +519,7 @@ class PromotionScreen extends StatelessWidget {
                           ? controller.submitPromotion
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryTeal,
+                        backgroundColor: AppTheme.primaryColor,
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey[300],
                         shape: RoundedRectangleBorder(
@@ -499,8 +541,12 @@ class PromotionScreen extends StatelessWidget {
               state: StepState.complete,
             ),
           ],
-        );
-      }),
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -599,7 +645,7 @@ class PromotionScreen extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey[700],
+                color: AppTheme.primaryColor,
               ),
             ),
           ),
@@ -611,10 +657,9 @@ class PromotionScreen extends StatelessWidget {
               softWrap: true,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 16,
+              style: AppTheme.bodyLarge.copyWith(
                 fontWeight: FontWeight.bold,
-                color: primaryTeal,
+                color: AppTheme.primaryColor,
               ),
             ),
           ),

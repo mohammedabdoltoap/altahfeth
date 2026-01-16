@@ -8,6 +8,7 @@ import '../../../controller/studentControllers/StudentPageController.dart';
 import '../../../globals.dart';
 import 'StudentPlanReport.dart';
 import '../../widget/common/promotional_footer.dart';
+import 'leaveRequestsPageStudent.dart';
 
 class StudentPage extends StatelessWidget {
   StudentPageController controller=Get.put(StudentPageController());
@@ -249,6 +250,18 @@ class StudentPage extends StatelessWidget {
               color: Colors.purple,
               onPressed: () {
                 controller.select_exam_results();
+              },
+            ),
+
+            _buildActionCard(
+              theme: theme,
+              title: "طلبات الاجازة",
+              icon: Icons.beach_access_rounded,
+              color: Colors.blue,
+              onPressed: () {
+                print("controller==${controller.student}");
+                Get.to(() => LeaveRequestsPageStudent(), arguments: controller.student);
+
               },
             ),
           ],
